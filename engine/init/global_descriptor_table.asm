@@ -18,8 +18,9 @@
 align	0x08
 
 variable_gdt_structure:
-variable_gdt_limit		dw	0x1000	; rozmiar tablicy GDT
-variable_gdt_address	dq	0x0000000000000000
+variable_gdt_limit				dw	0x1000	; rozmiar tablicy GDT
+variable_gdt_address				dq	0x0000000000000000
+
 ; utworzone zostaną tylko 4 deskryptory dla segmentów
 ; z czego pierwszy (0x0000) jest deskryptorem NULL, TSS będzie 5-tym
 variable_tss_descriptor				dw	0x0028	; 5 * 0x08
