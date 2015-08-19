@@ -77,6 +77,9 @@ start:
 	; call zwolnij stronę
 	call	cyjon_page_release
 
+	; zwolnij następną
+	add	rdi,	0x1000
+
 	; kontynuuj z pozostałymi
 	loop	.loop
 
