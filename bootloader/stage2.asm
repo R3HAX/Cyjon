@@ -429,28 +429,16 @@ load_kernel:
 	sub	eax,	start
 	shr	eax,	9	; /512
 
-	; koryguj o rozmiar programu stage1
+	; koryguj o rozmiar stage1
 	inc	eax
 
-	; sprawdź rozmiar pliku jądra
-	cmp	eax,	0x0400	; 512 KiB
-	jbe	.size_ok
-
-	; wyświetl informacje o rozmiarze jądra przekraczającym dopuszczalny limit
-	mov	si,	text_kernel_oversized
-	call	print_16bit
-
-	; zatrzymaj dalsze wykonywanie kodu
-	jmp	$
-
-.size_ok:
 	; zapisz informacje o początku kodu jądra systemu na nośniku
 	mov	dword [packet + 0x08],	eax
 
 	; oblicz rozmiar kodu jądra systemu do załadowania
 	mov	eax,	kernel	; koniec kodu jądra systemu
 	sub	eax,	stage2	; odejmij rozmiar programu rozruchowego stage2
-	mov	ecx,	512	; przelicz na ilość sektorów
+	mov	ecx,	512 * 64	; przelicz na ilość paczek sektorów
 	xor	edx,	edx	; wyczyść starszą część / resztę
 	div	ecx	; wylicz
 
