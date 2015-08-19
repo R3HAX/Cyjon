@@ -11,37 +11,413 @@
 ; Use:
 ; nasm - http://www.nasm.us/
 
-%define	KERNEL_VERSION			"0.445"
+; 64 bitowy kod programu
+[BITS 64]
 
-PHYSICAL_KERNEL_ADDRESS		equ	0x0000000000100000
+struc virtual_file_system_superblock
+	.s_all_blocks_count		resq	1
+	.s_fs_blocks_count		resq	1
 
-HIGH_MEMORY_ADDRESS		equ	0xFFFF000000000000
-REAL_HIGH_MEMORY_ADDRESS	equ	0xFFFF800000000000
-VIRTUAL_HIGH_MEMORY_ADDRESS	equ	REAL_HIGH_MEMORY_ADDRESS - HIGH_MEMORY_ADDRESS
-FREE_LOGICAL_MEMORY_ADDRESS	equ	0x0000400000000000	; adres umowny, jest to przestrzeń gdzie jądro systemu może operować na różnej wielkości fragmentach pamięci logicznej, gdzie pamięć fizyczna nie sięga
+	.s_knots_table			resq	1
+	.s_knots_table_size		resq	1
+endstruc
 
-KERNEL_STACK_ADDRESS		equ	VIRTUAL_HIGH_MEMORY_ADDRESS - 0x1000
+variable_partition_specification_system	times	4	dq	0x0000000000000000
+variable_partition_specification_home	times	4	dq	0x0000000000000000
 
-ASCII_CODE_TERMINATOR		equ	0x00
-ASCII_CODE_ENTER		equ	0x0D
-ASCII_CODE_NEWLINE		equ	0x0A
-ASCII_CODE_BACKSPACE		equ	0x08
+virtual_file_systems:
+	; zachowaj oryginalne rejestry
+	push	r8
 
-COLOR_DEFAULT			equ	0x00AAAAAA
-BACKGROUND_COLOR_DEFAULT	equ	0x00202020
-COLOR_WHITE			equ	0x00FFFFFF
-COLOR_GREEN			equ	0x001CC76A
-COLOR_BLUE			equ	0x00267BE6
-COLOR_RED			equ	0x00E62626
-COLOR_GRAY			equ	0x00686868
+	; inicjalizuj wirtualny system plików dla systemu
+	mov	r8,	variable_partition_specification_system
+	call	virtual_file_system_initialization
 
-%define	FONT_MATRIX_DEFAULT	"font/sinclair.asm"
+	; inicjalizuj wirtualny system plików dla użytkownika
+	mov	r8,	variable_partition_specification_home
+	call	virtual_file_system_initialization
 
-PCI_CONFIG_ADDRESS		equ	0x0CF8
-PCI_CONFIG_DATA			equ	0x0CFC
+	; przywróć oryginalne rejestry
+	pop	r8
 
-PIT_CLOCK			equ	1000	; Hz
+	; powrót z procedury
+	ret
 
-KEYBOARD_CACHE_SIZE		equ	16
+;===============================================================================
+; procedura zapisuje plik do wirtualnego systemu plików
+; IN:
+;	rcx - ilość znaków w nazwie pliku
+;	rdx - rozmiar pliku w Bajtach
+;	rdi - wskaźnik przechowywania pliku w pamięci
+;	rsi - wskaźnik do nazwy pliku
+;	r8 - specyfikacja systemu plików
+; OUT:
+;	brak
+;
+; wszystkie rejestry zachowane
+cyjon_virtual_file_system_save_file:
+	; zachowaj oryginalne rejestry
+	push	rax
+	push	rcx
+	push	rdx
+	push	rsi
+	push	rdi
 
-PROCESS_LIMIT			equ	256
+	; sprawdź czy istnieje plik o podanej nazwie w katalogu głównym
+	call	cyjon_virtual_file_system_find_file
+	jnc	.no	; brak pliku, utwórz nowy wpis do katalogu głównego
+
+	; aktualizuj nowy rozmiar pliku w rekordzie tablicy knotów
+	mov	qword [rdi + 0x08],	rdx
+
+	; kontynuuj zapis pliku
+	jmp	.continue
+
+.no:
+	; szukaj wolnego rekordu w katalogu głównym
+	call	cyjon_virtual_file_system_find_free_knot
+
+	; zapisz rozmiar pliku w Bajtach
+	mov	qword [rdi + 0x08],	rdx
+
+	; zapisz ilość znaków przypadających na nazwę pliku
+	mov	qword [rdi + 0x10],	rcx
+
+	; zapamiętaj adres wskaźnika
+	push	rdi
+
+	; przesuń wskaźnik na nazwe pliku w rekordzie
+	add	rdi,	0x18
+
+	; zapisz do rekordu nazwe pliku
+	rep	movsb
+
+	; przywróć adres wskaźnika
+	pop	rax
+
+	; pobierz adres pierwszego wolnego bloku/strony
+	call	cyjon_page_allocate
+
+	; ustaw na swoje miejsca
+	xchg	rdi,	rax
+
+	; zapisz do rekordu pierwszy blok danych zawartości pliku
+	mov	qword [rdi],	rax
+
+.continue:
+	; załaduj adres przechowywanego pliku w pamięci
+	mov	rsi,	qword [rsp]
+
+	; załaduj numer pierwszego bloku danych pliku
+	mov	rdi,	qword [rdi]
+
+.save:
+	; zachowaj adres przeznaczenia pliku
+	push	rdi
+
+	; sprawdź czy cały/pozostała część pliku mieści się w jednym bloku
+	cmp	rdx,	4096 - 0x08
+	jbe	.last_block
+
+	; skopiuj część pliku do bloku danych
+	mov	rcx,	4096 - 0x08
+	; oblicz pozostałą część pliku do skopiowania
+	sub	rdx,	rcx
+	; koryguj o rozmiar
+	shr	rcx,	3	; /8
+	; kopiuj
+	rep	movsq
+
+	; sprawdź czy jest opisany następny blok do uzupełniania danymi pliku
+	cmp	qword [rdi],	0x0000000000000000
+	ja	.store
+
+	; zachowaj adres bloku modyfikowanego
+	push	rdi
+	mov	rax,	rdi
+
+	; zaalokuj następny blok pod dane pliku
+	call	cyjon_page_allocate
+
+	; ustaw na swoje miejsca
+	xchg	rdi,	rax
+
+	; załaduj informacje do aktualnego bloku
+	stosq
+
+	; przyrwóć adres aktualnie modyfikowanego bloku
+	pop	rdi
+
+.store:
+	; przywróć adres przeznaczenia pliku
+	pop	rdi
+
+	; załaduj numer następnego bloku do modyfikacji
+	mov	rdi,	qword [rdi + 4096 - 0x08]
+
+	; sprawdź czy koniec danych pliku
+	cmp	rdx,	0x0000000000000000
+	je	.end
+
+	; kontynuuj z pozostałymi blokami
+	jmp	.save
+
+.last_block:
+	; skopiuj pozostałą część pliku
+	mov	rcx,	rdx
+	; kopiuj
+	rep	movsb
+
+	; uzupełnij o pustą przestrzeń
+	xor	rax,	rax
+	mov	rcx,	4096
+	sub	rcx,	rdx
+	; wyczyść
+	rep	stosb
+
+	; koniec zawartości pliku
+	xor	rdx,	rdx
+
+	; kontynuuj zapis
+	jmp	.store
+
+.end:
+	; sprawdzić czy pozostały jakieś bloku do zwolnienia, gdy plik zaaktualizowany jest mniejszy
+
+	; przywróc oryginalne rejestry
+	pop	rdi
+	pop	rsi
+	pop	rdx
+	pop	rcx
+	pop	rax
+	
+	; powrót z procedury
+	ret
+
+;===============================================================================
+; procedura wyszukuje w katalogu głównym wolnego supła/węzła dla pliku
+; IN:
+;	r8 - specyfikacja systemu plików
+; OUT:
+;	rdi - adres bezwzględny znalezionego wolnego supła
+;
+; pozostałe rejestry zachowane
+cyjon_virtual_file_system_find_free_knot:
+	; zachowaj oryginalne rejestry
+	push	rcx
+
+	; załaduj adres poczatku tablicy supłów
+	mov	rdi,	qword [r8 + virtual_file_system_superblock.s_knots_table]
+
+.prepare:
+	; ilość rekordów na blok
+	mov	rcx,	73
+
+.loop:
+	; sprawdź czy ilość znaków w nazwie pliku jest równa zero
+	cmp	qword [rdi + 0x10],	0x0000000000000000
+	je	.found
+
+	; przesuń wskaźnik na następny rekord
+	add	rdi,	56
+
+	; kontynuuj z kolejnymi rekordami
+	loop	.loop
+
+	; sprawdź czy tablica zawiera inne bloki danych
+	cmp	qword [rdi],	0x0000000000000000
+	je	.new	; jeśli tak, przeszukaj następny blok
+
+	; pobierz adres następnego bloku tablicy
+	mov	rdi,	qword [rdi]
+
+	; kontynuuj poszukiwania
+	jmp	.prepare
+
+.new:
+	; zapamiętaj
+	mov	rcx,	rdi
+
+	; zarezerwuj wolny blok
+	call	cyjon_page_allocate
+	; wyczyść
+	call	cyjon_page_clear
+
+	; dopisz do tablicy
+	mov	qword [rcx],	rdi
+
+	; kontynuuj poszukiwania
+	jmp	.prepare
+	
+.found:
+	; przywróć oryginalne rejestry
+	pop	rcx
+
+	; powrót z procedury
+	ret
+
+;===============================================================================
+; procedura tworzy nowy system plików
+; IN:
+;	r8 - adres tablicy specyfikacji systemu plików
+; OUT:
+;	brak
+;
+; wszystkie rejestry zachowane
+virtual_file_system_initialization:
+	; zachowaj oryginalne rejestry
+	push	rdi
+
+	; przygotuj muejsce na tablice supłów
+	call	cyjon_page_allocate
+	call	cyjon_page_clear
+
+	; aktualny rozmiar nośnika w blokach
+	mov	qword [r8],	1	; tablica supłów
+
+	; rozmair systemu plików w blokach
+	mov	qword [r8 + virtual_file_system_superblock.s_fs_blocks_count],	1
+
+	; zapisz adres tablicy supłów
+	mov	qword [r8 + virtual_file_system_superblock.s_knots_table],	rdi
+
+	; rozmiar tablicy supłów w blokach
+	mov	qword [r8 + virtual_file_system_superblock.s_knots_table_size],	1
+
+	; przywróć oryginalne rejestry
+	pop	rdi
+
+	; powrót z procedury
+	ret
+
+;===============================================================================
+; procedura ładuje zawartość pliu do pamięci
+; IN:
+;	rsi - numer pierwszego bloku danych pliku
+;	rdi - adres gdzie załadować plik
+; OUT:
+;	brak
+;
+; wszystkie rejestry zachowane
+cyjon_virtual_file_system_read_file:
+	; zachowaj oryginalne rejestry
+	push	rcx
+	push	rsi
+	push	rdi
+
+.prepare:
+	; rozmiar bloku do skopiowania
+	mov	rcx,	4096 - 8
+	shr	rcx,	3	; /8
+
+	; kopiuj
+	rep	movsq
+
+	; sprawdź czy koniec pliku
+	cmp	qword [rsi],	0x0000000000000000
+	je	.end
+
+	; pobierz informacje o następnym bloku do załadowania
+	mov	rsi,	qword [rsi]
+
+	; kontynuuj z następnym blokiem
+	jmp	.prepare
+
+.end:
+	; przywróć oryginalne rejestry
+	pop	rdi
+	pop	rsi
+	pop	rcx
+
+	; powrót z procedury
+	ret
+
+;===============================================================================
+; procedura przeszukuje katalogłówny systemu plików za wskazaną nazwą pliku
+; IN:
+;	rcx - ilość znaków w nazwie pliku
+;	rsi - ciąg znaków reprezentujący nazwę pliku
+;	r8 - specyfikacja systemu plików
+; OUT:
+;	rdi - adres rekordu opisującego plik
+;
+; wszystkie rejestry zachowane
+cyjon_virtual_file_system_find_file:
+	; zachowaj oryginalne rejestry
+	push	rax
+	push	rsi
+	push	rcx
+
+	; zapamiętaj ilość znaków w nazwie pliku
+	mov	rax,	rcx
+
+	; wyzeruj numer rekordu
+
+	; załaduj adres poczatku tablicy supłów
+	mov	rdi,	qword [r8 + virtual_file_system_superblock.s_knots_table]
+
+.prepare:
+	; ilość rekordów na blok
+	mov	rcx,	73
+
+.loop:
+	; sprawdź czy ilość znaków na nazwe pliku jest różna poszukiwanej
+	cmp	qword [rdi + 0x10],	rax
+	jne	.continue
+
+	; przesuń wskaźnik na ciąg znaków nazwy pliku
+	add	rdi,	0x18
+
+	; koryguj zawartość zmiennej
+	xchg	rcx,	rax
+
+	; porównaj ciągi
+	call	library_compare_string
+
+	; koryguj zawartość zmiennej
+	xchg	rcx,	rax
+
+	; czy ciągi były takie same?
+	jc	.found
+
+	; koryguj wskaźnik na poczatek rekordu
+	sub	rdi,	0x18
+
+.continue:
+	; przesuń wskaźnik na następny rekord
+	add	rdi,	56
+
+	; kontynuuj z kolejnymi rekordami
+	loop	.loop
+
+	; skończyły się rekordy z danego bloku
+	mov	rdi,	qword [rdi]
+
+	; sprawdź czy tablica zawiera inne bloki danych
+	cmp	rdi,	0x0000000000000000
+	ja	.prepare	; jeśli tak, przeszukaj następny blok
+
+	; zwróć brak adresu rekordu szukanego pliku
+	xor	rdi,	rdi
+
+	; wyłącz flagę
+	clc
+
+	; koniec obsługi procedury
+	jmp	.end
+	
+.found:
+	; zwróć adres rekordu opisującego znleziony plik
+	sub	rdi,	0x18
+
+	; ustaw wlagę
+	stc
+
+.end:
+	; przywróć oryginalne rejestry
+	pop	rcx
+	pop	rsi
+	pop	rax
+
+	; powrót z procedury
+	ret
