@@ -81,7 +81,7 @@ multitasking:
 ;	brak
 ;
 ; wszystkie rejestry zachowane
-cyjon_irq32:
+irq32:
 	; wyłącz przerwania, nic nie może przeszkadzać
 	cli
 
