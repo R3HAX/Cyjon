@@ -225,243 +225,243 @@ irq33:
 
 	; naciśnięcie klawisza strzałki w lewo?
 	cmp	al,	0x4B
-	je	.strzalka_w_lewo_nacisniecie
+	je	.key_left_arrow_press
 
 	; puszczenie klawisza strzałki w lewo?
 	cmp	al,	0x4B + 0x80
-	je	.strzalka_w_lewo_puszczenie
+	je	.key_left_arrow_release
 
 	; naciśnięcie klawisza strzałki w prawo?
 	cmp	al,	0x4D
-	je	.strzalka_w_prawo_nacisniecie
+	je	.key_right_arrow_press
 
 	; puszczenie klawisza strzałki w prawo?
 	cmp	al,	0x4D + 0x80
-	je	.strzalka_w_prawo_puszczenie
+	je	.key_right_arrow_release
 
 	; naciśnięcie klawisza strzałki w górę?
 	cmp	al,	0x48
-	je	.strzalka_w_gore_nacisniecie
+	je	.key_up_arrow_press
 
 	; puszczenie klawisza strzałki w górę?
 	cmp	al,	0x48 + 0x80
-	je	.strzalka_w_gore_puszczenie
+	je	.key_up_arrow_release
 
 	; naciśnięcie klawisza strzałki w dół?
 	cmp	al,	0x50
-	je	.strzalka_w_dol_nacisniecie
+	je	.key_down_arrow_press
 
 	; puszczenie klawisza strzałki w dół?
 	cmp	al,	0x50 + 0x80
-	je	.strzalka_w_dol_puszczenie
+	je	.key_down_arrow_release
 
 	; naciśnięcie prawego klawisza CTRL
 	cmp	al,	0x1D
-	je	.prawy_klawisz_ctrl_nacisniecie
+	je	.key_ctrl_right_press
 
 	; puszczenie prawego klawisza CTRL
 	cmp	al,	0x1D + 0x80
-	je	.prawy_klawisz_ctrl_puszczenie
+	je	.key_ctrl_right_release
 
 	; naciśnięcie klawisza End
 	cmp	al,	0x4F
-	je	.klawisz_end_nacisniecie
+	je	.key_end_press
 
 	; puszczenie klawisza End
 	cmp	al,	0x4F + 0x80
-	je	.klawisz_end_puszczenie
+	je	.key_end_release
 
 	; naciśnięcie klawisza Home
 	cmp	al,	0x47
-	je	.klawisz_home_nacisniecie
+	je	.key_home_press
 
 	; puszczenie klawisza Home
 	cmp	al,	0x47 + 0x80
-	je	.klawisz_home_puszczenie
+	je	.key_home_release
 
 	; naciśnięcie klawisza Delete
 	cmp	al,	0x53
-	je	.klawisz_delete_nacisniecie
+	je	.key_delete_press
 
 	; puszczenie klawisza Delete
 	cmp	al,	0x53 + 0x80
-	je	.klawisz_delete_puszczenie
+	je	.key_delete_release
 
 	; naciśnięcie klawisza PageUp
 	cmp	al,	0x49
-	je	.klawisz_pageup_nacisniecie
+	je	.key_pageup_press
 
 	; puszczenie klawisza PageUp
 	cmp	al,	0x49 + 0x80
-	je	.klawisz_pageup_puszczenie
+	je	.key_pageup_release
 
 	; naciśnięcie klawisza PageDown
 	cmp	al,	0x51
-	je	.klawisz_pagedown_nacisniecie
+	je	.key_pagedown_press
 
 	; puszczenie klawisza PageDown
 	cmp	al,	0x51 + 0x80
-	je	.klawisz_pagedown_puszczenie
+	je	.key_pagedown_release
 
 	; naciśnięcie klawisza Insert
 	cmp	al,	0x52
-	je	.klawisz_insert_nacisniecie
+	je	.key_insert_press
 
 	; puszczenie klawisza Insert
 	cmp	al,	0x52 + 0x80
-	je	.klawisz_insert_puszczenie
+	je	.key_insert_release
 
 	; nie rozpoznano znaku złożonego
 	jmp	.end
 
-.strzalka_w_lewo_nacisniecie:
+.key_left_arrow_press:
 	; ustaw systemowy kod klawisza
 	mov	ax,	0x8002
 
 	; koniec
 	jmp	.save
 
-.strzalka_w_lewo_puszczenie:
+.key_left_arrow_release:
 	; ustaw systemowy kod klawisza
 	mov	ax,	0xB002
 
 	; koniec
 	jmp	.save
 
-.strzalka_w_prawo_nacisniecie:
+.key_right_arrow_press:
 	; ustaw systemowy kod klawisza
 	mov	ax,	0x8003
 
 	; koniec
 	jmp	.save
 
-.strzalka_w_prawo_puszczenie:
+.key_right_arrow_release:
 	; ustaw systemowy kod klawisza
 	mov	ax,	0xB003
 
 	; koniec
 	jmp	.save
 
-.strzalka_w_gore_nacisniecie:
+.key_up_arrow_press:
 	; ustaw systemowy kod klawisza
 	mov	ax,	0x8004
 
 	; koniec
 	jmp	.save
 
-.strzalka_w_gore_puszczenie:
+.key_up_arrow_release:
 	; ustaw systemowy kod klawisza
 	mov	ax,	0xB004
 
 	; koniec
 	jmp	.save
 
-.strzalka_w_dol_nacisniecie:
+.key_down_arrow_press:
 	; ustaw systemowy kod klawisza
 	mov	ax,	0x8005
 
 	; koniec
 	jmp	.save
 
-.strzalka_w_dol_puszczenie:
+.key_down_arrow_release:
 	; ustaw systemowy kod klawisza
 	mov	ax,	0xB005
 
 	; koniec
 	jmp	.save
 
-.prawy_klawisz_ctrl_nacisniecie:
+.key_ctrl_right_press:
 	; ustaw systemowy kod klawisza
 	mov	ax,	0x8006
 
 	; koniec
 	jmp	.save
 
-.prawy_klawisz_ctrl_puszczenie:
+.key_ctrl_right_release:
 	; ustaw systemowy kod klawisza
 	mov	ax,	0xB006
 
 	; koniec
 	jmp	.save
 
-.klawisz_end_nacisniecie:
+.key_end_press:
 	; ustaw systemowy kod klawisza
 	mov	ax,	0x8008
 
 	; koniec
 	jmp	.save
 
-.klawisz_end_puszczenie:
+.key_end_release:
 	; ustaw systemowy kod klawisza
 	mov	ax,	0xB008
 
 	; koniec
 	jmp	.save
 
-.klawisz_home_nacisniecie:
+.key_home_press:
 	; ustaw systemowy kod klawisza
 	mov	ax,	0x8007
 
 	; koniec
 	jmp	.save
 
-.klawisz_home_puszczenie:
+.key_home_release:
 	; ustaw systemowy kod klawisza
 	mov	ax,	0xB007
 
 	; koniec
 	jmp	.save
 
-.klawisz_delete_nacisniecie:
+.key_delete_press:
 	; ustaw systemowy kod klawisza
 	mov	ax,	0x8009
 
 	; koniec
 	jmp	.save
 
-.klawisz_delete_puszczenie:
+.key_delete_release:
 	; ustaw systemowy kod klawisza
 	mov	ax,	0xB009
 
 	; koniec
 	jmp	.save
 
-.klawisz_pageup_nacisniecie:
+.key_pageup_press:
 	; ustaw systemowy kod klawisza
 	mov	ax,	0x800A
 
 	; koniec
 	jmp	.save
 
-.klawisz_pageup_puszczenie:
+.key_pageup_release:
 	; ustaw systemowy kod klawisza
 	mov	ax,	0xB00A
 
 	; koniec
 	jmp	.save
 
-.klawisz_pagedown_nacisniecie:
+.key_pagedown_press:
 	; ustaw systemowy kod klawisza
 	mov	ax,	0x800B
 
 	; koniec
 	jmp	.save
 
-.klawisz_pagedown_puszczenie:
+.key_pagedown_release:
 	; ustaw systemowy kod klawisza
 	mov	ax,	0xB00B
 
 	; koniec
 	jmp	.save
 
-.klawisz_insert_nacisniecie:
+.key_insert_press:
 	; ustaw systemowy kod klawisza
 	mov	ax,	0x800C
 
 	; koniec
 	jmp	.save
 
-.klawisz_insert_puszczenie:
+.key_insert_release:
 	; ustaw systemowy kod klawisza
 	mov	ax,	0xB00C
 
@@ -475,7 +475,7 @@ irq33:
 
 	; sprawdź czy naciśnięto klawisz ENTER
 	cmp	al,	0x0D
-	jne	.nie_enter
+	jne	.no_enter
 
 	; zapisz kod ASCII klawisza
 	call	keyboard_key_save
@@ -483,10 +483,10 @@ irq33:
 	; koniec
 	jmp	.end
 
-.nie_enter:
+.no_enter:
 	; sprawdź czy naciśnięto klawisz BACKSPACE
 	cmp	al,	0x08
-	jne	.nie_backspace
+	jne	.no_backspace
 
 	; zapisz kod ASCII klawisza
 	call	keyboard_key_save
@@ -494,10 +494,10 @@ irq33:
 	; koniec
 	jmp	.end
 
-.nie_backspace:
+.no_backspace:
 	; sprawdź czy naciśnięto klawisz ESC
 	cmp	al,	0x1B
-	jne	.nie_esc
+	jne	.no_esc
 
 	; kod ASCII klawisza
 	call	keyboard_key_save
@@ -505,10 +505,10 @@ irq33:
 	; koniec
 	jmp	.end
 
-.nie_esc:
+.no_esc:
 	; sprawdź czy naciśnięto klawisz TAB
 	cmp	al,	0x09
-	jne	.nie_tab
+	jne	.no_tab
 
 	; kod ASCII klawisza
 	call	keyboard_key_save
@@ -516,10 +516,10 @@ irq33:
 	; koniec
 	jmp	.end
 
-.nie_tab:
+.no_tab:
 	; sprawdź czy naciśnięto klawisz CTRL
 	cmp	al,	0x1D
-	jne	.nie_nacisnieto_ctrl
+	jne	.no_ctrl_press
 
 	; kod ASCII klawisza
 	call	keyboard_key_save
@@ -527,10 +527,10 @@ irq33:
 	; koniec
 	jmp	.end
 
-.nie_nacisnieto_ctrl:
+.no_ctrl_press:
 	; sprawdź czy puszczono klawisz CTRL
 	cmp	al,	0x1D + 0x80
-	jne	.nie_puszczono_ctrl
+	jne	.no_ctrl_release
 
 	; kod ASCII klawisza
 	call	keyboard_key_save
@@ -538,7 +538,7 @@ irq33:
 	; koniec
 	jmp	.end
 
-.nie_puszczono_ctrl:
+.no_ctrl_release:
 	; sprawdź czy kod ASCII klawisza jest możliwy do wyświetlenia
 
 	; test pierwszy
