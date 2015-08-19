@@ -20,7 +20,7 @@ variable_video_mode_x_resolution		dq	0x0000000000000000
 variable_video_mode_x_resolution_in_bytes	dq	0x0000000000000000
 variable_video_mode_y_resolution		dq	0x0000000000000000
 variable_video_mode_bpp				dq	0x0000000000000000
-variable_video_mode_pixels_count			dq	0x0000000000000000
+variable_video_mode_pixels_count		dq	0x0000000000000000
 variable_video_mode_pixels_per_line		dq	0x0000000000000000
 variable_video_mode_chars_x			dq	0x0000000000000000
 variable_video_mode_chars_y			dq	0x0000000000000000
