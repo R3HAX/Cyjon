@@ -5,7 +5,7 @@ nasm -f bin kernel.asm -o kernel.bin
 nasm -f bin bootloader/stage2.asm -o stage2.bin
 nasm -f bin bootloader/stage1.asm -o build/disk.raw
 
-rm -f kernel.bin stage2.bin
+rm -f kernel.bin stage2.bin init.bin
 
 # poniższe operacje tylko dla oprogramowania VirtualBOX,
 # jeżeli wykorzystujesz
