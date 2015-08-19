@@ -1,5 +1,6 @@
 #!/bin/bash
 
+nasm -f bin software/init.asm -o init.bin
 nasm -f bin kernel.asm -o kernel.bin
 nasm -f bin bootloader/stage2.asm -o stage2.bin
 nasm -f bin bootloader/stage1.asm -o build/disk.raw
