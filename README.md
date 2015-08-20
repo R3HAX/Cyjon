@@ -10,7 +10,7 @@ Wymagania sprzętowe:
 
 Oprogramowanie:
 - kompilator Nasm wersja 2.11.08 lub nowsza, http://www.nasm.us/
-- oprogramowanie Qemu do wirtualizacji, wersja 2.4.0 lub nowsze,
+- oprogramowanie Qemu do wirtualizacji, wersja 2.4.0 lub nowsze, http://wiki.qemu.org/Main_Page
 - system operacyjny dowolny, posiadający wymagane oprogramowanie w swoich repozytoriach.
 
 Kompilacja (z poziomu konsoli), przykład dla systemów GNU/Linux:
