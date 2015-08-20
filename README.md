@@ -10,7 +10,8 @@ Wymagania sprzętowe:
 
 Oprogramowanie:
 - kompilator Nasm wersja 2.11.08 lub nowsza, http://www.nasm.us/
-- system operacyjny posiadający w swoich repozytoriach kompilator Nasm.
+- oprogramowanie Qemu do wirtualizacji, wersja 2.4.0 lub nowsze,
+- system operacyjny dowolny, posiadający wymagane oprogramowanie w swoich repozytoriach.
 
 Kompilacja (z poziomu konsoli), przykład dla systemów GNU/Linux:
 
@@ -30,4 +31,5 @@ Dopisz się do grupy programistów Wataha.net!
 - Andrzej Adamczyk, akasei
 
 Kod źródlowy systemu operacyjnego jest na licencji Creative Commons BY-NC-ND
+
 ![alt tag](http://mirrors.creativecommons.org/presskit/buttons/80x15/png/by-nc-nd.png)
