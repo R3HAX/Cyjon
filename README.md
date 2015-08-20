@@ -18,6 +18,10 @@ Kompilacja (z poziomu konsoli), przykład dla systemów GNU/Linux:
     nasm -f bin bootloader/stage2.asm -o stage2.bin
     nasm -f bin bootloader/stage1.asm -o build/disk.raw
 
+Uruchomienie:
+
+    qemu-system-x86_64 -hda build/disk.raw
+
 Udało ci się nanieść poprawkę, ulepszenie lub coś zupełnie nowego w źródle systemu?
 Dopisz się do grupy programistów Wataha.net!
 
