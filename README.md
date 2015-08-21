@@ -16,6 +16,7 @@ Oprogramowanie:
 Kompilacja (z poziomu konsoli), przykład dla systemów GNU/Linux:
 
     nasm -f bin software/init.asm -o init.bin
+    nasm -f bin software/login.asm -o login.bin
     nasm -f bin software/shell.asm -o shell.bin
     nasm -f bin kernel.asm -o kernel.bin
     nasm -f bin bootloader/stage2.asm -o stage2.bin
