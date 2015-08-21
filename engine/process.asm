@@ -40,8 +40,7 @@ cyjon_process_init:
 
 	; szukaj pliku na partycji systemowej
 	call	cyjon_virtual_file_system_find_file
-	jc	.wait_for_ready	; jeśli plik znaleziono czekaj na możliwość uruchomienia procesu
-				; np. jeśli inny jest w tym momencie uruchomiony lub zamykany
+	jc	.leave	; znaleziono plik
 
 	; pliku nie znaleziono
 	xor	rax,	rax
@@ -49,7 +48,10 @@ cyjon_process_init:
 	; koniec obsługi procedury
 	jmp	.end
 
-.leave:
+.ready:
+	; odłóż na stos adres powrotu
+	push	alive
+
 	; zachowaj oryginalne rejestry
 	push	rbx
 	push	rcx
@@ -58,14 +60,10 @@ cyjon_process_init:
 	push	rdi
 	push	r11
 
-.wait_for_ready:
-	; sprawdź czy można przystąpić do uruchomienia nowego procesu
-	cmp	byte [variable_process_semaphore_init],	0x01
-	je	.wait_for_ready
+	; pobierz wskaźnik supła do uruchomienia
+	mov	rdi,	qword [variable_process_new]
 
-	; zarezerwuj czas dla siebie
-	mov	byte [variable_process_semaphore_init],	0x01
-
+.leave:
 	; pobierz rozmiar pliku w Bajtach
 	mov	rcx,	qword [rdi + 0x08]
 	; utwórz zmienną lokalną
@@ -223,10 +221,10 @@ cyjon_process_init:
 	rep	stosq	; wyczyść
 
 	; zwróć informacje o numerze identyfikatora uruchomionego procesu
-	pop	rax
+	pop	qword [variable_process_pid]
 
-	; zwolnij procedurę inicjalizacji nowego procesu
-	mov	byte [variable_process_semaphore_init],	0x00
+	; zwolnij możliwość uruchomienia nowego procesu
+	mov	qword [variable_process_new],	0x0000000000000000
 
 .end:
 	; przywróć oryginalne rejestry
@@ -239,3 +237,38 @@ cyjon_process_init:
 
 	; powrót z procedury
 	ret
+
+cyjon_process_close:
+	; załaduj adres rekordu z tablicy procesów
+	mov	rdi,	qword [variable_process_close]
+
+	; pobierz adres tablicy PML4 procesu do zamknięcia
+	mov	rbx,	qword [rdi]
+
+	; zapamiętaj adres tablicy PML4 procesu
+	push	rbx
+
+	; wyczyść rekord w tablicy
+	mov	qword [rdi],	0x0000000000000000
+
+	; zmniejsz ilość procesów przechowywanych w tablicy
+	dec	qword [variable_process_table_count]
+
+	; zwolnij pamięć zajętą przez proces
+	mov	rdi,	rbx	; załaduj adres tablicy PML4 procesu
+	add	rdi,	255 * 0x08	; rozpocznij zwalnianie przestrzeni od rekordu stosu kontekstu procesu
+	mov	rbx,	4	; ustaw poziom tablicy przetwarzanej
+	mov	rcx,	257	; ile pozostało rekordów w tablicy PML4 do zwolnienia
+	call	cyjon_page_release_area.loop
+
+	; przywróć adres tablicy PML4 procesu
+	pop	rdi
+
+	; zwolnij przestrzeń spod tablicy PML4 procesu
+	call	cyjon_page_release
+
+	; zwolnij procedure zamykania procesów
+	mov	qword [variable_process_close],	0x0000000000000000
+
+	; kontynuuj
+	jmp	alive
