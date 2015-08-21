@@ -89,10 +89,10 @@ start:
 	mov	r8,	variable_partition_specification_system	; z partycji systemowej
 	call	cyjon_process_init	; wykonaj
 
-	; pozostała część w trakcie przepisywania
+	; nie potrzebujemy pamiętać numeru PID procesu init
+	mov	qword [variable_process_pid],	0x0000000000000000
 
-	; zatrzymaj dalsze wykonywanie kodu
-	jmp	$
+%include	"engine/alive.asm"
 
 %include	"engine/init/binary_memory_map.asm"
 %include	"engine/init/global_descriptor_table.asm"
@@ -136,7 +136,7 @@ save_included_files:
 	; pliki załaduj do wirtualnego systemu plików
 	mov	r8,	variable_partition_specification_system
 
-	; plik shell
+	; plik init
 	mov	rcx,	qword [file_init_name_chars]	; ilość znaków w nazwie pliku
 	; oblicz rozmiar pliku
 	mov	rdx,	file_init_end
@@ -145,6 +145,30 @@ save_included_files:
 	mov	rdi,	file_init
 	; ciąg znaków reprezentujący nazwe pliku
 	mov	rsi,	file_init_name
+	; zapisz
+	call	cyjon_virtual_file_system_save_file
+
+	; plik shell
+	mov	rcx,	qword [file_shell_name_chars]	; ilość znaków w nazwie pliku
+	; oblicz rozmiar pliku
+	mov	rdx,	file_shell_end
+	sub	rdx,	file_shell
+	; poczatek kodu pliku
+	mov	rdi,	file_shell
+	; ciąg znaków reprezentujący nazwe pliku
+	mov	rsi,	file_shell_name
+	; zapisz
+	call	cyjon_virtual_file_system_save_file
+
+	; plik login
+	mov	rcx,	qword [file_login_name_chars]	; ilość znaków w nazwie pliku
+	; oblicz rozmiar pliku
+	mov	rdx,	file_login_end
+	sub	rdx,	file_login
+	; poczatek kodu pliku
+	mov	rdi,	file_login
+	; ciąg znaków reprezentujący nazwe pliku
+	mov	rsi,	file_login_name
 	; zapisz
 	call	cyjon_virtual_file_system_save_file
 
@@ -162,6 +186,16 @@ file_init_name		db	'init'
 file_init_name_chars	dq	5
 file_init:		incbin	'init.bin'
 file_init_end:
+
+file_shell_name		db	'shell'
+file_shell_name_chars	dq	5
+file_shell:		incbin	'shell.bin'
+file_shell_end:
+
+file_login_name		db	'login'
+file_login_name_chars	dq	5
+file_login:		incbin	'login.bin'
+file_login_end:
 
 ;===============================================================================
 ;===============================================================================
