@@ -77,7 +77,7 @@ keyboard_key_save:
 	mov	word [rsi + rcx],	ax
 
 	; zwięsz ilość znaków ASCII przechowywanych w buforze programowym klawiatury
-	inc	byte [variable_keyboard_cache]
+	inc	byte [variable_keyboard_cache_keys]
 
 	; przywróć oryginalne rejestry
 	pop	rsi
