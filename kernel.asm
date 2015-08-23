@@ -172,6 +172,30 @@ save_included_files:
 	; zapisz
 	call	cyjon_virtual_file_system_save_file
 
+	; plik help
+	mov	rcx,	qword [file_help_name_chars]	; ilość znaków w nazwie pliku
+	; oblicz rozmiar pliku
+	mov	rdx,	file_help_end
+	sub	rdx,	file_help
+	; poczatek kodu pliku
+	mov	rdi,	file_help
+	; ciąg znaków reprezentujący nazwe pliku
+	mov	rsi,	file_help_name
+	; zapisz
+	call	cyjon_virtual_file_system_save_file
+
+	; plik uptime
+	mov	rcx,	qword [file_uptime_name_chars]	; ilość znaków w nazwie pliku
+	; oblicz rozmiar pliku
+	mov	rdx,	file_uptime_end
+	sub	rdx,	file_uptime
+	; poczatek kodu pliku
+	mov	rdi,	file_uptime
+	; ciąg znaków reprezentujący nazwe pliku
+	mov	rsi,	file_uptime_name
+	; zapisz
+	call	cyjon_virtual_file_system_save_file
+
 	; przywróć oryginalne rejestry
 	pop	r8
 	pop	rdi
@@ -196,6 +220,16 @@ file_login_name		db	'login'
 file_login_name_chars	dq	5
 file_login:		incbin	'login.bin'
 file_login_end:
+
+file_help_name		db	'help'
+file_help_name_chars	dq	4
+file_help:		incbin	'help.bin'
+file_help_end:
+
+file_uptime_name		db	'uptime'
+file_uptime_name_chars	dq	6
+file_uptime:		incbin	'uptime.bin'
+file_uptime_end:
 
 ;===============================================================================
 ;===============================================================================
