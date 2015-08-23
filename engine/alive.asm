@@ -31,6 +31,16 @@ alive:
 	cmp	qword [variable_process_new],	0x0000000000000000
 	jne	cyjon_process_init.ready	; pomiń poszukiwania za plikiem
 
+	; sprawdź czy skorygować czas o jedną sekunde
+	cmp	qword [variable_system_microtime],	PIT_CLOCK
+	jb	.uptime_no_change	; nie
+
+	; cofnij czas o 1 sek
+	sub	qword [variable_system_microtime],	PIT_CLOCK
+	; zwiększ ilość upłyniętych sekund
+	inc	qword [variable_system_uptime]
+
+.uptime_no_change:
 	; jądro systemu zakończyło analize zgłoszeń
 	hlt
 
