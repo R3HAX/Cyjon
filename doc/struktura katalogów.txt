@@ -1,10 +1,8 @@
-/bootloader/ → oprogramowanie rozruchowe systemu i MBR. Tworzy tablicę mapy pamięci, otwiera brame A20, przygotowuje /stronicowanie i przełącza procesor w tryb 64 bitowy,
-/build/ → obrazy utworzonego dysku twardego,
-/engine/ → poszczególne części kodu źródłowego jądra systemu,
-/engine/init/ → procedury przygotowujące środowisko procesora zaraz po wyjściu z programu rozruchowego,
-/engine/drivers/ → zbiór sterowników do zarządzania podzespołami jednostki,
-/font/ → czcionki w postaci bitmapy,
-/library/ → niezależne "liblioteki" do wykorzystania w własnych programach,
-/software/ → podstawowe oprogramowanie systemu operacyjnego.
-
-ps: na komórce brak klawisza TAB, do poprawy
+/bootloader/		- oprogramowanie rozruchowe systemu i MBR. Tworzy tablicę mapy pamięci, otwiera brame A20, przygotowuje stronicowanie i przełącza procesor w tryb 64 bitowy,
+/build/			- obrazy utworzonego dysku twardego,
+/engine/		- poszczególne części kodu źródłowego jądra systemu,
+/engine/init/		- procedury przygotowujące środowisko procesora zaraz po wyjściu z programu rozruchowego,
+/engine/drivers/	- zbiór sterowników do zarządzania podzespołami jednostki,
+/font/			- czcionki w postaci bitmapy,
+/library/		- niezależne "liblioteki" do wykorzystania w własnych programach,
+/software/		- podstawowe oprogramowanie systemu operacyjnego.
