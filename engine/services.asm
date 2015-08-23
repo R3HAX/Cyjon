@@ -57,6 +57,10 @@ irq64_process:
 	cmp	al,	0x02
 	je	.process_check
 
+	; proces poprosił o dodatkową przestrzeń pamięci?
+	cmp	al,	0x03
+	je	.process_more_memory
+
 	; brak obsługi
 	jmp	irq64.end
 
@@ -143,6 +147,35 @@ irq64_process:
 	; przywróć oryginalne rejestry
 	pop	rdi
 	pop	rcx
+
+	; koniec obsługi procedury
+	jmp	irq64.end
+
+.process_more_memory:
+	; zachowaj oryginalne rejestry
+	push	rax
+	push	rcx
+	push	rbx
+	push	rdi
+	push	r11
+
+	; wyrównaj adres do pełnej strony
+	call	library_align_address_up_to_page
+
+	; przygotuj przestrzeń pod dane
+	mov	rax,	rdi
+	mov	rdi,	HIGH_MEMORY_ADDRESS
+	sub	rax,	rdi
+	mov	rbx,	0x07	; flagi: Użytkownik, 4 KiB, Odczyt/Zapis, Dostępna
+	mov	r11,	cr3
+	call	cyjon_page_map_logical_area
+
+	; przywróć oryginalne rejestry
+	pop	r11
+	pop	rdi
+	pop	rcx
+	pop	rbx
+	pop	rax
 
 	; koniec obsługi procedury
 	jmp	irq64.end
@@ -266,7 +299,7 @@ irq64_screen:
 	call	cyjon_screen_cursor_lock
 
 	; sprawdź czy kursor będzie znajdował się poza ekranem
-	cmp	dword [variable_video_mode_chars_x],	ebx
+	cmp	ebx,	dword [variable_video_mode_chars_x]
 	jb	.ok
 
 	; koryguj
@@ -280,7 +313,7 @@ irq64_screen:
 	ror	rbx,	32
 
 	; sprawdź czy kursor będzie znajdował się poza ekranem
-	cmp	dword [variable_video_mode_chars_y],	ebx
+	cmp	ebx,	dword [variable_video_mode_chars_y]
 	jb	.ready
 
 	; koryguj
