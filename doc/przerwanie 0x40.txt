@@ -1,1 +1,0 @@
-Podstawowe przerwanie systemowe dla oprogramowania.
