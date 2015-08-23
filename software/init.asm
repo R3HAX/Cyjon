@@ -24,10 +24,15 @@
 [ORG REAL_HIGH_MEMORY_ADDRESS]
 
 start:
+	; pierwszą inicjalizacje nie rozpoczynaj od czyszczenia ekranu
+	jmp	.start
+
+.reload:
 	; wyczyść ekran
 	mov	rax,	0x0100
 	int	0x40	; wykonaj
 
+.start:
 	; wyświetl zaproszenie
 
 	; procedura - wyświetl ciąg znaków na ekranie w miejscu kursora
@@ -74,7 +79,7 @@ start:
 	call	check
 
 	; inicjalizuj ponownie powłokę
-	jmp	start
+	jmp	.reload
 
 ; rcx - numer PID procesu do sprawdzenia
 check:
