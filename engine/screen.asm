@@ -831,7 +831,7 @@ cyjon_screen_print_string:
 	ret
 
 ;=======================================================================
-; przewija zawartość ekranu o jedną linię (w znakach) do góry
+; przewija zawartość ekranu o jedną linię (w znakach) do góry jeśli kursor znajduje się w nieodpowiednim miejscu
 ; IN:
 ;	brak
 ; OUT:
@@ -919,11 +919,34 @@ cyjon_screen_scroll:
 
 	; rozmiar linii do wyczyszczenia w Bajtach
 	mov	rcx,	qword [variable_video_mode_char_line_in_bytes]
-	shr	rcx,	2	; czyść po 4 Bajty na raz
+
+	; sprawdź głębie kolorów
+	cmp	byte [variable_video_mode_bpp],	3
+	je	.bpp24
+
+	; kopiuj po 4 Bajty naraz
+	shr	rax,	2
 
 	; wykonaj
 	rep	stosd
 
+	; koniec
+	jmp	.end
+
+.bpp24:
+	; szybkość zabójcza :/
+
+	; wykonaj
+	stosw	; młodsza część koloru piksela
+	ror	eax,	16
+	stosb	; starsza część koloru piksela
+	rol	eax,	16
+
+	; kontynuuj z następnym pikselem
+	sub	rcx,	2
+	loop	.bpp24
+
+.end:
 	; włącz kursor programowy lub zmniejsz poziom blokady
 	call	cyjon_screen_cursor_unlock
 
