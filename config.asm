@@ -11,7 +11,7 @@
 ; Use:
 ; nasm - http://www.nasm.us/
 
-%define	KERNEL_VERSION			"0.447"
+%define	KERNEL_VERSION			"0.451"
 
 PHYSICAL_KERNEL_ADDRESS		equ	0x0000000000100000
 
