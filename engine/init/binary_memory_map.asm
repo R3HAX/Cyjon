@@ -20,6 +20,7 @@ variable_binary_memory_map_total_pages		dq	0x0000000000000000
 variable_binary_memory_map_free_pages		dq	0x0000000000000000
 
 text_binary_memory_map_fail			db	"Binary Memory Map fail, I cannot find the size of memory available at 0x00100000.", ASCII_CODE_ENTER, ASCII_CODE_NEWLINE,"System halted.", ASCII_CODE_TERMINATOR
+text_available_memory				db	" Available memory: ", ASCII_CODE_TERMINATOR
 
 ;===============================================================================
 ; tworzy binarną mapę pamięci za kodem jądra systemu operacyjnego
@@ -119,6 +120,30 @@ binary_memory_map:
 
 	; wykonaj raz jeszcze
 	loop	.disable
+
+	; wyświetl informacje o inicjalizacji wirtulnego systemu plików
+	mov	rbx,	COLOR_GREEN
+	mov	rcx,	-1
+	mov	rdx,	BACKGROUND_COLOR_DEFAULT
+	mov	rsi,	text_caution
+	call	cyjon_screen_print_string
+
+	mov	rbx,	COLOR_DEFAULT
+	mov	rsi,	text_available_memory
+	call	cyjon_screen_print_string
+
+	mov	rbx,	COLOR_WHITE
+	mov	rax,	qword [variable_binary_memory_map_total_pages]
+	shl	rax,	2	; zamień strony na KiB
+	mov	rcx,	10	; system liczbowy
+	call	cyjon_screen_print_number
+
+	mov	rbx,	COLOR_DEFAULT
+	mov	rsi,	text_kib
+	call	cyjon_screen_print_string
+
+	mov	rsi,	text_paragraph
+	call	cyjon_screen_print_string
 
 	; przywróć oryginalne rejestry
 	pop	rdi
