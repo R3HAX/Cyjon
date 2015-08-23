@@ -35,6 +35,10 @@ irq64:
 	cmp	ah,	0x02
 	je	irq64_keyboard
 
+	; czy zarządzać systemem?
+	cmp	ah,	0x03
+	je	irq64_system
+
 .end:
 	; powrót z przerwania programowanego
 	iretq
@@ -304,9 +308,9 @@ irq64_screen:
 
 .screen_information:
 	; zwróć informacje o rozmiarze ekranu w znakach
-	mov	eax,	dword [variable_video_mode_chars_y]
-	shl	rax,	32
-	or	rax,	qword [variable_video_mode_chars_x]
+	mov	ebx,	dword [variable_video_mode_chars_y]
+	shl	rbx,	32
+	or	rbx,	qword [variable_video_mode_chars_x]
 
 	; koniec obsługi procedury
 	jmp	irq64.end
@@ -323,6 +327,22 @@ irq64_keyboard:
 .keyboard_get_key:
 	; pobierz kod ASCII klawisza z bufora klawiatury
 	call	cyjon_keyboard_key_read
+
+	; koniec obsługi procedury
+	jmp	irq64.end
+
+;===============================================================================
+irq64_system:
+	; pobrać czas 'uptime'?
+	cmp	al,	0x00
+	je	.system_uptime
+
+	; brak obsługi
+	jmp	irq64.end
+
+.system_uptime:
+	; pobierz czas 'uptime'
+	mov	rcx,	qword [variable_system_uptime]
 
 	; koniec obsługi procedury
 	jmp	irq64.end
