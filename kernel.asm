@@ -196,46 +196,41 @@ save_included_files:
 
 files_table:
 	; plik
-	dq	4
-	dq	file_init_end - file_init
-	dq	file_init
-	dq	file_init_end
-	db	'init'
+	dq	4				; ilość znaków w nazwie pliku
+	dq	file_init_end - file_init	; rozmiar pliku w Bajtach
+	dq	file_init			; wskaźnik początku pliku
+	dq	file_init_end			; wskaźnik końca pliku
+	db	'init'				; nazwa pliku
 
-	; plik
 	dq	5
 	dq	file_shell_end - file_shell
 	dq	file_shell
 	dq	file_shell_end
 	db	'shell'
 
-	; plik
 	dq	5
 	dq	file_login_end - file_login
 	dq	file_login
 	dq	file_login_end
 	db	'login'
 
-	; plik
 	dq	4
 	dq	file_help_end - file_help
 	dq	file_help
 	dq	file_help_end
 	db	'help'
 
-	; plik
 	dq	6
 	dq	file_uptime_end - file_uptime
 	dq	file_uptime
 	dq	file_uptime_end
 	db	'uptime'
 
-;	; plik
-;	dq	4
-;	dq	file_moko_end - file_moko
-;	dq	file_moko
-;	dq	file_moko_end
-;	db	'moko'
+	dq	4
+	dq	file_moko_end - file_moko
+	dq	file_moko
+	dq	file_moko_end
+	db	'moko'
 
 	; koniec tablicy plików
 	dq	VARIABLE_EMPTY
@@ -255,8 +250,8 @@ file_help_end:
 file_uptime:		incbin	'uptime.bin'
 file_uptime_end:
 
-;file_moko:		incbin	'moko.bin'
-;file_moko_end:
+file_moko:		incbin	'moko.bin'
+file_moko_end:
 
 text_virtial_file_system	db	" Virtual file system initialized.", ASCII_CODE_ENTER, ASCII_CODE_NEWLINE, ASCII_CODE_TERMINATOR
 
