@@ -84,8 +84,8 @@ start:
 	loop	.loop
 
 	; uruchom proces główny INIT
-	mov	rcx,	qword [file_init_name_chars]	; ilość znaków nazwie pliku
-	mov	rsi,	file_init_name	; wskaźnik do ciągu znaków reprezentujący nazwe pliku
+	mov	rcx,	qword [files_table]	; ilość znaków nazwie pliku
+	mov	rsi,	files_table + 0x20	; wskaźnik do ciągu znaków reprezentujący nazwe pliku
 	mov	r8,	variable_partition_specification_system	; z partycji systemowej
 	call	cyjon_process_init	; wykonaj
 
@@ -136,65 +136,53 @@ save_included_files:
 	; pliki załaduj do wirtualnego systemu plików
 	mov	r8,	variable_partition_specification_system
 
-	; plik init
-	mov	rcx,	qword [file_init_name_chars]	; ilość znaków w nazwie pliku
-	; oblicz rozmiar pliku
-	mov	rdx,	file_init_end
-	sub	rdx,	file_init
-	; poczatek kodu pliku
-	mov	rdi,	file_init
-	; ciąg znaków reprezentujący nazwe pliku
-	mov	rsi,	file_init_name
-	; zapisz
+	; wskaźnik do tablicy plików
+	mov	rsi,	files_table
+
+.loop:
+	; koniec tablicy?
+	cmp	qword [rsi],	VARIABLE_EMPTY
+	je	.end	; tak
+
+	; zachowaj wskaźnik
+	push	rsi
+
+	; pobierz ilość znaków w nazwie pliku
+	mov	rcx,	qword [rsi]
+
+	; pobierz rozmiar pliku
+	mov	rdx,	qword [rsi + 0x08]
+
+	; ustaw wskaźnik na początek danych pliku
+	mov	rdi,	qword [rsi + 0x10]
+
+	; ustaw wskaźnik na nazwę pliku
+	add	rsi,	0x20
+
+	; zapisz do wirtualnego systemu plików
 	call	cyjon_virtual_file_system_save_file
 
-	; plik shell
-	mov	rcx,	qword [file_shell_name_chars]	; ilość znaków w nazwie pliku
-	; oblicz rozmiar pliku
-	mov	rdx,	file_shell_end
-	sub	rdx,	file_shell
-	; poczatek kodu pliku
-	mov	rdi,	file_shell
-	; ciąg znaków reprezentujący nazwe pliku
-	mov	rsi,	file_shell_name
-	; zapisz
-	call	cyjon_virtual_file_system_save_file
+	; przywróć wskaźnik
+	pop	rsi
 
-	; plik login
-	mov	rcx,	qword [file_login_name_chars]	; ilość znaków w nazwie pliku
-	; oblicz rozmiar pliku
-	mov	rdx,	file_login_end
-	sub	rdx,	file_login
-	; poczatek kodu pliku
-	mov	rdi,	file_login
-	; ciąg znaków reprezentujący nazwe pliku
-	mov	rsi,	file_login_name
-	; zapisz
-	call	cyjon_virtual_file_system_save_file
+	; przesuń na następny rekord
+	add	rsi,	0x20
+	add	rsi,	rcx
 
-	; plik help
-	mov	rcx,	qword [file_help_name_chars]	; ilość znaków w nazwie pliku
-	; oblicz rozmiar pliku
-	mov	rdx,	file_help_end
-	sub	rdx,	file_help
-	; poczatek kodu pliku
-	mov	rdi,	file_help
-	; ciąg znaków reprezentujący nazwe pliku
-	mov	rsi,	file_help_name
-	; zapisz
-	call	cyjon_virtual_file_system_save_file
+	; kontynuuj z pozostałymi plikami
+	loop	.loop
 
-	; plik uptime
-	mov	rcx,	qword [file_uptime_name_chars]	; ilość znaków w nazwie pliku
-	; oblicz rozmiar pliku
-	mov	rdx,	file_uptime_end
-	sub	rdx,	file_uptime
-	; poczatek kodu pliku
-	mov	rdi,	file_uptime
-	; ciąg znaków reprezentujący nazwe pliku
-	mov	rsi,	file_uptime_name
-	; zapisz
-	call	cyjon_virtual_file_system_save_file
+.end:
+	; wyświetl informacje o inicjalizacji wirtulnego systemu plików
+	mov	rbx,	COLOR_GREEN
+	mov	rcx,	-1
+	mov	rdx,	BACKGROUND_COLOR_DEFAULT
+	mov	rsi,	text_caution
+	call	cyjon_screen_print_string
+
+	mov	rbx,	COLOR_DEFAULT
+	mov	rsi,	text_virtial_file_system
+	call	cyjon_screen_print_string
 
 	; przywróć oryginalne rejestry
 	pop	r8
@@ -206,30 +194,71 @@ save_included_files:
 	; powrót z procedury
 	ret
 
-file_init_name		db	'init'
-file_init_name_chars	dq	5
+files_table:
+	; plik
+	dq	4
+	dq	file_init_end - file_init
+	dq	file_init
+	dq	file_init_end
+	db	'init'
+
+	; plik
+	dq	5
+	dq	file_shell_end - file_shell
+	dq	file_shell
+	dq	file_shell_end
+	db	'shell'
+
+	; plik
+	dq	5
+	dq	file_login_end - file_login
+	dq	file_login
+	dq	file_login_end
+	db	'login'
+
+	; plik
+	dq	4
+	dq	file_help_end - file_help
+	dq	file_help
+	dq	file_help_end
+	db	'help'
+
+	; plik
+	dq	6
+	dq	file_uptime_end - file_uptime
+	dq	file_uptime
+	dq	file_uptime_end
+	db	'uptime'
+
+;	; plik
+;	dq	4
+;	dq	file_moko_end - file_moko
+;	dq	file_moko
+;	dq	file_moko_end
+;	db	'moko'
+
+	; koniec tablicy plików
+	dq	VARIABLE_EMPTY
+
 file_init:		incbin	'init.bin'
 file_init_end:
 
-file_shell_name		db	'shell'
-file_shell_name_chars	dq	5
 file_shell:		incbin	'shell.bin'
 file_shell_end:
 
-file_login_name		db	'login'
-file_login_name_chars	dq	5
 file_login:		incbin	'login.bin'
 file_login_end:
 
-file_help_name		db	'help'
-file_help_name_chars	dq	4
 file_help:		incbin	'help.bin'
 file_help_end:
 
-file_uptime_name		db	'uptime'
-file_uptime_name_chars	dq	6
 file_uptime:		incbin	'uptime.bin'
 file_uptime_end:
+
+;file_moko:		incbin	'moko.bin'
+;file_moko_end:
+
+text_virtial_file_system	db	" Virtual file system initialized.", ASCII_CODE_ENTER, ASCII_CODE_NEWLINE, ASCII_CODE_TERMINATOR
 
 ;===============================================================================
 ;===============================================================================
