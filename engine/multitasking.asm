@@ -110,7 +110,7 @@ irq32:
 	pushfq
 
 	; zwiększ znacznik mikroczasu do obliczenia "uptime"
-	inc	qword [variable_microtime]
+	inc	qword [variable_system_microtime]
 
 	; sprawdź czy tablica procesów jest zablokowana
 	cmp	byte [variable_multitasking_semaphore_process_table],	0x01
