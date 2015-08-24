@@ -18,4 +18,4 @@ all:
 	$(ASM) $(BOOTLOADER)/stage1.asm -o build/disk.raw
 
 clean:
-	rm -f init.bin login.bin shell.bin help.bjn uptime.bin moko.bin
+	rm -f init.bin login.bin shell.bin help.bin uptime.bin moko.bin
