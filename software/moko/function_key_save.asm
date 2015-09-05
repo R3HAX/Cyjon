@@ -32,7 +32,7 @@ key_function_save:
 	xor	rbx,	rbx	; czarne litery
 	mov	ecx,	dword [screen_xy]	; szerokość ekranu w znakach
 	mov	rdx,	' '	; spacja
-	mov	r8,	BACKGROUND_COLOR_DEFAULT	; szare tło
+	mov	r8,	VARIABLE_COLOR_BACKGROUND_DEFAULT	; szare tło
 	int	0x40	; wykonaj
 
 	; ustaw kursor w wierszu informacyjnym
@@ -42,20 +42,20 @@ key_function_save:
 
 	; wyświetl zapytanie
 	mov	ax,	0x0101
-	mov	rbx,	COLOR_DEFAULT
+	mov	rbx,	VARIABLE_COLOR_DEFAULT
 	xor	rcx,	rcx	; wyświetl pełny ciąg znaków, zakończony terminatorem
-	mov	rdx,	BACKGROUND_COLOR_DEFAULT
+	mov	rdx,	VARIABLE_COLOR_BACKGROUND_DEFAULT
 	mov	rsi,	text_save_as
 	int	0x40	; wykonaj
 
 	; kolor wprowadzania tekstu
-	mov	rbx,	COLOR_DEFAULT
+	mov	rbx,	VARIABLE_COLOR_DEFAULT
 	; rozmiar polecenia do pobrania
 	mov	ecx,	dword [screen_xy]
 	sub	rcx,	9	; ilość znaków już wykorzystana w linii
 	dec	rcx
 	; domyślny kolor tła
-	mov	rdx,	BACKGROUND_COLOR_DEFAULT
+	mov	rdx,	VARIABLE_COLOR_BACKGROUND_DEFAULT
 	; gdzie przechować wprowadzony ciąg znaków
 	mov	rdi,	file_name_cache
 	; bufor nie zawiera danych
@@ -74,10 +74,10 @@ key_function_save:
 
 	; wyczyść linie zapytań
 	mov	ax,	0x0102
-	mov	rbx,	COLOR_DEFAULT
+	mov	rbx,	VARIABLE_COLOR_DEFAULT
 	mov	ecx,	dword [screen_xy]	; szerokość ekranu w znakach
 	mov	rdx,	' '	; spacja
-	mov	r8,	BACKGROUND_COLOR_DEFAULT
+	mov	r8,	VARIABLE_COLOR_BACKGROUND_DEFAULT
 	int	0x40	; wykonaj
 
 	; ustaw kursor na swoją pozycję
@@ -111,10 +111,10 @@ key_function_save:
 
 	; wyczyść linie zapytań
 	mov	ax,	0x0102
-	mov	rbx,	COLOR_DEFAULT
+	mov	rbx,	VARIABLE_COLOR_DEFAULT
 	mov	ecx,	dword [screen_xy]	; szerokość ekranu w znakach
 	mov	rdx,	' '	; spacja
-	mov	r8,	BACKGROUND_COLOR_DEFAULT
+	mov	r8,	VARIABLE_COLOR_BACKGROUND_DEFAULT
 	int	0x40	; wykonaj
 
 	; sprawdź czy użytkownik chciał wyjść z programu po zapisie
@@ -131,7 +131,7 @@ key_function_save:
 	xor	rbx,	rbx	; czarne litery
 	mov	ecx,	dword [screen_xy]	; szerokość ekranu w znakach
 	mov	rdx,	' '	; spacja
-	mov	r8,	BACKGROUND_COLOR_DEFAULT	; szare tło
+	mov	r8,	VARIABLE_COLOR_BACKGROUND_DEFAULT	; szare tło
 	int	0x40	; wykonaj
 
 	; ustaw kursor w nagłówku
@@ -142,9 +142,9 @@ key_function_save:
 	; wyświetl nawę pliku w nagłówku
 	; wyświetl zapytanie
 	mov	ax,	0x0101
-	mov	rbx,	COLOR_DEFAULT
+	mov	rbx,	VARIABLE_COLOR_DEFAULT
 	mov	rcx,	qword [file_name_count]	; wyświetl pełny ciąg znaków, zakończony terminatorem
-	mov	rdx,	BACKGROUND_COLOR_DEFAULT
+	mov	rdx,	VARIABLE_COLOR_BACKGROUND_DEFAULT
 	mov	rsi,	file_name_cache
 	int	0x40	; wykonaj
 
@@ -157,4 +157,4 @@ key_function_save:
 	; kontynuuj przeszukiwanie
 	jmp	start.loop
 
-text_save_as			db	'Save as: ', ASCII_CODE_TERMINATOR
+text_save_as			db	'Save as: ', VARIABLE_ASCII_CODE_TERMINATOR
