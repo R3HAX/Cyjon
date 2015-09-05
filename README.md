@@ -1,7 +1,7 @@
 # Cyjon OS
 Prosty system operacyjny dla procesorów z rodziny x86-64.
 
-![alt tag](http://wiki.osdev.org/images/a/a7/Wataha.png)
+![alt tag](http://wataha.net/show/show.png)
 
 #Wymagania sprzętowe:
 - procesor z rodziny x86-64,
