@@ -16,7 +16,7 @@
 
 key_pagedown:
 	; sprawdź czy dokument zawiera treść
-	cmp	qword [document_chars_count],	0
+	cmp	qword [document_chars_count],	VARIABLE_EMPTY
 	je	start.loop	; koniec obsługi klawisza
 
 	; sprawdź czy można wyświetlić następne 20 lub mniej linii z dokumentu
