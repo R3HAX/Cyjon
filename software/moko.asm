@@ -11,17 +11,14 @@
 ; Use:
 ; nasm - http://www.nasm.us/
 
-; kolory, stałe
-%include	'config.asm'
+%include	"config.asm"
 
-; 64 Bitowy kod programu
+%define	VARIABLE_PROGRAM_VERSION		""
+VARIABLE_CURSOR_POSITION_INITIAL	equ	0x0000000200000000
+
 [BITS 64]
-
-; adresowanie względne (skoki, etykiety)
 [DEFAULT REL]
-
-; adres kodu programu w przestrzeni logicznej
-[ORG REAL_HIGH_MEMORY_ADDRESS]
+[ORG VARIABLE_MEMORY_HIGH_REAL_ADDRESS]
 
 start:
 	; przygotowanie przestrzeni pod dokument i interfejsu
@@ -47,7 +44,7 @@ start:
 	je	.noKey
 
 	; naciśnięcie klawisza enter?
-	cmp	ax,	0x000D
+	cmp	ax,	VARIABLE_ASCII_CODE_ENTER
 	je	key_enter
 
 	; naciśnięcie klawisza backspace?
@@ -186,7 +183,7 @@ cursor_position		dq	0x0000000000000000
 show_line		dq	0x0000000000000000
 cursor_yx		dq	0x0000000000000000
 
-text_new_line		db	ASCII_CODE_ENTER, ASCII_CODE_NEWLINE, ASCII_CODE_TERMINATOR
+text_new_line		db	VARIABLE_ASCII_CODE_ENTER, VARIABLE_ASCII_CODE_NEWLINE, VARIABLE_ASCII_CODE_TERMINATOR
 text_clear_line		db	' '
 
 stop:
