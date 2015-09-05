@@ -34,12 +34,12 @@ print:
 	mov	rsi,	qword [document_address_start]
 
 	; ustaw kolor
-	mov	rbx,	COLOR_DEFAULT
+	mov	rbx,	VARIABLE_COLOR_DEFAULT
 	; ustaw tło
-	mov	rdx,	BACKGROUND_COLOR_DEFAULT
+	mov	rdx,	VARIABLE_COLOR_BACKGROUND_DEFAULT
 
 	; sprawdź czy wyświetlić zawartość pliku od samego początku
-	cmp	qword [show_line],	0x0000000000000000
+	cmp	qword [show_line],	VARIABLE_EMPTY
 	je	.leave	; tak
 
 	; szukaj linii od której zacząć wyświetlać
@@ -50,7 +50,7 @@ print:
 	lodsb
 
 	; znak nowej linii?
-	cmp	al,	0x0A
+	cmp	al,	VARIABLE_ASCII_CODE_NEWLINE
 	jne	.loop	; nie, szukaj dalej
 
 	; tak, szukaj następnego znaku nowej linii
@@ -71,11 +71,11 @@ print:
 	and	ax,	0x00FF
 
 	; koniec dokumentu?
-	cmp	al,	0x00
+	cmp	al,	VARIABLE_ASCII_CODE_TERMINATOR
 	je	.end
 
 	; znak nowej linii?
-	cmp	al,	0x0A
+	cmp	al,	VARIABLE_ASCII_CODE_NEWLINE
 	je	.enter
 
 	; zliczaj wyświetlone znaki w linii
@@ -84,11 +84,11 @@ print:
 	; wyświetl znak
 	push	r8
 	push	rcx
-	mov	rbx,	COLOR_DEFAULT
+	mov	rbx,	VARIABLE_COLOR_DEFAULT
 	mov	r8,	rax
 	mov	rcx,	1
 	mov	ax,	0x0102
-	mov	rdx,	BACKGROUND_COLOR_DEFAULT
+	mov	rdx,	VARIABLE_COLOR_BACKGROUND_DEFAULT
 	int	0x40	; wykonaj
 	pop	rcx
 	pop	r8
@@ -105,10 +105,10 @@ print:
 	sub	rcx,	r8
 
 	push	r8
-	mov	rbx,	COLOR_DEFAULT
+	mov	rbx,	VARIABLE_COLOR_DEFAULT
 	mov	r8,	' '
 	mov	ax,	0x0102
-	mov	rdx,	BACKGROUND_COLOR_DEFAULT
+	mov	rdx,	VARIABLE_COLOR_BACKGROUND_DEFAULT
 	int	0x40	; wykonaj
 	pop	r8
 
