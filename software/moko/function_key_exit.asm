@@ -85,9 +85,9 @@ key_function_exit:
 	int	0x40	; wykonaj
 
 	mov	ax,	0x0101
-	mov	rbx,	COLOR_DEFAULT
+	mov	rbx,	VARIABLE_COLOR_DEFAULT
 	mov	rcx,	-1	; wyświetl pełny ciąg znaków, zakończony terminatorem
-	mov	rdx,	BACKGROUND_COLOR_DEFAULT
+	mov	rdx,	VARIABLE_COLOR_BACKGROUND_DEFAULT
 	mov	rsi,	text_new_line
 	int	0x40	; wykonaj
 
@@ -97,4 +97,4 @@ key_function_exit:
 
 semaphore_exit	db	0x00
 
-text_save_changes	db	'Save the changes? (Y/n)', ASCII_CODE_TERMINATOR
+text_save_changes	db	'Save the changes? (Y/n)', VARIABLE_ASCII_CODE_TERMINATOR
