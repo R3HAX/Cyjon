@@ -234,6 +234,6 @@ key_function_read:
 
 file_name_count		dq	0x0000000000000000
 file_name_cache		times	80	db	0x00
-					db	ASCII_CODE_TERMINATOR
+					db	VARIABLE_ASCII_CODE_TERMINATOR
 
-text_open_file			db	'Open file: ', ASCII_CODE_TERMINATOR
+text_open_file			db	'Open file: ', VARIABLE_ASCII_CODE_TERMINATOR
