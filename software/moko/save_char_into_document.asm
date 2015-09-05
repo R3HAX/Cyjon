@@ -102,9 +102,9 @@ modified:
 
 	; wyświetl informację
 	mov	ax,	0x0101
-	mov	rbx,	BACKGROUND_COLOR_DEFAULT	; czcionka
+	mov	rbx,	VARIABLE_COLOR_BACKGROUND_DEFAULT	; czcionka
 	mov	rcx,	-1	; wyświetl całą zawartość ciągu
-	mov	rdx,	COLOR_DEFAULT	; tło
+	mov	rdx,	VARIABLE_COLOR_DEFAULT	; tło
 	mov	rsi,	text_file_modified
 	int	0x40	; wykonaj
 
@@ -120,5 +120,5 @@ modified:
 	; powrót z procedury
 	ret
 
-semaphore_modified		db	0x00
-text_file_modified	db	'[modified]', ASCII_CODE_TERMINATOR
+semaphore_modified		db	VARIABLE_EMPTY
+text_file_modified	db	'[modified]', VARIABLE_ASCII_CODE_TERMINATOR
