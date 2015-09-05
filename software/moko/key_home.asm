@@ -22,7 +22,7 @@ key_home:
 	sub	qword [cursor_position],	rcx
 
 	; ustaw pozycje kursora na poczatek linii (kolumna 0)
-	mov	dword [cursor_yx],	0
+	mov	dword [cursor_yx],	VARIABLE_EMPTY
 
 	; przestaw fizyczny kursor w odpowiednie miejsce
 	call	set_cursor
