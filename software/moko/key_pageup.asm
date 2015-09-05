@@ -37,7 +37,7 @@ key_pageup:
 
 .no:
 	; wyświetl pierwsze 20 linii dokumentu
-	mov	qword [show_line],	0
+	mov	qword [show_line],	VARIABLE_EMPTY
 
 	; ustaw wskaźnik nowej pozycji kursora wewnątrz dokumentu-------
 	xor	rsi,	rsi
