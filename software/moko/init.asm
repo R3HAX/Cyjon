@@ -53,10 +53,10 @@ initialization:
 
 	; ustaw tło nagłówka
 	mov	ax,	0x0102
-	mov	rbx,	BACKGROUND_COLOR_DEFAULT
+	mov	rbx,	VARIABLE_COLOR_BACKGROUND_DEFAULT
 	mov	ecx,	dword [screen_xy]	; szerokość ekranu w znakach
 	mov	r8,	' '	; spacja
-	mov	rdx,	COLOR_DEFAULT
+	mov	rdx,	VARIABLE_COLOR_DEFAULT
 	int	0x40	; wykonaj
 
 	; zresetuj kursor
@@ -66,8 +66,8 @@ initialization:
 
 	; wyświetl informacje w nagłówku
 	mov	ax,	0x0101	; wypisz tekst
-	mov	rbx,	BACKGROUND_COLOR_DEFAULT
-	mov	rdx,	COLOR_DEFAULT
+	mov	rbx,	VARIABLE_COLOR_BACKGROUND_DEFAULT
+	mov	rdx,	VARIABLE_COLOR_DEFAULT
 
 	; sprawdź czy plik posiada nazwę
 	cmp	qword [file_name_count],	0x00
@@ -97,9 +97,9 @@ initialization:
 
 	; wyświetl skrót X =============================================
 	mov	ax,	0x0101
-	mov	rbx,	BACKGROUND_COLOR_DEFAULT	; czarne litery
+	mov	rbx,	VARIABLE_COLOR_BACKGROUND_DEFAULT
 	mov	rcx,	-1
-	mov	rdx,	COLOR_DEFAULT	; czare tło
+	mov	rdx,	VARIABLE_COLOR_DEFAULT	; czare tło
 	mov	rsi,	text_shortcut_exit
 	int	0x40	; wykonaj
 
