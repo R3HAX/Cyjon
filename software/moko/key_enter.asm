@@ -16,7 +16,7 @@
 
 key_enter:
 	; załaduj do akumulatora znak nowej linii
-	mov	al,	ASCII_CODE_NEWLINE
+	mov	al,	VARIABLE_ASCII_CODE_NEWLINE
 
 	; sprawdź czy jest miejsce na nowy znak w dokumencie
 	mov	rdi,	qword [document_address_start]
