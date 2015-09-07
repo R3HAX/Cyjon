@@ -14,7 +14,7 @@
 ; 64 Bitowy kod programu
 [BITS 64]
 
-variable_page_pml4_address	dq	0x0000000000000000
+variable_page_pml4_address	dq	VARIABLE_EMPTY
 
 ;===============================================================================
 ; tworzy nowe tablice stronicowania opisując przestrzeń pamięci fizycznej względem utworzonej binarnej mapy pamięci
@@ -43,7 +43,7 @@ recreate_paging:
 	mov	qword [variable_page_pml4_address],	rdi
 
 	; opisz w tablicach stronicowania jądra przestrzeń zarejestrowaną w binarnej mapie pamięci
-	mov	rax,	PHYSICAL_KERNEL_ADDRESS
+	mov	rax,	VARIABLE_KERNEL_PHYSICAL_ADDRESS
 	; ustaw właściwości rekordów/stron w tablicach stronicowania
 	mov	rbx,	3	; flagi: 4 KiB, Administrator, Odczyt/Zapis, Dostępna
 	; opisz w tablicach stronicowania jądra przestrzeń o rozmiarze N stron
@@ -60,7 +60,7 @@ recreate_paging:
 	; tj. 0x0000000000000000 - 0x00007FFFFFFFFFFF
 	; a pozostałe procesy/programy, drugą połowę
 	; tj. 0xFFFF8000000000000000 - 0xFFFFFFFFFFFFFFFF
-	mov	rax,	KERNEL_STACK_ADDRESS	; ostatnia strona o rozmiarze 4 KiB
+	mov	rax,	VARIABLE_KERNEL_STACK_ADDRESS	; ostatnia strona o rozmiarze 4 KiB
 	mov	rcx,	1	; przeznacz jedną stronę na stos/stos kontekstu jądra systemu
 	; mapuj opisaną przestrzeń fizyczną
 	call	cyjon_page_map_logical_area
@@ -71,7 +71,7 @@ recreate_paging:
 
 	; stronicowanie utworzone, pora wrócić z procedury
 	; ustawiamy wskaźnik szczytu stosu na koniec przestrzeni stosu
-	mov	rsp,	KERNEL_STACK_ADDRESS + 0x1000
+	mov	rsp,	VARIABLE_KERNEL_STACK_ADDRESS + 0x1000
 
 	; i wychodzimy z procedury, imitacją RET
 	jmp	qword [recreate_paging]
