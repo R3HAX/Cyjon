@@ -15,16 +15,16 @@
 [BITS 64]
 
 ; semafor blokujący dostęp do tablicy procesów
-variable_multitasking_semaphore_process_table	db	0x00
+variable_multitasking_semaphore_process_table	db	VARIABLE_EMPTY
 
 ; adres logiczny tablicy z uruchomionymi procesami
-variable_process_table_address			dq	0x0000000000000000
+variable_process_table_address			dq	VARIABLE_EMPTY
 ; aktualnie obsługiwany proces ( uruchomiony)
-variable_process_table_record_active		dq	0x0000000000000000
+variable_process_table_record_active		dq	VARIABLE_EMPTY
 ; ilość rekordów przechowywanych w tablicy
-variable_process_table_count			dq	0x0000000000000000
+variable_process_table_count			dq	VARIABLE_EMPTY
 ; ilość rekordów, które zostały przetworzone
-variable_process_table_handled			dq	0x0000000000000000
+variable_process_table_handled			dq	VARIABLE_EMPTY
 
 ;===============================================================================
 ; procedura tworzy i dodaje jądro systemu do tablicy procesów uruchomionych
@@ -137,7 +137,7 @@ irq32:
 	mov	rdi,	qword [variable_process_table_address]
 
 	; zresetuj licznik procesów obsłużonych
-	mov	qword [variable_process_table_handled],	0x0000000000000000
+	mov	qword [variable_process_table_handled],	VARIABLE_EMPTY
 
 	; załaduj proces
 	jmp	.found
@@ -147,7 +147,7 @@ irq32:
 	add	rdi,	0x10	; pml4 + rsp = jeden rekord
 
 	; sprawdź czy rekord zawiera informacje o procesie
-	cmp	qword [rdi],	0x0000000000000000	; czy brak wpisanej tablicy PML4 procesu
+	cmp	qword [rdi],	VARIABLE_EMPTY	; czy brak wpisanej tablicy PML4 procesu
 	je	.next	; jeśli tak, pobierz zawartość następnego rekordu
 
 .found:
@@ -165,7 +165,7 @@ irq32:
 	mov	cr3,	rax	; wykonaj
 
 	; udostępnij tablice procesów
-	mov	byte [variable_multitasking_semaphore_process_table],	0x00
+	mov	byte [variable_multitasking_semaphore_process_table],	VARIABLE_EMPTY
 
 .end:
 	; wyślij informacje o zakończeniu obsługi przerwania sprzętowego
