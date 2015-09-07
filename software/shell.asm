@@ -14,7 +14,7 @@
 ; zestaw imiennych wartości stałych
 %include	"config.asm"
 
-%define	SHELL_VERSION	"w0.47"
+%define	VARIABLE_SHELL_VERSION	"w0.47"
 
 ; adresacja względna
 [DEFAULT REL]
@@ -23,14 +23,14 @@
 [BITS 64]
 
 ; adres logiczny kodu programu
-[ORG REAL_HIGH_MEMORY_ADDRESS]
+[ORG VARIABLE_MEMORY_HIGH_REAL_ADDRESS]
 
 prestart:
 	; wyświetl wstępną informacje przy pierwszym uruchomieniu programu
 	mov	ax,	0x0101	; procedura wyświetlająca ciąg znaków zakończony TERMINATOREM lub sprecyzowaną ilością
-	mov	rbx,	COLOR_DEFAULT
+	mov	rbx,	VARIABLE_COLOR_DEFAULT
 	mov	rcx,	-1	; wyświetl wszystkie znaki z ciągu
-	mov	rdx,	BACKGROUND_COLOR_DEFAULT
+	mov	rdx,	VARIABLE_COLOR_BACKGROUND_DEFAULT
 	mov	rsi,	text_help
 	int	0x40	; wykonaj
 	
@@ -38,14 +38,14 @@ prestart:
 start:
 	; wyświetl znak zachęty
 	mov	ax,	0x0101	; procedura wyświetlająca ciąg znaków zakończony TERMINATOREM lub sprecyzowaną ilością
-	mov	rbx,	COLOR_GREEN
+	mov	rbx,	VARIABLE_COLOR_GREEN
 	mov	rcx,	-1	; wyświetl wszystkie znaki z ciągu
 	mov	rsi,	text_prompt
 	int	0x40	; wykonaj
 
 .loop:
 	; pobierz od użytkownika polecenie
-	mov	rbx,	COLOR_DEFAULT	; kolor domyślny
+	mov	rbx,	VARIABLE_COLOR_DEFAULT	; kolor domyślny
 	mov	rcx,	256	; maksymalny rozmiar polecenia do pobrania
 	mov	rdi,	command_cache	; gdzie przechować wprowadzony ciąg znaków
 	xor	r8,	r8	; bufor nie zawiera danych
@@ -57,9 +57,9 @@ start:
 .restart:
 	; wyświetl znak zachęty od nowej linii
 	mov	ax,	0x0101	; procedura wyświetlająca ciąg znaków zakończony TERMINATOREM lub sprecyzowaną ilością
-	mov	rbx,	COLOR_GREEN
+	mov	rbx,	VARIABLE_COLOR_GREEN
 	mov	rcx,	-1	; wyświetl wszystkie znaki z ciągu
-	mov	rdx,	BACKGROUND_COLOR_DEFAULT
+	mov	rdx,	VARIABLE_COLOR_BACKGROUND_DEFAULT
 	mov	rsi,	text_prompt_with_newline
 	int	0x40	; wykonaj
 
@@ -169,7 +169,7 @@ start:
 	int	0x40	; wykonaj
 
 	; sprawdź czy uruchomiono nowy proces
-	cmp	rcx,	0x0000000000000000
+	cmp	rcx,	VARIABLE_EMPTY
 	ja	.process
 
 	; wyświetl informację o braku danego programu na partycji systemowej
@@ -190,7 +190,7 @@ start:
 	int	0x40	; wykonaj
 
 	; sprawdź czy proces zakończył pracę
-	cmp	rcx,	0x0000000000000000
+	cmp	rcx,	VARIABLE_EMPTY
 	ja	.wait
 
 	; rozpocznij od nowa pracę powłoki
@@ -201,16 +201,16 @@ start:
 %include	'library/compare_string.asm'
 
 command_cache	times	256	db	0x00
-				db	ASCII_CODE_TERMINATOR
+				db	VARIABLE_ASCII_CODE_TERMINATOR
 
-text_help			db	"Type 'help' for more info.", ASCII_CODE_ENTER, ASCII_CODE_NEWLINE, ASCII_CODE_TERMINATOR
-text_prompt_with_newline	db	ASCII_CODE_ENTER, ASCII_CODE_NEWLINE
-text_prompt			db	"localhost $ ", ASCII_CODE_TERMINATOR
-text_newline			db	ASCII_CODE_ENTER, ASCII_CODE_NEWLINE, ASCII_CODE_TERMINATOR
-text_ups			db	"Command not found.", ASCII_CODE_ENTER, ASCII_CODE_NEWLINE, ASCII_CODE_TERMINATOR
-text_inception			db	'Inception, good movie.', ASCII_CODE_ENTER, ASCII_CODE_NEWLINE, ASCII_CODE_TERMINATOR
-text_blocked			db	"No, you can't.", ASCII_CODE_ENTER, ASCII_CODE_NEWLINE, ASCII_CODE_TERMINATOR
-text_login			db	"Online.", ASCII_CODE_ENTER, ASCII_CODE_NEWLINE, ASCII_CODE_TERMINATOR
+text_help			db	"Type 'help' for more info.", VARIABLE_ASCII_CODE_ENTER, VARIABLE_ASCII_CODE_NEWLINE, VARIABLE_ASCII_CODE_TERMINATOR
+text_prompt_with_newline	db	VARIABLE_ASCII_CODE_ENTER, VARIABLE_ASCII_CODE_NEWLINE
+text_prompt			db	"localhost $ ", VARIABLE_ASCII_CODE_TERMINATOR
+text_newline			db	VARIABLE_ASCII_CODE_ENTER, VARIABLE_ASCII_CODE_NEWLINE, VARIABLE_ASCII_CODE_TERMINATOR
+text_ups			db	"Command not found.", VARIABLE_ASCII_CODE_ENTER, VARIABLE_ASCII_CODE_NEWLINE, VARIABLE_ASCII_CODE_TERMINATOR
+text_inception			db	'Inception, good movie.', VARIABLE_ASCII_CODE_ENTER, VARIABLE_ASCII_CODE_NEWLINE, VARIABLE_ASCII_CODE_TERMINATOR
+text_blocked			db	"No, you can't.", VARIABLE_ASCII_CODE_ENTER, VARIABLE_ASCII_CODE_NEWLINE, VARIABLE_ASCII_CODE_TERMINATOR
+text_login			db	"Online.", VARIABLE_ASCII_CODE_ENTER, VARIABLE_ASCII_CODE_NEWLINE, VARIABLE_ASCII_CODE_TERMINATOR
 
 command_clear			db	'clear'
 command_shell			db	'shell'
