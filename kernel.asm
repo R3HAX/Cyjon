@@ -18,7 +18,7 @@
 [BITS 64]
 
 ; położenie kodu jądra systemu w pamięci logicznej/fizycznej
-[ORG PHYSICAL_KERNEL_ADDRESS]
+[ORG VARIABLE_KERNEL_PHYSICAL_ADDRESS]
 
 	; NAGŁÓWEK =============================================================
 	db	0x40	; 64 bitowy kod jądra systemu
@@ -54,7 +54,7 @@ start:
 
 	; włącz przerwania sprzętowe IRQ0 (planista), IRQ1 (klawiatura)
 	mov	al,	11111111b
-	out	0xa1,	al
+	out	0xA1,	al
 	mov	al,	11111100b	; irq0, irq1
 	out	0x21,	al
 
@@ -90,7 +90,7 @@ start:
 	call	cyjon_process_init	; wykonaj
 
 	; nie potrzebujemy pamiętać numeru PID procesu init
-	mov	qword [variable_process_pid],	0x0000000000000000
+	mov	qword [variable_process_pid],	VARIABLE_EMPTY
 
 %include	"engine/alive.asm"
 
@@ -116,7 +116,7 @@ start:
 %include	"library/find_free_bit.asm"
 %include	"library/compare_string.asm"
 
-%include	FONT_MATRIX_DEFAULT
+%include	VARIABLE_FONT_MATRIX_DEFAULT
 
 ; dołączone oprogramowanie wyrównaj do pełnego adresu strony, będzie można zwolnić przestrzeń dla innych
 align	0x1000
@@ -174,13 +174,13 @@ save_included_files:
 
 .end:
 	; wyświetl informacje o inicjalizacji wirtulnego systemu plików
-	mov	rbx,	COLOR_GREEN
+	mov	rbx,	VARIABLE_COLOR_GREEN
 	mov	rcx,	-1
-	mov	rdx,	BACKGROUND_COLOR_DEFAULT
+	mov	rdx,	VARIABLE_COLOR_BACKGROUND_DEFAULT
 	mov	rsi,	text_caution
 	call	cyjon_screen_print_string
 
-	mov	rbx,	COLOR_DEFAULT
+	mov	rbx,	VARIABLE_COLOR_DEFAULT
 	mov	rsi,	text_virtial_file_system
 	call	cyjon_screen_print_string
 
@@ -253,7 +253,7 @@ file_uptime_end:
 file_moko:		incbin	'moko.bin'
 file_moko_end:
 
-text_virtial_file_system	db	" Virtual file system initialized.", ASCII_CODE_ENTER, ASCII_CODE_NEWLINE, ASCII_CODE_TERMINATOR
+text_virtial_file_system	db	" Virtual file system initialized.", VARIABLE_ASCII_CODE_ENTER, VARIABLE_ASCII_CODE_NEWLINE, VARIABLE_ASCII_CODE_TERMINATOR
 
 ;===============================================================================
 ;===============================================================================
