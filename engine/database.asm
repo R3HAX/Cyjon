@@ -11,11 +11,11 @@
 ; Use:
 ; nasm - http://www.nasm.us/
 
-text_caution			db	"::", ASCII_CODE_TERMINATOR
-text_paragraph			db	ASCII_CODE_ENTER, ASCII_CODE_NEWLINE, ASCII_CODE_TERMINATOR
+text_caution			db	"::", VARIABLE_ASCII_CODE_TERMINATOR
+text_paragraph			db	VARIABLE_ASCII_CODE_ENTER, VARIABLE_ASCII_CODE_NEWLINE, VARIABLE_ASCII_CODE_TERMINATOR
 
-text_kib			db	" KiB",	ASCII_CODE_TERMINATOR
-text_mib			db	" MiB", ASCII_CODE_TERMINATOR
+text_kib			db	" KiB",	VARIABLE_ASCII_CODE_TERMINATOR
+text_mib			db	" MiB", VARIABLE_ASCII_CODE_TERMINATOR
 
-variable_system_microtime	dq	0x0000000000000000
-variable_system_uptime		dq	0x0000000000000000
+variable_system_microtime	dq	VARIABLE_EMPTY
+variable_system_uptime		dq	VARIABLE_EMPTY
