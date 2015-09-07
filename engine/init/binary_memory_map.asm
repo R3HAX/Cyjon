@@ -14,13 +14,13 @@
 ; 64 bitowy kod
 [BITS 64]
 
-variable_binary_memory_map_address_start	dq	0x0000000000000000
-variable_binary_memory_map_address_end		dq	0x0000000000000000
-variable_binary_memory_map_total_pages		dq	0x0000000000000000
-variable_binary_memory_map_free_pages		dq	0x0000000000000000
+variable_binary_memory_map_address_start	dq	VARIABLE_EMPTY
+variable_binary_memory_map_address_end		dq	VARIABLE_EMPTY
+variable_binary_memory_map_total_pages		dq	VARIABLE_EMPTY
+variable_binary_memory_map_free_pages		dq	VARIABLE_EMPTY
 
-text_binary_memory_map_fail			db	"Binary Memory Map fail, I cannot find the size of memory available at 0x00100000.", ASCII_CODE_ENTER, ASCII_CODE_NEWLINE,"System halted.", ASCII_CODE_TERMINATOR
-text_available_memory				db	" Available memory: ", ASCII_CODE_TERMINATOR
+text_binary_memory_map_fail			db	"Binary Memory Map fail, I cannot find the size of memory available at 0x00100000.", VARIABLE_ASCII_CODE_ENTER, VARIABLE_ASCII_CODE_NEWLINE, "System halted.", VARIABLE_ASCII_CODE_TERMINATOR
+text_available_memory				db	" Available memory: ", VARIABLE_ASCII_CODE_TERMINATOR
 
 ;===============================================================================
 ; tworzy binarną mapę pamięci za kodem jądra systemu operacyjnego
@@ -49,7 +49,7 @@ binary_memory_map:
 	add	rsi,	16
 
 	; sprawdź czy koniec tablicy mapy pamięci
-	cmp	qword [rsi],	0x0000000000000000
+	cmp	qword [rsi],	VARIABLE_EMPTY
 	jne	.next
 
 	; nie można odnaleźć wymaganego rekordu, dalsza inicjalizacja jądra systemu jest niemożliwa
@@ -104,7 +104,7 @@ binary_memory_map:
 	call	library_align_address_up_to_page
 
 	; oblicz rozmiar zajętej pamięci przez jądro i binarną mapę pamięci łącznie
-	sub	rdi,	PHYSICAL_KERNEL_ADDRESS
+	sub	rdi,	VARIABLE_KERNEL_PHYSICAL_ADDRESS
 	; zamień na ilość stron po 4 KiB
 	shr	rdi,	12	; / 4096
 
@@ -122,23 +122,23 @@ binary_memory_map:
 	loop	.disable
 
 	; wyświetl informacje o inicjalizacji wirtulnego systemu plików
-	mov	rbx,	COLOR_GREEN
+	mov	rbx,	VARIABLE_COLOR_GREEN
 	mov	rcx,	-1
-	mov	rdx,	BACKGROUND_COLOR_DEFAULT
+	mov	rdx,	VARIABLE_COLOR_BACKGROUND_DEFAULT
 	mov	rsi,	text_caution
 	call	cyjon_screen_print_string
 
-	mov	rbx,	COLOR_DEFAULT
+	mov	rbx,	VARIABLE_COLOR_DEFAULT
 	mov	rsi,	text_available_memory
 	call	cyjon_screen_print_string
 
-	mov	rbx,	COLOR_WHITE
+	mov	rbx,	VARIABLE_COLOR_WHITE
 	mov	rax,	qword [variable_binary_memory_map_total_pages]
 	shl	rax,	2	; zamień strony na KiB
 	mov	rcx,	10	; system liczbowy
 	call	cyjon_screen_print_number
 
-	mov	rbx,	COLOR_DEFAULT
+	mov	rbx,	VARIABLE_COLOR_DEFAULT
 	mov	rsi,	text_kib
 	call	cyjon_screen_print_string
 
