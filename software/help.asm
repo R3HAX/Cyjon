@@ -21,7 +21,7 @@
 [DEFAULT REL]
 
 ; adres kodu programu w przestrzeni logicznej
-[ORG REAL_HIGH_MEMORY_ADDRESS]
+[ORG VARIABLE_MEMORY_HIGH_REAL_ADDRESS]
 
 start:
 	; ustaw wskaźnik na tablice
@@ -34,7 +34,7 @@ start:
 	mov	ax,	0x0101
 
 	; domyślny kolor tła
-	mov	rdx,	BACKGROUND_COLOR_DEFAULT
+	mov	rdx,	VARIABLE_COLOR_BACKGROUND_DEFAULT
 
 .loop:
 	; sprawdź czy koniec tablicy?
@@ -42,7 +42,7 @@ start:
 	je	.end	; tak
 
 	; wyświetl polecenie
-	mov	ebx,	COLOR_WHITE
+	mov	ebx,	VARIABLE_COLOR_WHITE
 	mov	rcx,	r8	; rozmiar ciągu znaków
 	int	0x40	; wykonaj
 
@@ -53,7 +53,7 @@ start:
 	mov	rsi,	qword [rsi + r8]
 
 	; wyświetl opis polecenia
-	mov	ebx,	COLOR_DEFAULT
+	mov	ebx,	VARIABLE_COLOR_DEFAULT
 	mov	rcx,	-1	; wyświetl cały ciąg
 	int	0x40	; wykonaj
 
@@ -97,12 +97,12 @@ command_table:
 	dq	text_uptime
 
 	; koniec tablicy
-	dq	0x0000000000000000
+	dq	VARIABLE_EMPTY
 
-text_clear	db	"- clean console screen,", ASCII_CODE_ENTER, ASCII_CODE_NEWLINE, ASCII_CODE_TERMINATOR
-text_date	db	"- display the current time,", ASCII_CODE_ENTER, ASCII_CODE_NEWLINE, ASCII_CODE_TERMINATOR
-text_exit	db	"- logout,", ASCII_CODE_ENTER, ASCII_CODE_NEWLINE, ASCII_CODE_TERMINATOR
-text_help	db	"- yes, it's me,", ASCII_CODE_ENTER, ASCII_CODE_NEWLINE, ASCII_CODE_TERMINATOR
-text_ls		db	"- show files owned by user,", ASCII_CODE_ENTER, ASCII_CODE_NEWLINE, ASCII_CODE_TERMINATOR
-text_moko	db	"- system text editor,", ASCII_CODE_ENTER, ASCII_CODE_NEWLINE, ASCII_CODE_TERMINATOR
-text_uptime	db	"- tells how long the system has been running.", ASCII_CODE_ENTER, ASCII_CODE_NEWLINE, ASCII_CODE_TERMINATOR
+text_clear	db	"- clean console screen,", VARIABLE_ASCII_CODE_ENTER, VARIABLE_ASCII_CODE_NEWLINE, VARIABLE_ASCII_CODE_TERMINATOR
+text_date	db	"- display the current time,", VARIABLE_ASCII_CODE_ENTER, VARIABLE_ASCII_CODE_NEWLINE, VARIABLE_ASCII_CODE_TERMINATOR
+text_exit	db	"- logout,", VARIABLE_ASCII_CODE_ENTER, VARIABLE_ASCII_CODE_NEWLINE, VARIABLE_ASCII_CODE_TERMINATOR
+text_help	db	"- yes, it's me,", VARIABLE_ASCII_CODE_ENTER, VARIABLE_ASCII_CODE_NEWLINE, VARIABLE_ASCII_CODE_TERMINATOR
+text_ls		db	"- show files owned by user,", VARIABLE_ASCII_CODE_ENTER, VARIABLE_ASCII_CODE_NEWLINE, VARIABLE_ASCII_CODE_TERMINATOR
+text_moko	db	"- system text editor,", VARIABLE_ASCII_CODE_ENTER, VARIABLE_ASCII_CODE_NEWLINE, VARIABLE_ASCII_CODE_TERMINATOR
+text_uptime	db	"- tells how long the system has been running.", VARIABLE_ASCII_CODE_ENTER, VARIABLE_ASCII_CODE_NEWLINE, VARIABLE_ASCII_CODE_TERMINATOR
