@@ -19,7 +19,7 @@ align	0x08
 
 variable_gdt_structure:
 variable_gdt_limit				dw	0x1000	; rozmiar tablicy GDT
-variable_gdt_address				dq	0x0000000000000000
+variable_gdt_address				dq	VARIABLE_EMPTY
 
 ; utworzone zostaną tylko 4 deskryptory dla segmentów
 ; z czego pierwszy (0x0000) jest deskryptorem NULL, TSS będzie 5-tym
@@ -29,20 +29,20 @@ variable_tss_descriptor				dw	0x0028	; 5 * 0x08
 align	0x08
 
 variable_tss_structure:
-						dd	0x00000000			; zastrzeżone
+						dd	VARIABLE_EMPTY			; zastrzeżone
 						; wbudowany debugger w oprogramowanie Bochs, posiada jakiś wewnętrzny problem z samym sobą
 						; dlatego, jeśli nie korzystasz z tego debuggera możesz usunąć wartość 0x08,
 						; sprawia ona tylko to, że na stosie kontekstu procesów podczas pierwszego uruchomienia programu
 						; znajduje się 8-mio Bajtowa wartość 0x0000000000000000, nic więcej, nic mniej
-						dq	0x0000800000000000 - 0x08	; RSP0
-				times	2	dq	0x0000000000000000		; RSP1..2
-						dd	0x00000000			; zastrzeżone
-						dd	0x00000000			; zastrzeżone
-				times	7	dq	0x0000000000000000		; IST1..7
-						dd	0x00000000			; zastrzeżone
-						dd	0x00000000			; zastrzeżone
-						dw	0x0000				; zastrzeżone
-						dw	0x0000				; I/O Map Base Address
+						dq	VARIABLE_MEMORY_HIGH_VIRTUAL_ADDRESS - 0x08	; RSP0
+				times	2	dq	VARIABLE_EMPTY		; RSP1..2
+						dd	VARIABLE_EMPTY			; zastrzeżone
+						dd	VARIABLE_EMPTY			; zastrzeżone
+				times	7	dq	VARIABLE_EMPTY		; IST1..7
+						dd	VARIABLE_EMPTY			; zastrzeżone
+						dd	VARIABLE_EMPTY			; zastrzeżone
+						dw	VARIABLE_EMPTY				; zastrzeżone
+						dw	VARIABLE_EMPTY				; I/O Map Base Address
 
 ;===============================================================================
 ; tworzy globalną tablicę deskryptorów, nie korzystamy z przygotowanej przez bootloader (zawsze własna i pewny adres)
