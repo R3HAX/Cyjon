@@ -21,7 +21,7 @@
 [DEFAULT REL]
 
 ; adres kodu programu w przestrzeni logicznej
-[ORG REAL_HIGH_MEMORY_ADDRESS]
+[ORG VARIABLE_MEMORY_HIGH_REAL_ADDRESS]
 
 start:
 	; procedura - pobierz uptime systemu
@@ -29,8 +29,8 @@ start:
 	int	0x40	; wykonaj
 
 	; domyślny kolor czcionki i tła
-	mov	rbx,	COLOR_DEFAULT
-	mov	rdx,	BACKGROUND_COLOR_DEFAULT
+	mov	rbx,	VARIABLE_COLOR_DEFAULT
+	mov	rdx,	VARIABLE_COLOR_BACKGROUND_DEFAULT
 
 	; zapamiętaj
 	push	rcx
@@ -62,7 +62,7 @@ start:
 	; wyświetl liczbę
 	mov	ax,	0x0103
 	mov	rcx,	10	; system dziesiętny
-	mov	rdx,	BACKGROUND_COLOR_DEFAULT
+	mov	rdx,	VARIABLE_COLOR_BACKGROUND_DEFAULT
 	int	0x40	; wykonaj
 
 	; sprawdź pisownię dzień/dni
@@ -102,7 +102,7 @@ start:
 	; wyświetl godzinę
 	mov	r8,	rax
 	mov	ax,	0x0103
-	mov	rdx,	BACKGROUND_COLOR_DEFAULT
+	mov	rdx,	VARIABLE_COLOR_BACKGROUND_DEFAULT
 	mov	rcx,	10	; system dziesiętny
 	int	0x40
 
@@ -134,12 +134,12 @@ start:
 	inc	rcx
 
 .caution:
-	cmp	byte [variable_semaphore],	0x00
+	cmp	byte [variable_semaphore],	VARIABLE_EMPTY
 	je	.no_hour
 
 	; wyświetl tekst
 	mov	ax,	0x0101
-	mov	rdx,	BACKGROUND_COLOR_DEFAULT
+	mov	rdx,	VARIABLE_COLOR_BACKGROUND_DEFAULT
 	mov	rsi,	text_caution
 	int	0x40	; wykonaj
 
@@ -159,7 +159,7 @@ start:
 	; wyświetl ' min'
 	mov	ax,	0x0101
 	mov	rcx,	-1
-	mov	rdx,	BACKGROUND_COLOR_DEFAULT
+	mov	rdx,	VARIABLE_COLOR_BACKGROUND_DEFAULT
 	mov	rsi,	text_min
 	int	0x40	; wykonaj
 
@@ -173,12 +173,12 @@ start:
 	xor	ax,	ax
 	int	0x40	; wykonaj
 
-variable_semaphore	db	0x00
+variable_semaphore	db	VARIABLE_EMPTY
 
-text_up	db	'up ', ASCII_CODE_TERMINATOR
+text_up			db	'up ', VARIABLE_ASCII_CODE_TERMINATOR
 
-text_caution	db	':0' ;)
-text_day	db	' day, ', ASCII_CODE_TERMINATOR
-text_days	db	' days, ', ASCII_CODE_TERMINATOR
-text_min	db	' min', ASCII_CODE_TERMINATOR
-text_end	db	ASCII_CODE_ENTER, ASCII_CODE_NEWLINE, ASCII_CODE_TERMINATOR
+text_caution		db	':0' ;)
+text_day		db	' day, ', VARIABLE_ASCII_CODE_TERMINATOR
+text_days		db	' days, ', VARIABLE_ASCII_CODE_TERMINATOR
+text_min		db	' min', VARIABLE_ASCII_CODE_TERMINATOR
+text_end		db	VARIABLE_ASCII_CODE_ENTER, VARIABLE_ASCII_CODE_NEWLINE, VARIABLE_ASCII_CODE_TERMINATOR
