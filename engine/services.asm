@@ -24,7 +24,7 @@
 ; różne rejestry zachowane
 irq64:
 	; czy zarządzać procesami?
-	cmp	ah,	0x00
+	cmp	ah,	VARIABLE_EMPTY
 	je	irq64_process
 
 	; czy zarządzać ekranem?
@@ -46,7 +46,7 @@ irq64:
 ;===============================================================================
 irq64_process:
 	; sprawdź czy zamknąć proces
-	cmp	al,	0x00
+	cmp	al,	VARIABLE_EMPTY
 	je	.process_kill
 
 	; uruchomić nowy proces?
@@ -66,7 +66,7 @@ irq64_process:
 
 .process_kill:
 	; sprawdź czy jądro jest gotowe przyjąć polecenie zamknięcia procesu
-	cmp	qword [variable_process_close],	0x0000000000000000
+	cmp	qword [variable_process_close],	VARIABLE_EMPTY
 	ja	.process_kill	; czekaj
 
 	; zatrzymaj aktualnie uruchomiony proces
@@ -96,7 +96,7 @@ irq64_process:
 
 .process_new_found:
 	; sprawdź czy jądro jest gotowe na uruchomienie kolejnego procesu
-	cmp	byte [variable_process_semaphore_init],	0x00
+	cmp	byte [variable_process_semaphore_init],	VARIABLE_EMPTY
 	jne	.process_new_found	; czekaj
 
 	; zarezerwuj procedure
@@ -107,7 +107,7 @@ irq64_process:
 
 .process_new_check:
 	; sprawdź czy proces został uruchomiony
-	cmp	qword [variable_process_pid],	0x0000000000000000
+	cmp	qword [variable_process_pid],	VARIABLE_EMPTY
 	je	.process_new_check	; jeśli nie, czekaj dalej
 
 	; pobierz numer PID uruchomionego procesu
@@ -115,7 +115,7 @@ irq64_process:
 	xchg	rcx,	qword [variable_process_pid]
 
 	; zwolnij procedure uruchamiania nowego procesu
-	mov	byte [variable_process_semaphore_init],	0x00
+	mov	byte [variable_process_semaphore_init],	VARIABLE_EMPTY
 
 .process_new_end:
 	; przywróć oryginalne rejestry
@@ -137,11 +137,11 @@ irq64_process:
 	shl	rcx,	4
 
 	; sprawdź czy proces jest uruchomiony
-	cmp	qword [rdi + rcx],	0x0000000000000000
+	cmp	qword [rdi + rcx],	VARIABLE_EMPTY
 	jne	.process_check_exists
 
 	; brak procesu
-	mov	qword [rsp + 0x08],	0x0000000000000000
+	mov	qword [rsp + 0x08],	VARIABLE_EMPTY
 
 .process_check_exists:
 	; przywróć oryginalne rejestry
@@ -164,7 +164,7 @@ irq64_process:
 
 	; przygotuj przestrzeń pod dane
 	mov	rax,	rdi
-	mov	rdi,	HIGH_MEMORY_ADDRESS
+	mov	rdi,	VARIABLE_MEMORY_HIGH_ADDRESS
 	sub	rax,	rdi
 	mov	rbx,	0x07	; flagi: Użytkownik, 4 KiB, Odczyt/Zapis, Dostępna
 	mov	r11,	cr3
@@ -183,7 +183,7 @@ irq64_process:
 ;===============================================================================
 irq64_screen:
 	; sprawdź czy wyczyścić ekran
-	cmp	al,	0x00
+	cmp	al,	VARIABLE_EMPTY
 	je	.screen_clear
 
 	; sprawdź czy wyświetlić ciąg znaków
@@ -209,6 +209,14 @@ irq64_screen:
 	; pobierz informacje o ekranie
 	cmp	al,	0x06
 	je	.screen_information
+
+	; ukryj kursor
+	cmp	al,	0x07
+	je	.screen_cursor_hide
+
+	; pokaź kursor
+	cmp	al,	0x08
+	je	.screen_cursor_show
 
 	; brak obsługi
 	jmp	irq64.end
@@ -348,10 +356,24 @@ irq64_screen:
 	; koniec obsługi procedury
 	jmp	irq64.end
 
+.screen_cursor_hide:
+	call	cyjon_screen_cursor_lock
+
+	; koniec obsługi procedury
+	jmp	irq64.end
+
+.screen_cursor_show:
+	cmp	qword [variable_screen_cursor_semaphore], VARIABLE_EMPTY
+	je	irq64.end
+
+	call	cyjon_screen_cursor_unlock
+
+	; koniec obsługi procedury
+	jmp	irq64.end
 ;===============================================================================
 irq64_keyboard:
 	; sprawdź czy pobrać znak z bufora klawiatury
-	cmp	al,	0x00
+	cmp	al,	VARIABLE_EMPTY
 	je	.keyboard_get_key
 
 	; brak obsługi
@@ -367,7 +389,7 @@ irq64_keyboard:
 ;===============================================================================
 irq64_system:
 	; pobrać czas 'uptime'?
-	cmp	al,	0x00
+	cmp	al,	VARIABLE_EMPTY
 	je	.system_uptime
 
 	; brak obsługi
