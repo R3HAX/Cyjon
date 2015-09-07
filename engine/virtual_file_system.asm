@@ -22,8 +22,8 @@ struc virtual_file_system_superblock
 	.s_knots_table_size		resq	1
 endstruc
 
-variable_partition_specification_system	times	4	dq	0x0000000000000000
-variable_partition_specification_home	times	4	dq	0x0000000000000000
+variable_partition_specification_system	times	4	dq	VARIABLE_EMPTY
+variable_partition_specification_home	times	4	dq	VARIABLE_EMPTY
 
 virtual_file_systems:
 	; zachowaj oryginalne rejestry
@@ -129,7 +129,7 @@ cyjon_virtual_file_system_save_file:
 	rep	movsq
 
 	; sprawdź czy jest opisany następny blok do uzupełniania danymi pliku
-	cmp	qword [rdi],	0x0000000000000000
+	cmp	qword [rdi],	VARIABLE_EMPTY
 	ja	.store
 
 	; zachowaj adres bloku modyfikowanego
@@ -156,7 +156,7 @@ cyjon_virtual_file_system_save_file:
 	mov	rdi,	qword [rdi + 4096 - 0x08]
 
 	; sprawdź czy koniec danych pliku
-	cmp	rdx,	0x0000000000000000
+	cmp	rdx,	VARIABLE_EMPTY
 	je	.end
 
 	; kontynuuj z pozostałymi blokami
@@ -215,7 +215,7 @@ cyjon_virtual_file_system_find_free_knot:
 
 .loop:
 	; sprawdź czy ilość znaków w nazwie pliku jest równa zero
-	cmp	qword [rdi + 0x10],	0x0000000000000000
+	cmp	qword [rdi + 0x10],	VARIABLE_EMPTY
 	je	.found
 
 	; przesuń wskaźnik na następny rekord
@@ -225,7 +225,7 @@ cyjon_virtual_file_system_find_free_knot:
 	loop	.loop
 
 	; sprawdź czy tablica zawiera inne bloki danych
-	cmp	qword [rdi],	0x0000000000000000
+	cmp	qword [rdi],	VARIABLE_EMPTY
 	je	.new	; jeśli tak, przeszukaj następny blok
 
 	; pobierz adres następnego bloku tablicy
@@ -314,7 +314,7 @@ cyjon_virtual_file_system_read_file:
 	rep	movsq
 
 	; sprawdź czy koniec pliku
-	cmp	qword [rsi],	0x0000000000000000
+	cmp	qword [rsi],	VARIABLE_EMPTY
 	je	.end
 
 	; pobierz informacje o następnym bloku do załadowania
@@ -394,7 +394,7 @@ cyjon_virtual_file_system_find_file:
 	mov	rdi,	qword [rdi]
 
 	; sprawdź czy tablica zawiera inne bloki danych
-	cmp	rdi,	0x0000000000000000
+	cmp	rdi,	VARIABLE_EMPTY
 	ja	.prepare	; jeśli tak, przeszukaj następny blok
 
 	; zwróć brak adresu rekordu szukanego pliku
