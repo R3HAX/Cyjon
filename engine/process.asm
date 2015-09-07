@@ -14,11 +14,11 @@
 ; 64 Bitowy kod programu
 [BITS 64]
 
-variable_process_semaphore_init	db	0x00
+variable_process_semaphore_init	db	VARIABLE_EMPTY
 
-variable_process_new		dq	0x0000000000000000
-variable_process_close		dq	0x0000000000000000
-variable_process_pid		dq	0x0000000000000000
+variable_process_new		dq	VARIABLE_EMPTY
+variable_process_close		dq	VARIABLE_EMPTY
+variable_process_pid		dq	VARIABLE_EMPTY
 
 ;===============================================================================
 ; procedura uruchamia nowy proces, przydzielając pamięć i numer identyfikacyjny
@@ -87,18 +87,18 @@ cyjon_process_init:
 	shr	rcx,	12
 
 	; przygotuj przestrzeń pod proces
-	mov	rax,	VIRTUAL_HIGH_MEMORY_ADDRESS
+	mov	rax,	VARIABLE_MEMORY_HIGH_VIRTUAL_ADDRESS
 	mov	rbx,	0x07	; flagi: Użytkownik, 4 KiB, Odczyt/Zapis, Dostępna
 	mov	r11,	cr3	; tablica PML4 jądra systemu
 	call	cyjon_page_map_logical_area	; wykonaj
 
 	; załaduj plik do pamięci
 	mov	rsi,	qword [rdi]	; numer pierwszego bloku danych pliku
-	mov	rdi,	REAL_HIGH_MEMORY_ADDRESS
+	mov	rdi,	VARIABLE_MEMORY_HIGH_REAL_ADDRESS
 	call	cyjon_virtual_file_system_read_file
 
 	; przygotuj miejsce pod stos procesu
-	mov	rax,	VIRTUAL_HIGH_MEMORY_ADDRESS + VIRTUAL_HIGH_MEMORY_ADDRESS - 0x1000	; ostatnie 4 KiB pamięci logicznej
+	mov	rax,	VARIABLE_MEMORY_HIGH_VIRTUAL_ADDRESS + VARIABLE_MEMORY_HIGH_VIRTUAL_ADDRESS - 0x1000	; ostatnie 4 KiB pamięci logicznej
 	mov	rbx,	0x07	; flagi: Użytkownik, 4 KiB, Odczyt/Zapis, Dostępna
 	mov	rcx,	1	; rozmiar stosu, jedna strona (4096 Bajtów)
 	mov	r11,	cr3	; tablica PML4 jądra systemu
@@ -119,10 +119,10 @@ cyjon_process_init:
 	mov	r11,	qword [rsp]
 
 	; usuń stos kontekstu jądra, zostanie utworzony nowy dla procesu
-	mov	qword [r11 + 0x07F8],	0x0000000000000000
+	mov	qword [r11 + 0x07F8],	VARIABLE_EMPTY
 
 	; utwórz stos kontekstu procesu
-	mov	rax,	VIRTUAL_HIGH_MEMORY_ADDRESS - 0x1000	; ostatnie 4 KiB Low Memory
+	mov	rax,	VARIABLE_MEMORY_HIGH_VIRTUAL_ADDRESS - 0x1000	; ostatnie 4 KiB Low Memory
 	mov	rcx,	1	; jedna strona o rozmiarze 4 KiB
 	mov	rbx,	0x03	; ustaw flagi 4 KiB, Administrator, 4 KiB, Odczyt/Zapis, Dostępna
 	call	cyjon_page_map_logical_area	; wykonaj
@@ -140,7 +140,7 @@ cyjon_process_init:
 	; odstaw na stos kontekstu procesu spreparowane dane powrotu z przerwania IRQ0
 
 	; RIP
-	mov	rax,	REAL_HIGH_MEMORY_ADDRESS
+	mov	rax,	VARIABLE_MEMORY_HIGH_REAL_ADDRESS
 	stosq	; zapisz
 
 	; CS
@@ -152,7 +152,7 @@ cyjon_process_init:
 	stosq	; zapisz
 
 	; RSP
-	mov	rax,	0x0000000000000000
+	mov	rax,	VARIABLE_EMPTY
 	stosq	; zapisz
 
 	; DS
@@ -164,7 +164,7 @@ cyjon_process_init:
 
 .free:
 	; oczekuj na wolne miejsce w tablicy procesów
-	cmp	qword [variable_process_table_count],	PROCESS_LIMIT
+	cmp	qword [variable_process_table_count],	VARIABLE_PROCESS_LIMIT
 	je	.free
 
 .wait:
@@ -180,7 +180,7 @@ cyjon_process_init:
 
 .loop:
 	; szukaj wolnego rekordu w tablicy
-	cmp	qword [rdi],	0x0000000000000000
+	cmp	qword [rdi],	VARIABLE_EMPTY
 	je	.found
 
 	; przesuń wskaźnik na następny rekord
@@ -204,14 +204,14 @@ cyjon_process_init:
 	stosq
 	
 	; zapisz adres szczytu stosu kontekstu procesu do rekordu
-	mov	rax,	VIRTUAL_HIGH_MEMORY_ADDRESS - (21 * 0x08)
+	mov	rax,	VARIABLE_MEMORY_HIGH_VIRTUAL_ADDRESS - (21 * 0x08)
 	stosq
 
 	; zwiększ ilość rekordów/procesów przechowywanych w tablicy
 	inc	qword [variable_process_table_count]
 
 	; odblokuj tablice procesów dla planisty
-	mov	byte [variable_multitasking_semaphore_process_table],	0x00
+	mov	byte [variable_multitasking_semaphore_process_table],	VARIABLE_EMPTY
 
 	; wysprzątaj tablice PML4 jądra z zainicjalizowanego procesu
 	xor	rax,	rax	; wyczyść rekordy
@@ -224,7 +224,7 @@ cyjon_process_init:
 	pop	qword [variable_process_pid]
 
 	; zwolnij możliwość uruchomienia nowego procesu
-	mov	qword [variable_process_new],	0x0000000000000000
+	mov	qword [variable_process_new],	VARIABLE_EMPTY
 
 .end:
 	; przywróć oryginalne rejestry
@@ -249,7 +249,7 @@ cyjon_process_close:
 	push	rbx
 
 	; wyczyść rekord w tablicy
-	mov	qword [rdi],	0x0000000000000000
+	mov	qword [rdi],	VARIABLE_EMPTY
 
 	; zmniejsz ilość procesów przechowywanych w tablicy
 	dec	qword [variable_process_table_count]
@@ -268,7 +268,7 @@ cyjon_process_close:
 	call	cyjon_page_release
 
 	; zwolnij procedure zamykania procesów
-	mov	qword [variable_process_close],	0x0000000000000000
+	mov	qword [variable_process_close],	VARIABLE_EMPTY
 
 	; kontynuuj
 	jmp	alive
