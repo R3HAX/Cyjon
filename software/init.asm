@@ -21,7 +21,7 @@
 [DEFAULT REL]
 
 ; adres kodu programu w przestrzeni logicznej
-[ORG REAL_HIGH_MEMORY_ADDRESS]
+[ORG VARIABLE_MEMORY_HIGH_REAL_ADDRESS]
 
 start:
 	; pierwszą inicjalizacje nie rozpoczynaj od czyszczenia ekranu
@@ -38,22 +38,22 @@ start:
 	; procedura - wyświetl ciąg znaków na ekranie w miejscu kursora
 	mov	rax,	0x0101
 	mov	rcx,	-1	; wyświetl wszystkie znaki z ciągu
-	mov	rdx,	BACKGROUND_COLOR_DEFAULT
+	mov	rdx,	VARIABLE_COLOR_BACKGROUND_DEFAULT
 
 	;kolor znaków
-	mov	rbx,	COLOR_BLUE_LIGHT
+	mov	rbx,	VARIABLE_COLOR_BLUE_LIGHT
 	; wskaźnik do ciągu znaków zakończony terminatorem lub licznikiem
 	mov	rsi,	text_welcome
 	int	0x40	; wykonaj
 
 	;kolor znaków
-	mov	rbx,	COLOR_DEFAULT
+	mov	rbx,	VARIABLE_COLOR_DEFAULT
 	; wskaźnik do ciągu znaków zakończony terminatorem lub licznikiem
 	mov	rsi,	text_separator
 	int	0x40	; wykonaj
 
 	;kolor znaków
-	mov	rbx,	COLOR_GRAY
+	mov	rbx,	VARIABLE_COLOR_GRAY
 	; wskaźnik do ciągu znaków zakończony terminatorem lub licznikiem
 	mov	rsi,	text_version
 	int	0x40	; wykonaj
@@ -94,7 +94,7 @@ check:
 	int	0x40	; wykonaj
 
 	; sprawdź czy proces zakończył pracę / poprawne zalogowanie się do systemu
-	cmp	rcx,	0x0000000000000000
+	cmp	rcx,	VARIABLE_EMPTY
 	ja	.wait	; jeśli nie, czekaj dalej
 
 	; przywróć oryginalne rejestry
@@ -103,10 +103,10 @@ check:
 	; powrót z procedury
 	ret
 
-text_welcome	db	ASCII_CODE_ENTER, ASCII_CODE_NEWLINE
-		db	"     C y j o n   O S  ", ASCII_CODE_ENTER, ASCII_CODE_NEWLINE, ASCII_CODE_TERMINATOR
-text_separator	db	"   -------------------", ASCII_CODE_ENTER, ASCII_CODE_NEWLINE, ASCII_CODE_TERMINATOR
-text_version	db	"                v", KERNEL_VERSION, ASCII_CODE_ENTER, ASCII_CODE_NEWLINE, ASCII_CODE_NEWLINE, ASCII_CODE_TERMINATOR
+text_welcome	db	VARIABLE_ASCII_CODE_ENTER, VARIABLE_ASCII_CODE_NEWLINE
+		db	"     C y j o n   O S  ", VARIABLE_ASCII_CODE_ENTER, VARIABLE_ASCII_CODE_NEWLINE, VARIABLE_ASCII_CODE_TERMINATOR
+text_separator	db	"   -------------------", VARIABLE_ASCII_CODE_ENTER, VARIABLE_ASCII_CODE_NEWLINE, VARIABLE_ASCII_CODE_TERMINATOR
+text_version	db	"                v", VARIABLE_KERNEL_VERSION, VARIABLE_ASCII_CODE_ENTER, VARIABLE_ASCII_CODE_NEWLINE, VARIABLE_ASCII_CODE_NEWLINE, VARIABLE_ASCII_CODE_TERMINATOR
 
 file_login		db	'login'
 file_login_name_length	dq	5
