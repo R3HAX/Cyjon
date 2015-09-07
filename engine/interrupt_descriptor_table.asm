@@ -139,7 +139,7 @@ itd_cpu_exception:
 
 	mov	rbx,	VARIABLE_COLOR_ORANGE
 
-	mov	rsi,	text_cpu_exception_rbx
+	mov	rsi,	text_cpu_exception_rax
 	call	cyjon_screen_print_string
 
 	pop	rax
