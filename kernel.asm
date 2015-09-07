@@ -232,6 +232,12 @@ files_table:
 	dq	file_moko_end
 	db	'moko'
 
+	dq	5
+	dq	file_debug_end - file_debug
+	dq	file_debug
+	dq	file_debug_end
+	db	'debug'
+
 	; koniec tablicy plików
 	dq	VARIABLE_EMPTY
 
@@ -252,6 +258,9 @@ file_uptime_end:
 
 file_moko:		incbin	'moko.bin'
 file_moko_end:
+
+file_debug:		incbin	'debug.bin'
+file_debug_end:
 
 text_virtial_file_system	db	" Virtual file system initialized.", VARIABLE_ASCII_CODE_ENTER, VARIABLE_ASCII_CODE_NEWLINE, VARIABLE_ASCII_CODE_TERMINATOR
 
