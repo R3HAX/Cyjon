@@ -227,7 +227,19 @@ itd_cpu_exception:
 	mov	rsi,	text_cpu_exception_rip
 	call	cyjon_screen_print_string
 
+
+	cmp	qword [rsp + 0x40],	VARIABLE_KERNEL_PHYSICAL_ADDRESS
+	ja	.no_code_error2
+
+	; pomiń kod błędu
 	mov	rax,	qword [rsp + 9 * 0x08]
+
+	jmp	.error_code2
+
+.no_code_error2:
+	mov	rax,	qword [rsp + 8 * 0x08]
+
+.error_code2:
 	call	cyjon_screen_print_number
 
 	mov	rsi,	text_cpu_exception_eflags
