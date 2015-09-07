@@ -16,7 +16,7 @@
 
 variable_idt_structure:
 variable_interrupt_descriptor_table_limit	dw	0x1000	; rozmiar tablicy / do 512 rekordów
-variable_interrupt_descriptor_table_address	dq	0x0000000000000000
+variable_interrupt_descriptor_table_address	dq	VARIABLE_EMPTY
 
 ;===============================================================================
 ; procedura tworzy tablicę IDT do obsługi przerwań i wyjątków
@@ -114,16 +114,16 @@ interrupt_descriptor_table:
 ; wszystkie rejestry zachowane
 itd_cpu_exception:
 	; wyświetl informację
-	mov	rbx,	COLOR_RED
+	mov	rbx,	VARIABLE_COLOR_RED
 	mov	rcx,	-1	; wyświetl całą informację
-	mov	rdx,	BACKGROUND_COLOR_DEFAULT
+	mov	rdx,	VARIABLE_COLOR_BACKGROUND_DEFAULT
 	mov	rsi,	text_cpu_exception
 	call	cyjon_screen_print_string	; plik: engine/screen.asm
 
 	; wyświetl rozamiar pozostałej pamięcie w ilości stron
 	mov	rax,	qword [variable_binary_memory_map_free_pages]
 	mov	rcx,	10	; system dziesiętny
-	mov	rdx,	BACKGROUND_COLOR_DEFAULT
+	mov	rdx,	VARIABLE_COLOR_BACKGROUND_DEFAULT
 	call	cyjon_screen_print_number
 
 	; przejdź do następnej linii
@@ -159,7 +159,7 @@ itd_cpu_exception:
 	; zatrzymaj dalsze wykonywanie kodu jądra
 	jmp	$
 
-text_cpu_exception	db	"Unhandled CPU exception! pages:", ASCII_CODE_TERMINATOR
+text_cpu_exception	db	"Unhandled CPU exception! pages:", VARIABLE_ASCII_CODE_TERMINATOR
 
 ;===============================================================================
 ; procedura podstawowej obsługi przerwania sprzętowego
@@ -171,9 +171,9 @@ text_cpu_exception	db	"Unhandled CPU exception! pages:", ASCII_CODE_TERMINATOR
 ; wszystkie rejestry zachowane
 itd_hardware_interrupt:
 	; wyświetl informację
-	mov	rbx,	COLOR_RED
+	mov	rbx,	VARIABLE_COLOR_RED
 	mov	rcx,	-1	; wyświetl całą informację
-	mov	rdx,	BACKGROUND_COLOR_DEFAULT
+	mov	rdx,	VARIABLE_COLOR_BACKGROUND_DEFAULT
 	mov	rsi,	text_hardware_interrupt
 	call	cyjon_screen_print_string	; plik: engine/screen.asm
 
@@ -183,7 +183,7 @@ itd_hardware_interrupt:
 	; zatrzymaj dalsze wykonywanie kodu jądra
 	jmp	$
 
-text_hardware_interrupt	db	"Unhandled hardware interrupt!", ASCII_CODE_TERMINATOR
+text_hardware_interrupt	db	"Unhandled hardware interrupt!", VARIABLE_ASCII_CODE_TERMINATOR
 
 ;===============================================================================
 ; procedura podstawowej obsługi przerwania programowego
@@ -197,9 +197,9 @@ itd_software_interrupt:
 	; standardowo zastosuję zabicie procesu, który zrobił coś czego być był nie powinien
 
 	; wyświetl informację
-	mov	rbx,	COLOR_RED
+	mov	rbx,	VARIABLE_COLOR_RED
 	mov	rcx,	-1	; wyświetl całą informację
-	mov	rdx,	BACKGROUND_COLOR_DEFAULT
+	mov	rdx,	VARIABLE_COLOR_BACKGROUND_DEFAULT
 	mov	rsi,	text_software_interrupt
 	call	cyjon_screen_print_string	; plik: engine/screen.asm
 
@@ -209,7 +209,7 @@ itd_software_interrupt:
 	; zatrzymaj dalsze wykonywanie kodu jądra
 	jmp	$
 
-text_software_interrupt	db	"Unhandled software interrupt!", ASCII_CODE_TERMINATOR
+text_software_interrupt	db	"Unhandled software interrupt!", VARIABLE_ASCII_CODE_TERMINATOR
 
 ;===============================================================================
 ; procedura tworzy/modyfikuje rekord w Tablicy Deskryptorów Przerwań
