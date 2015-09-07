@@ -21,31 +21,31 @@
 [DEFAULT REL]
 
 ; adres kodu programu w przestrzeni logicznej
-[ORG REAL_HIGH_MEMORY_ADDRESS]
+[ORG VARIABLE_MEMORY_HIGH_REAL_ADDRESS]
 
 start:
 	; wyświetl nawe jednostki i prośbę o nazwe konta
 	mov	rax,	0x0101	; procedura - wyświetl ciąg znaków na ekranie w miejscu kursora
-	mov	rbx,	COLOR_DEFAULT
+	mov	rbx,	VARIABLE_COLOR_DEFAULT
 	mov	rcx,	-1	; wszystkie znaki z ciągu
-	mov	rdx,	BACKGROUND_COLOR_DEFAULT
+	mov	rdx,	VARIABLE_COLOR_BACKGROUND_DEFAULT
 	mov	rsi,	text_login	; wskaźnik do ciągu znaków zakończony terminatorem lub licznikiem
 	int	0x40	; wykonaj
 
 	; pobierz od użytkownika ciąg znaków
-	mov	rbx,	COLOR_WHITE
+	mov	rbx,	VARIABLE_COLOR_WHITE
 	mov	rcx,	16	; ilość pobieranych znaków
 	mov	rdi,	text_login_cache	; gdzie przechować pobrane znaki
 	call	library_input	; wykonaj
 
 	; wyświetl prośbę o podanie hasła
-	mov	rbx,	COLOR_DEFAULT
+	mov	rbx,	VARIABLE_COLOR_DEFAULT
 	mov	rcx,	-1	; wszystkie znaki z ciągu
 	mov	rsi,	text_password	; wskaźnik do ciągu znaków zakończony terminatorem lub licznikiem
 	int	0x40	; wykonaj
 
 	; pobierz od użytkownika ciąg znaków
-	mov	rbx,	BACKGROUND_COLOR_DEFAULT
+	mov	rbx,	VARIABLE_COLOR_BACKGROUND_DEFAULT
 	mov	rcx,	16	; ilość pobieranych znaków
 	mov	rdi,	text_password_cache	; gdzie przechować pobrane znaki
 	call	library_input	; wykonaj
@@ -62,8 +62,8 @@ start:
 %include	'library/input.asm'
 %include	'library/compare_string.asm'
 
-text_login				db	'localhost login: ', ASCII_CODE_TERMINATOR
+text_login				db	'localhost login: ', VARIABLE_ASCII_CODE_TERMINATOR
 text_login_cache	times	16	db	0x00
-text_password				db	ASCII_CODE_ENTER, ASCII_CODE_NEWLINE, 'Password: ', ASCII_CODE_TERMINATOR
+text_password				db	VARIABLE_ASCII_CODE_ENTER, VARIABLE_ASCII_CODE_NEWLINE, 'Password: ', VARIABLE_ASCII_CODE_TERMINATOR
 text_password_cache	times	16	db	0x00
-text_space				db	ASCII_CODE_ENTER, ASCII_CODE_NEWLINE, ASCII_CODE_NEWLINE, ASCII_CODE_TERMINATOR
+text_space				db	VARIABLE_ASCII_CODE_ENTER, VARIABLE_ASCII_CODE_NEWLINE, VARIABLE_ASCII_CODE_NEWLINE, VARIABLE_ASCII_CODE_TERMINATOR
