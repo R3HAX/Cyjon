@@ -114,12 +114,12 @@ interrupt_descriptor_table:
 ; wszystkie rejestry zachowane
 itd_cpu_exception:
 	push	r15
-	push	r14
-	push	r13
-	push	r12
 	push	r11
+	push	r14
 	push	r10
+	push	r13
 	push	r9
+	push	r12
 	push	r8
 	push	rdx
 	push	rbp
