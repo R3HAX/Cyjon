@@ -299,12 +299,45 @@ irq64_screen:
 	jmp	irq64.end
 
 .screen_cursor_set_xy:
+	; wyłącz kursor
+	call	cyjon_screen_cursor_lock
+
+	call	screen_cursor_set_xy
+
+	; włącz kursor
+	call	cyjon_screen_cursor_unlock
+
+	; koniec obsługi procedury
+	jmp	irq64.end
+
+.screen_information:
+	; zwróć informacje o rozmiarze ekranu w znakach
+	mov	ebx,	dword [variable_video_mode_chars_y]
+	shl	rbx,	32
+	or	rbx,	qword [variable_video_mode_chars_x]
+
+	; koniec obsługi procedury
+	jmp	irq64.end
+
+.screen_cursor_hide:
+	call	cyjon_screen_cursor_lock
+
+	; koniec obsługi procedury
+	jmp	irq64.end
+
+.screen_cursor_show:
+	cmp	qword [variable_screen_cursor_semaphore], VARIABLE_EMPTY
+	je	irq64.end
+
+	call	cyjon_screen_cursor_unlock
+
+	; koniec obsługi procedury
+	jmp	irq64.end
+
+screen_cursor_set_xy:
 	; zachowaj oryginalne rejestry
 	push	rbx
 	push	rdi
-
-	; wyłącz kursor
-	call	cyjon_screen_cursor_lock
 
 	; sprawdź czy kursor będzie znajdował się poza ekranem
 	cmp	ebx,	dword [variable_video_mode_chars_x]
@@ -337,39 +370,13 @@ irq64_screen:
 	; zapisz
 	mov	qword [variable_video_mode_cursor_indicator],	rdi
 
-	; włącz kursor
-	call	cyjon_screen_cursor_unlock
-
 	; przywróć oryginalne rejestry
 	pop	rdi
 	pop	rbx
 
-	; koniec obsługi procedury
-	jmp	irq64.end
+	; powrót z procedury
+	ret
 
-.screen_information:
-	; zwróć informacje o rozmiarze ekranu w znakach
-	mov	ebx,	dword [variable_video_mode_chars_y]
-	shl	rbx,	32
-	or	rbx,	qword [variable_video_mode_chars_x]
-
-	; koniec obsługi procedury
-	jmp	irq64.end
-
-.screen_cursor_hide:
-	call	cyjon_screen_cursor_lock
-
-	; koniec obsługi procedury
-	jmp	irq64.end
-
-.screen_cursor_show:
-	cmp	qword [variable_screen_cursor_semaphore], VARIABLE_EMPTY
-	je	irq64.end
-
-	call	cyjon_screen_cursor_unlock
-
-	; koniec obsługi procedury
-	jmp	irq64.end
 ;===============================================================================
 irq64_keyboard:
 	; sprawdź czy pobrać znak z bufora klawiatury
