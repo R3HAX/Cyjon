@@ -14,21 +14,21 @@
 ; 64 Bitowy kod programu
 [BITS 64]
 
-variable_video_mode_memory_address		dq	0x00000000C0000000	; wartość standardowa
-variable_video_mode_memory_size			dq	0x0000000000000000
-variable_video_mode_x_resolution		dq	0x0000000000000000
-variable_video_mode_x_resolution_in_bytes	dq	0x0000000000000000
-variable_video_mode_y_resolution		dq	0x0000000000000000
-variable_video_mode_bpp				dq	0x0000000000000000
-variable_video_mode_pixels_count		dq	0x0000000000000000
-variable_video_mode_pixels_per_line		dq	0x0000000000000000
-variable_video_mode_chars_x			dq	0x0000000000000000
-variable_video_mode_chars_y			dq	0x0000000000000000
-variable_video_mode_cursor_indicator		dq	0x0000000000000000	; określa wyliczoną pozycję wirtualnego kursora w przestrzeni pamięci ekranu na podstawie X,Y
-variable_video_mode_char_line_in_bytes		dq	0x0000000000000000
+variable_video_mode_memory_address		dq	VARIABLE_EMPTY
+variable_video_mode_memory_size			dq	VARIABLE_EMPTY
+variable_video_mode_x_resolution		dq	VARIABLE_EMPTY
+variable_video_mode_x_resolution_in_bytes	dq	VARIABLE_EMPTY
+variable_video_mode_y_resolution		dq	VARIABLE_EMPTY
+variable_video_mode_bpp				dq	VARIABLE_EMPTY
+variable_video_mode_pixels_count		dq	VARIABLE_EMPTY
+variable_video_mode_pixels_per_line		dq	VARIABLE_EMPTY
+variable_video_mode_chars_x			dq	VARIABLE_EMPTY
+variable_video_mode_chars_y			dq	VARIABLE_EMPTY
+variable_video_mode_cursor_indicator		dq	VARIABLE_EMPTY	; określa wyliczoną pozycję wirtualnego kursora w przestrzeni pamięci ekranu na podstawie X,Y
+variable_video_mode_char_line_in_bytes		dq	VARIABLE_EMPTY
 
-variable_screen_cursor_xy			dq	0x0000000000000000
-variable_screen_cursor_semaphore		dq	0x0000000000000000	; flaga, 0 == kursor włączony
+variable_screen_cursor_xy			dq	VARIABLE_EMPTY
+variable_screen_cursor_semaphore		dq	VARIABLE_EMPTY	; flaga, 0 == kursor włączony
 										; jeśli inaczej oznacza poziom blokady kursora programowego
 
 ;=======================================================================
@@ -79,7 +79,7 @@ screen_initialization:
 	div	qword [variable_video_mode_bpp]
 
 	; sprawdź czy wartość różna od zera
-	cmp	rax,	0x0000000000000000
+	cmp	rax,	VARIABLE_EMPTY
 	ja	.ok
 
 	; ustaw wartość standardową
@@ -208,7 +208,7 @@ cyjon_screen_clear:
 	call	cyjon_screen_cursor_lock
 
 	; wyczyść przestrzeń pamięci ekranu karty graficznej
-	mov	eax,	BACKGROUND_COLOR_DEFAULT
+	mov	eax,	VARIABLE_COLOR_BACKGROUND_DEFAULT
 	; rozmiar przestrzeni pamięci w pikselach
 	mov	rcx,	qword [variable_video_mode_pixels_count]
 	; adres początku przestrzeni pamięci ekranu
@@ -269,7 +269,7 @@ cyjon_screen_clear:
 ; wszystkie rejestry zachowane
 cyjon_screen_cursor_lock:
 	; sprawdź czy kursor programowy jest wyłączony
-	cmp	qword [variable_screen_cursor_semaphore],	0x0000000000000000
+	cmp	qword [variable_screen_cursor_semaphore],	VARIABLE_EMPTY
 	ja	.blocked	; tak wyłączony
 
 	; zablokuj kursor programowy
@@ -301,7 +301,7 @@ cyjon_screen_cursor_unlock:
 	dec	qword [variable_screen_cursor_semaphore]
 
 	; sprawdź czy kursor został odblokowany
-	cmp	qword [variable_screen_cursor_semaphore],	0x0000000000000000
+	cmp	qword [variable_screen_cursor_semaphore],	VARIABLE_EMPTY
 	ja	.no
 
 	; włącz kursor programowy
@@ -474,15 +474,15 @@ cyjon_screen_print_char:
 	call	cyjon_screen_cursor_lock
 
 	; sprawdź czy klawisz BACKSPACE
-	cmp	al,	ASCII_CODE_BACKSPACE
+	cmp	al,	VARIABLE_ASCII_CODE_BACKSPACE
 	je	.backspace
 
 	; sprawdź czy klawisz ENTER
-	cmp	al,	ASCII_CODE_ENTER
+	cmp	al,	VARIABLE_ASCII_CODE_ENTER
 	je	.enter
 
 	; sprawdź czy klawisz NOWA_LINIA
-	cmp	al,	ASCII_CODE_NEWLINE
+	cmp	al,	VARIABLE_ASCII_CODE_NEWLINE
 	je	.new_line
 
 	; ustaw wskaźnik na matryce znaku do wyświetlenia
@@ -583,11 +583,11 @@ cyjon_screen_print_char:
 
 .backspace:
 	; sprawdź czy kursor znajduje się na początku linii
-	cmp	dword [variable_screen_cursor_xy],	0x00
+	cmp	dword [variable_screen_cursor_xy],	VARIABLE_EMPTY
 	ja	.no
 
 	; sprawdź czy można się cofnąć o jedną linię wcześniej
-	cmp	dword [variable_screen_cursor_xy + 0x04],	0x00
+	cmp	dword [variable_screen_cursor_xy + 0x04],	VARIABLE_EMPTY
 	je	.end	; kursora nie można ustawić poza ekranem
 
 	; przesuń kursor o jedną linię wyżej
@@ -632,7 +632,7 @@ cyjon_screen_print_char:
 	mov	qword [rsp],	rdi
 
 	; przesuń kursor programowy na początek linii
-	mov	dword [variable_screen_cursor_xy],	0x00000000
+	mov	dword [variable_screen_cursor_xy],	VARIABLE_EMPTY
 
 	; koniec
 	jmp	.end
@@ -791,7 +791,7 @@ cyjon_screen_print_string:
 	mov	rdi,	qword [variable_video_mode_cursor_indicator]
 
 	; sprawdź czy wskazano ilość znaków do wyświetlenia
-	cmp	rcx,	0x0000000000000000
+	cmp	rcx,	VARIABLE_EMPTY
 	je	.end	; jeśli nie, zakończ działanie
 
 	; wyczyść akumulator
@@ -802,7 +802,7 @@ cyjon_screen_print_string:
 	lodsb	; załaduj do rejestru AL Bajt pod adresem w wskaźniku RSI, zwiększ wskaźnik RSI o jeden
 
 	; sprawdź czy koniec ciągu
-	cmp	al,	ASCII_CODE_TERMINATOR
+	cmp	al,	VARIABLE_ASCII_CODE_TERMINATOR
 	je	.end	; jeśli tak, koniec
 
 	; wyświetl znak na ekranie
@@ -850,7 +850,7 @@ cyjon_screen_cursor_check_position:
 	; przesuń kursor w do nowej linii
 	inc	qword [variable_screen_cursor_xy + 0x04]
 	; przesuń kursor na początek nowej linii
-	mov	dword [variable_screen_cursor_xy],	0x00000000
+	mov	dword [variable_screen_cursor_xy],	VARIABLE_EMPTY
 
 	; oblicz nową pozycję kursora w przestrzeni pamięci ekranu
 	call	cyjon_screen_cursor_calculate_indicator
@@ -1012,7 +1012,7 @@ cyjon_screen_print_number:
 	xor	rdx,	rdx
 
 	; sprawdź czy przeliczać dalej
-	cmp	rax,	0x0000000000000000
+	cmp	rax,	VARIABLE_EMPTY
 	ja	.loop	; jeśli tak, powtórz działanie
 
 	; załaduj wskaźnik pozycji kursora
@@ -1076,7 +1076,7 @@ cyjon_screen_kernel_panic:
 	; wyświetl informacje o niepowodzeniu
 	mov	ebx,	0x00ff2727	; kolor czerwony
 	mov	rcx,	-1	; wyświetl cały ciąg tekstu
-	mov	edx,	BACKGROUND_COLOR_DEFAULT
+	mov	edx,	VARIABLE_COLOR_BACKGROUND_DEFAULT
 
 	; wyświetl informacje
 	call	cyjon_screen_print_string
