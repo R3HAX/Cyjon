@@ -980,16 +980,18 @@ cyjon_screen_print_number:
 	push	rdi
 	push	rbp
 	push	r8
+	push	r9
+	push	r10
 
 	; wyłącz kursor programowy lub zwiększ poziom blokady
 	call	cyjon_screen_cursor_lock
 
 	; sprawdź czy podstawa liczby dozwolona
-	cmp	rcx,	2
+	cmp	cl,	2
 	jb	.end	; brak obsługi
 
 	; sprawdź czy podstawa liczby dozwolona
-	cmp	rcx,	36
+	cmp	cl,	36
 	ja	.end	; brak obsługi
 
 	; zapamiętaj kolor tła
@@ -998,12 +1000,24 @@ cyjon_screen_print_number:
 	; wyczyść starszą część / resztę z dzielenia
 	xor	rdx,	rdx
 
+	; zapamiętaj flagi
+	mov	r9,	rcx
+
+	; wyczyść flagi
+	xor	ch,	ch
+
 	; utwórz stos zmiennych lokalnych
 	mov	rbp,	rsp
+
+	; zreseruj licznik cyfr
+	xor	r10,	r10
 
 .loop:
 	; oblicz resztę z dzielenia
 	div	rcx
+
+	; licznik cyfr
+	inc	r10
 
 	; zapisz resztę z dzielenia do zmiennych lokalnych
 	push	rdx
@@ -1015,8 +1029,42 @@ cyjon_screen_print_number:
 	cmp	rax,	VARIABLE_EMPTY
 	ja	.loop	; jeśli tak, powtórz działanie
 
+	; przywróć kolor tła liczby
+	mov	rdx,	r8
+
 	; załaduj wskaźnik pozycji kursora
 	mov	rdi,	qword [variable_video_mode_cursor_indicator]
+
+	; przywróć flagi
+	mov	rcx,	r9
+
+	; flagi dostępne?
+	cmp	ch,	VARIABLE_EMPTY
+	je	.print
+
+	; wyświetl uzupełnienie do liczby 64 bitowej
+	cmp	ch,	0x01
+	jne	.no_64bit
+
+	; przywróć tło
+	mov	rdx,	r8
+
+	; cyfra
+	mov	rcx,	1
+	; zero
+	mov	rax,	"0"
+
+.bit64:
+	cmp	r10,	16
+	jae	.print
+
+	call	cyjon_screen_print_char
+
+	inc	r10
+
+	jmp	.bit64
+
+.no_64bit:
 
 .print:
 	; pobierz z zmiennych lokalnych cyfrę
@@ -1024,9 +1072,6 @@ cyjon_screen_print_number:
 
 	; przemianuj cyfrę na kod ASCII
 	add	rax,	0x30
-
-	; przywróć kolor tła liczby
-	mov	rdx,	r8
 
 	; sprawdź czy system liczbowy powyżej podstawy 10
 	cmp	al,	0x3A
@@ -1054,6 +1099,8 @@ cyjon_screen_print_number:
 	call	cyjon_screen_cursor_unlock
 
 	; przywróć oryginalne rejestry
+	pop	r10
+	pop	r9
 	pop	r8
 	pop	rbp
 	pop	rdi
