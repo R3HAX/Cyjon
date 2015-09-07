@@ -44,11 +44,11 @@ cyjon_pci_read:
 	shl	eax,	2	; wyłącz bity 1..0
 
 	; poproś o informacje w danym rejestrze
-	mov	dx,	PCI_CONFIG_ADDRESS
+	mov	dx,	VARIABLE_PCI_CONFIG_ADDRESS
 	out	dx,	eax	; wyślij polecenie
 
 	; odbierz odpowiedź
-	mov	dx,	PCI_CONFIG_DATA
+	mov	dx,	VARIABLE_PCI_CONFIG_DATA
 	in	eax,	dx
 
 	; przywróć oryginalne rejestry
@@ -91,14 +91,14 @@ cyjon_pci_write:
 	shl	eax,	2	; wyłącz bity 1..0
 
 	; poproś o informacje w danym rejestrze
-	mov	dx,	PCI_CONFIG_ADDRESS
+	mov	dx,	VARIABLE_PCI_CONFIG_ADDRESS
 	out	dx,	eax	; wyślij polecenie
 
 	; przywróc wartość do wysłania
 	pop	rax
 
 	; odbierz odpowiedź
-	mov	dx,	PCI_CONFIG_DATA
+	mov	dx,	VARIABLE_PCI_CONFIG_DATA
 	out	dx,	eax
 
 	; przywróć oryginalne rejestry
