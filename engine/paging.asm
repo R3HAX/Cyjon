@@ -14,7 +14,7 @@
 ; 64 Bitowy kod programu
 [BITS 64]
 
-variable_page_semaphore_allocate	db	0x00
+variable_page_semaphore_allocate	db	VARIABLE_EMPTY
 
 ;=======================================================================
 ; pobiera adres fizyczny wolnej strony do wykorzystania
@@ -34,7 +34,7 @@ cyjon_page_allocate:
 	xor	rdi,	rdi
 
 	; sprawdź czy istnieją dostępne strony
-	cmp	qword [variable_binary_memory_map_free_pages],	0x0000000000000000
+	cmp	qword [variable_binary_memory_map_free_pages],	VARIABLE_EMPTY
 	je	.end	; brak, zakończ procedurę
 
 	; istnieją dostępne strony, zmniejsz ich ilość o jedną
@@ -68,7 +68,7 @@ cyjon_page_allocate:
 
 .end:
 	; zwolnij dostęp do binarnej mapy pamięci
-	mov	byte [variable_page_semaphore_allocate],	0x00
+	mov	byte [variable_page_semaphore_allocate],	VARIABLE_EMPTY
 
 	; przywróć oryginalne rejestry
 	pop	rsi
@@ -148,7 +148,7 @@ cyjon_page_prepare_pml_variables:
 	add	r11,	rax
 
 	; sprawdź czy rekord PML4 zawieta adres tablicy PML3
-	cmp	qword [r11],	0x0000000000000000
+	cmp	qword [r11],	VARIABLE_EMPTY
 	je	.no_pml3
 
 	; pobierz adres tablicy PML3 z rekordu tablicy PML4
@@ -201,7 +201,7 @@ cyjon_page_prepare_pml_variables:
 	add	r10,	rax
 
 	; sprawdź czy istnieje tablica PML2
-	cmp	qword [r10],	0x0000000000000000
+	cmp	qword [r10],	VARIABLE_EMPTY
 	je	.no_pml2
 
 	; pobierz adres tablicy PML2 z rekordu tablicy PML3
@@ -254,7 +254,7 @@ cyjon_page_prepare_pml_variables:
 	add	r9,	rax
 
 	; sprawdź czy istnieje tablica PML1
-	cmp	qword [r9],	0x0000000000000000
+	cmp	qword [r9],	VARIABLE_EMPTY
 	je	.no_pml1
 
 	; pobierz adres tablicy PML1 z rekordu tablicy PML2
@@ -355,7 +355,7 @@ cyjon_page_map_logical_area:
 
 .ok:
 	; sprawdź czy rekord jest już zarezerwowany
-	cmp	qword [rdi],	0x0000000000000000
+	cmp	qword [rdi],	VARIABLE_EMPTY
 	je	.continue
 
 	; przesuń wskaźnik na następy rekord
@@ -440,7 +440,7 @@ cyjon_page_new_pml1:
 	mov	rdi,	qword [r9]
 
 	; sprawdź czy jest już opisany
-	cmp	rdi,	0
+	cmp	rdi,	VARIABLE_EMPTY
 	je	.continue_pml2	; jesli nie
 
 	; usuń właściwości z adresu tablicy pml1
@@ -495,7 +495,7 @@ cyjon_page_new_pml1:
 	mov	rdi,	qword [r10]
 
 	; sprawdź czy jest już opisany
-	cmp	rdi,	0
+	cmp	rdi,	VARIABLE_EMPTY
 	je	.continue_pml3	; jesli nie
 
 	; usuń właściwości z adresu tablicy pml2
@@ -547,7 +547,7 @@ cyjon_page_new_pml1:
 	mov	rdi,	qword [r11]
 
 	; sprawdź czy jest już opisany
-	cmp	rdi,	0
+	cmp	rdi,	VARIABLE_EMPTY
 	je	.continue_pml4	; jesli nie
 
 	; usuń właściwości z adresu tablicy pml3
@@ -634,7 +634,7 @@ cyjon_page_release:
 
 .wait:
 	; czekaj na zwolnienie binarnej mapy pamięci
-	cmp	byte [variable_page_semaphore_allocate],	0x00
+	cmp	byte [variable_page_semaphore_allocate],	VARIABLE_EMPTY
 	jne	.wait
 
 	; zarezerwuj binarną mapę pamięci
@@ -652,7 +652,7 @@ cyjon_page_release:
 	inc	qword [variable_binary_memory_map_free_pages]
 
 	; zwolnij binarną mapę pamięci
-	mov	byte [variable_page_semaphore_allocate],	0x00
+	mov	byte [variable_page_semaphore_allocate],	VARIABLE_EMPTY
 
 	; przywróć oryginalne rejestry
 	pop	rdi
@@ -685,7 +685,7 @@ cyjon_page_find_free_memory:
 	push	r15
 
 	; początek przestrzeni przeszukiwanej
-	mov	rax,	FREE_LOGICAL_MEMORY_ADDRESS
+	mov	rax,	VARIABLE_MEMORY_FREE_LOGICAL_ADDRESS
 
 	; właściwości rejestrowanej przestrzeni
 	mov	bx,	0x07	; flagi Administrator, Odczyt/Zapis, Dostępna
@@ -727,7 +727,7 @@ cyjon_page_find_free_memory:
 	add	rax,	0x1000
 
 	; sprawdź czy przestrzeń była nieopisana
-	cmp	qword [rdi - 0x08],	0
+	cmp	qword [rdi - 0x08],	VARIABLE_EMPTY
 	je	.next
 
 	; przywróć oryginalny rozmiar poszukiwanej przestrzeni
@@ -769,7 +769,7 @@ cyjon_page_find_free_memory:
 
 .continue:
 	; sprawdź czy znaleziono przestrzeń wolną
-	cmp	rax,	0x0000000000000000
+	cmp	rax,	VARIABLE_EMPTY
 	je	.no
 
 	; zachowaj adres
@@ -822,7 +822,7 @@ cyjon_page_release_area:
 	push	rdi
 
 	; sprawdź czy rekord jest pusty
-	cmp	qword [rdi],	0x00
+	cmp	qword [rdi],	VARIABLE_EMPTY
 	je	.empty	; jeśli nie, kontynuuj
 
 	; pobierz adres tablicy następnego poziomu tablicy PML
@@ -860,7 +860,7 @@ cyjon_page_release_area:
 
 .continue:
 	; sprawdź czy rekord jest pusty
-	cmp	qword [rdi],	0x00
+	cmp	qword [rdi],	VARIABLE_EMPTY
 	jne	.after	; jeśli nie, zwolnij przestrzeń opisywaną przez rekord
 
 .next:
