@@ -30,7 +30,7 @@ programmable_interval_timer:
 
 	mov	rax,	1193182	; częstotliwość kryształu 1193182 Hz
 	xor	rdx,	rdx	; czyścimy starszą część / resztę
-	mov	rcx,	PIT_CLOCK	; częstotliwość w Hz
+	mov	rcx,	VARIABLE_PIT_CLOCK_HZ	; częstotliwość w Hz
 	div	rcx	; rdx:rax / rcx
 
 	; zachowaj wynik
