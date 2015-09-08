@@ -70,8 +70,11 @@ irq64_process:
 	ja	.process_kill	; czekaj
 
 	; zatrzymaj aktualnie uruchomiony proces
-	mov	rax,	qword [variable_process_table_record_active]
-	mov	qword [variable_process_close],	rax
+	mov	rdi,	qword [variable_process_serpentine_record_active]
+	mov	di,	word [rdi + STATIC_PROCESS_RECORD.FLAGS]
+	xor	cx,	cx
+	; ustaw flagę "gotowy do zamknięcia"
+	btr	di,	cx
 
 	; zatrzymaj dalsze wykonywanie kodu procesu
 	jmp	$
@@ -127,26 +130,69 @@ irq64_process:
 
 .process_check:
 	; zachowaj oryginalne rejestry
+	push	rax
 	push	rcx
 	push	rdi
 
 	; pobierz adres tablicy procesów
-	mov	rdi,	qword [variable_process_table_address]
+	mov	rdi,	qword [variable_process_serpentine_start_address]
 
-	; zamień numer PID na przesunięcie
-	shl	rcx,	4
+	; zapamiętaj
+	push	rdi
 
-	; sprawdź czy proces jest uruchomiony
-	cmp	qword [rdi + rcx],	VARIABLE_EMPTY
-	jne	.process_check_exists
+	; przeszukane rekordy
+	xor	rcx,	rcx
 
-	; brak procesu
-	mov	qword [rsp + 0x08],	VARIABLE_EMPTY
+	; pomiń nagłówek
+	add	rdi,	0x08
+
+.process_check_loop:
+	; sprawdź numer PID procesu w rekordzie
+	cmp	qword [rdi + STATIC_PROCESS_RECORD.PID],	rcx
+	jne	.process_check_continue
+
+	; sprawdź czy proces jest aktywny
+	mov	al,	byte [rdi + STATIC_PROCESS_RECORD.FLAGS]
+	bt	ax,	0
+	jc	.process_check_not_found
+
+	; proces istnieje i jest aktywny
+	jmp	.process_check_exists
+
+.process_check_continue:
+	; następny rekord
+	add	rdi,	STATIC_PROCESS_RECORD
+
+	; przeszukano rekord
+	inc	rcx
+
+	; koniec części serpentyny?
+	cmp	rcx,	STATIC_PROCESS_RECORDS_PER_PAGE
+	jb	.process_check_loop
+
+	; przejdź do następnej części
+	mov	rdi,	qword [rdi]
+
+	; wykonaliśmy pętlę?
+	cmp	rdi,	qword [rsp]
+	je	.process_check_not_found
+
+	; pomiń nagłówek
+	add	rdi,	0x08
+
+	; kontynuuj z nastepnymi rekordami
+	jmp	.process_check_loop
+
+.process_check_not_found:
+	; zwróć brak uruchomionego procesu
+	mov	qword [rsp + 0x10],	VARIABLE_EMPTY
 
 .process_check_exists:
 	; przywróć oryginalne rejestry
 	pop	rdi
+	pop	rdi
 	pop	rcx
+	pop	rax
 
 	; koniec obsługi procedury
 	jmp	irq64.end
