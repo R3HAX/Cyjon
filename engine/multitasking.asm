@@ -112,8 +112,8 @@ multitasking:
 	; aktualizuj ilość przechowywanych rekordów w serpentynie
 	inc	qword [variable_process_serpentine_record_count]
 
-	; aktualizuj ilość procesów obsłużonych (czyli jądro systemu w tym momencie)
-	inc	qword [variable_process_serpentine_record_count_handled]
+	; ustal następny dostępny numer procesu
+	inc	qword [variable_process_pid_next]
 
 	; przywróć oryginalne rejestry
 	pop	rdi
@@ -175,15 +175,18 @@ irq32:
 	; zapisz aktualny wskaźnik stosu kontekstu wstrzymanego procesu
 	mov	qword [rdi + STATIC_PROCESS_RECORD.RSP],	rsp
 
+	; ilość rekordów przeszukanych
+	mov	rcx,	qword [variable_process_serpentine_record_count_handled]
+
 .next:
 	; zarejestruj obsłużony rekord w danej części serpentyny
-	inc	qword [variable_process_serpentine_record_count_handled]
+	inc	rcx
 
 	; przesuń na następny rekord
 	add	rdi,	STATIC_PROCESS_RECORD.SIZE
 
-	cmp	qword [variable_process_serpentine_record_count_handled],	STATIC_PROCESS_RECORDS_PER_PAGE
-	jbe	.in_page
+	cmp	rcx,	STATIC_PROCESS_RECORDS_PER_PAGE
+	jb	.in_page
 
 	; zładuj adres kolejnej części serpentyny
 	mov	rdi,	qword [rdi]
@@ -191,16 +194,19 @@ irq32:
 	add	rdi,	0x08
 
 	; zresetuj licznik rekordów na część serpentyny
-	mov	qword [variable_process_serpentine_record_count_handled],	VARIABLE_EMPTY
+	xor	rcx,	rcx
 
 .in_page:
 	; flaga ACTIVE
-	xor	cx,	cx
+	xor	bx,	bx
 	; sprawdź czy rekord jest aktywny
-	bt	word [rdi + STATIC_PROCESS_RECORD.FLAGS],	cx
+	bt	word [rdi + STATIC_PROCESS_RECORD.FLAGS],	bx
 	jnc	.next	; jeśli nie
 
 .found:
+	; zapamięraj ilość obsłużonych rekordów
+	mov	qword [variable_process_serpentine_record_count_handled],	rcx
+
 	; zapamiętaj adres aktualnie przetwarzanego rekordu
 	mov	qword [variable_process_serpentine_record_active],	rdi
 
