@@ -120,7 +120,7 @@ cyjon_virtual_file_system_save_file:
 	jbe	.last_block
 
 	; skopiuj część pliku do bloku danych
-	mov	rcx,	4096 - 0x08
+	mov	rcx,	VARIABLE_MEMORY_PAGE_SIZE - 0x08
 	; oblicz pozostałą część pliku do skopiowania
 	sub	rdx,	rcx
 	; koryguj o rozmiar
@@ -153,7 +153,7 @@ cyjon_virtual_file_system_save_file:
 	pop	rdi
 
 	; załaduj numer następnego bloku do modyfikacji
-	mov	rdi,	qword [rdi + 4096 - 0x08]
+	mov	rdi,	qword [rdi + VARIABLE_MEMORY_PAGE_SIZE - 0x08]
 
 	; sprawdź czy koniec danych pliku
 	cmp	rdx,	VARIABLE_EMPTY
@@ -170,7 +170,7 @@ cyjon_virtual_file_system_save_file:
 
 	; uzupełnij o pustą przestrzeń
 	xor	rax,	rax
-	mov	rcx,	4096
+	mov	rcx,	VARIABLE_MEMORY_PAGE_SIZE
 	sub	rcx,	rdx
 	; wyczyść
 	rep	stosb
