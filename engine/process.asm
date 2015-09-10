@@ -63,6 +63,16 @@ cyjon_process_init:
 	; pobierz wskaźnik supła do uruchomienia
 	mov	rdi,	qword [variable_process_new]
 
+	; ustaw wskaźnik nazwy pliku
+	mov	rsi,	rdi
+	add	rsi,	0x18
+	mov	qword [rsp + 0x10],	rsi
+
+	; ustaw rozmiar nazwy procesu
+	mov	rcx,	rdi
+	mov	rcx,	qword [rcx + 0x10]
+	mov	qword [rsp + 0x20],	rcx
+	
 .leave:
 	; pobierz rozmiar pliku w Bajtach
 	mov	rcx,	qword [rdi + 0x08]
@@ -207,11 +217,9 @@ cyjon_process_init:
 	bt	word [rdi + STATIC_PROCESS_RECORD.FLAGS],	bx
 	jc	.next	; jeśli tak
 
-	; flaga
-	inc	bx
-	; sprawdź czy rekord jest dostepny do wykorzystania
-	bt	word [rdi + STATIC_PROCESS_RECORD.FLAGS],	bx
-	jc	.loop
+	; sprawdź czy rekord jest niedostepny
+	cmp	qword [rdi + STATIC_PROCESS_RECORD.FLAGS],	VARIABLE_EMPTY
+	ja	.loop	; jeśli tak
 
 .found:
 	; pobierz dostępny identyfikator procesu
@@ -223,69 +231,79 @@ cyjon_process_init:
 	; szukaj nastepnego wolnego
 	inc	rax
 
+	push	rax
+
 	; sprawdź czy numer procesu jest dozwolony (modulo ROZMIAR_STRONY != 0)
 	mov	rcx,	VARIABLE_MEMORY_PAGE_SIZE
 	xor	rdx,	rdx
 	div	rcx
 
 	cmp	rdx,	VARIABLE_EMPTY
-	je	.pid
+	jne	.pid
 
 	; następny
-	inc	rax
+	inc	qword [rsp]
 
 .pid:
 	; zapisz
-	mov	qword [variable_process_pid_next],	rax
+	pop	qword [variable_process_pid_next]
 
 	; przywróć
 	pop	rax
 
-	; zapamiętaj identyfikator procesu
-	xchg	rax,	qword [rsp]
-
-	; zapisz adres tablicy PML4 procesu do rekordu
+	; zapisz PID procesu do rekordu
 	stosq
-	
+
+	; zapisz CR3 procesu
+	xchg	rax,	qword [rsp]
+	stosq
+
 	; zapisz adres szczytu stosu kontekstu procesu do rekordu
 	mov	rax,	VARIABLE_MEMORY_HIGH_VIRTUAL_ADDRESS - (21 * 0x08)
 	stosq
 
-	; zachowaj	
-	push	rdi
+	; ustaw flagę rekordu na aktywny
+	mov	rax,	0x01
+	stosq
+
+	; ustaw wskaźnik do nazwy pliku
+	mov	rsi,	qword [rsp + 0x18]
+
+	; rozmiar nazwy pliku
+	mov	rcx,	qword [rsp + 0x28]
+
+	; załaduj nazwe procesu do rekordu
+	rep	movsb
 
 	; zwiększ ilość rekordów/procesów przechowywanych w tablicy
 	inc	qword [variable_process_serpentine_record_count]
-;
-;	; odblokuj tablice procesów dla planisty
-;	mov	byte [variable_multitasking_semaphore_process_table],	VARIABLE_EMPTY
-;
-;	; wysprzątaj tablice PML4 jądra z zainicjalizowanego procesu
-;	xor	rax,	rax	; wyczyść rekordy
-;	mov	rcx,	0x100	; 256 rekordów (256:511)
-;	mov	rdi,	cr3	; adres tablicy PML4 jądra systemu
-;	add	rdi,	256 * 0x08	; przesuń wskaźnik na 256 rekord tablicy PML4 jądra systemu
-;	rep	stosq	; wyczyść
-;
-;	; zwróć informacje o numerze identyfikatora uruchomionego procesu
-;	pop	qword [variable_process_pid]
-;
-;	; zwolnij możliwość uruchomienia nowego procesu
-;	mov	qword [variable_process_new],	VARIABLE_EMPTY
-;
+
+	; odblokuj tablice procesów dla planisty
+	mov	byte [variable_process_serpentine_blocked],	VARIABLE_EMPTY
+
+	; wysprzątaj tablice PML4 jądra z zainicjalizowanego procesu
+	xor	rax,	rax	; wyczyść rekordy
+	mov	rcx,	0x100	; 256 rekordów (256:511)
+	mov	rdi,	cr3	; adres tablicy PML4 jądra systemu
+	add	rdi,	256 * 0x08	; przesuń wskaźnik na 256 rekord tablicy PML4 jądra systemu
+	rep	stosq	; wyczyść
+
+	; zwróć informacje o numerze identyfikatora uruchomionego procesu
+	pop	qword [variable_process_pid]
+
+	; zwolnij możliwość uruchomienia nowego procesu
+	mov	qword [variable_process_new],	VARIABLE_EMPTY
+
 .end:
-;	; przywróć oryginalne rejestry
-;	pop	r11
-;	pop	rdi
-;	pop	rsi
-;	pop	rdx
-;	pop	rcx
-;	pop	rbx
-;
-;	; powrót z procedury
+	; przywróć oryginalne rejestry
+	pop	r11
+	pop	rdi
+	pop	rsi
+	pop	rdx
+	pop	rcx
+	pop	rbx
 
-	jmp	$
-
+	; powrót z procedury
 	ret
 
 cyjon_process_close:
