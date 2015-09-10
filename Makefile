@@ -11,7 +11,7 @@ all:
 	$(ASM) $(SOFTWARE)/help.asm -o help.bin
 	$(ASM) $(SOFTWARE)/uptime.asm -o uptime.bin
 	$(ASM) $(SOFTWARE)/moko.asm -o moko.bin
-	$(ASM) $(SOFTWARE)/debug.asm -o debug.bin
+	$(ASM) $(SOFTWARE)/ps.asm -o ps.bin
 
 	$(ASM) kernel.asm -o kernel.bin
 
@@ -19,4 +19,4 @@ all:
 	$(ASM) $(BOOTLOADER)/stage1.asm -o build/disk.raw
 
 clean:
-	rm -f stage2.bin init.bin shell.bin help.bin login.bin uptime.bin moko.bin kernel.bin debug.bin
+	rm -f stage2.bin init.bin shell.bin help.bin login.bin uptime.bin moko.bin kernel.bin ps.bin
