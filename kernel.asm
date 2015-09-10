@@ -84,8 +84,8 @@ start:
 	loop	.loop
 
 	; uruchom proces główny INIT
-	mov	rcx,	qword [files_table]	; ilość znaków nazwie pliku
-	mov	rsi,	files_table + 0x20	; wskaźnik do ciągu znaków reprezentujący nazwe pliku
+	mov	rcx,	qword [file_load_init]	; ilość znaków nazwie pliku
+	mov	rsi,	file_load_init_pointer	; wskaźnik do ciągu znaków reprezentujący nazwe pliku
 	mov	r8,	variable_partition_specification_system	; z partycji systemowej
 	call	cyjon_process_init	; wykonaj
 
@@ -117,6 +117,9 @@ start:
 %include	"library/compare_string.asm"
 
 %include	VARIABLE_FONT_MATRIX_DEFAULT
+
+file_load_init		dq	4
+file_load_init_pointer	dq	"init"
 
 ; dołączone oprogramowanie wyrównaj do pełnego adresu strony, będzie można zwolnić przestrzeń dla innych
 align	0x1000
@@ -232,11 +235,11 @@ files_table:
 	dq	file_moko_end
 	db	'moko'
 
-	dq	5
-	dq	file_debug_end - file_debug
-	dq	file_debug
-	dq	file_debug_end
-	db	'debug'
+	dq	2
+	dq	file_ps_end - file_ps
+	dq	file_ps
+	dq	file_ps_end
+	db	'ps'
 
 	; koniec tablicy plików
 	dq	VARIABLE_EMPTY
@@ -259,8 +262,8 @@ file_uptime_end:
 file_moko:		incbin	'moko.bin'
 file_moko_end:
 
-file_debug:		incbin	'debug.bin'
-file_debug_end:
+file_ps:		incbin	'ps.bin'
+file_ps_end:
 
 text_virtial_file_system	db	" Virtual file system initialized.", VARIABLE_ASCII_CODE_ENTER, VARIABLE_ASCII_CODE_NEWLINE, VARIABLE_ASCII_CODE_TERMINATOR
 
