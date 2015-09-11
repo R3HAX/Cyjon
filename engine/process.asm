@@ -186,40 +186,47 @@ cyjon_process_init:
 	; pomiń nagłówek
 	add	rdi,	0x08
 
-.loop:
 	; flaga
 	xor	bx,	bx
-
-	; licznik rekordów
-	xor	rcx,	rcx
 
 .next:
 	; przesuń na następny rekord
 	add	rdi,	STATIC_PROCESS_RECORD.SIZE
 
-	; rekord zajęty
-	inc	rcx
-
 	; koniec rekordów w części serpentyny?
-	cmp	rcx,	STATIC_PROCESS_RECORDS_PER_PAGE
-	jb	.in_page
+	mov	cx,	di
+	and	cx,	0x0FFF
+	cmp	cx,	0x0FF8
+	jne	.in_page
 
 	; zładuj adres kolejnej części serpentyny
+	mov	rcx,	qword [rdi]
+
+	; koniec serpentyny?
+	cmp	rcx,	qword [variable_process_serpentine_start_address]
+	jne	.not_at_end
+
+	; rozszerz serpentynę
+	mov	rcx,	rdi
+	call	cyjon_page_allocate
+	call	cyjon_page_clear
+	push	rcx
+	mov	rcx,	qword [variable_process_serpentine_start_address]
+	mov	qword [rdi + VARIABLE_MEMORY_PAGE_SIZE - 0x08],	rcx
+	pop	rcx
+	mov	qword [rcx],	rdi
+	mov	rdi,	rcx
+
+.not_at_end:
 	mov	rdi,	qword [rdi]
+
 	; pomiń nagłówek
 	add	rdi,	0x08
 
-	; zresetuj licznik rekordów na część serpentyny
-	xor	rcx,	rcx
-
 .in_page:
-	; sprawdź czy rekord jest aktywny
-	bt	word [rdi + STATIC_PROCESS_RECORD.FLAGS],	bx
-	jc	.next	; jeśli tak
-
 	; sprawdź czy rekord jest niedostepny
 	cmp	qword [rdi + STATIC_PROCESS_RECORD.FLAGS],	VARIABLE_EMPTY
-	ja	.loop	; jeśli tak
+	ja	.next	; jeśli tak
 
 .found:
 	; pobierz dostępny identyfikator procesu
