@@ -11,49 +11,213 @@
 ; Use:
 ; nasm - http://www.nasm.us/
 
-%define	VARIABLE_KERNEL_VERSION		"0.455"
+; kolory, stałe
+%include	'config.asm'
 
-VARIABLE_KERNEL_PHYSICAL_ADDRESS	equ	0x0000000000100000
+; 64 Bitowy kod programu
+[BITS 64]
 
-VARIABLE_MEMORY_PAGE_SIZE		equ	0x1000
-VARIABLE_MEMORY_HIGH_ADDRESS		equ	0xFFFF000000000000
-VARIABLE_MEMORY_HIGH_REAL_ADDRESS	equ	0xFFFF800000000000
-VARIABLE_MEMORY_HIGH_VIRTUAL_ADDRESS	equ	VARIABLE_MEMORY_HIGH_REAL_ADDRESS - VARIABLE_MEMORY_HIGH_ADDRESS
-; adres umowny, jest to przestrzeń gdzie jądro systemu może operować na
-; różnej wielkości fragmentach pamięci logicznej, gdzie pamięć fizyczna
-; nie sięga
-VARIABLE_MEMORY_FREE_LOGICAL_ADDRESS	equ	0x0000400000000000
+; adresowanie względne (skoki, etykiety)
+[DEFAULT REL]
 
-VARIABLE_KERNEL_STACK_ADDRESS		equ	VARIABLE_MEMORY_HIGH_VIRTUAL_ADDRESS - 0x1000
+; adres kodu programu w przestrzeni logicznej
+[ORG VARIABLE_MEMORY_HIGH_REAL_ADDRESS]
 
-VARIABLE_ASCII_CODE_TERMINATOR		equ	0x00
-VARIABLE_ASCII_CODE_ENTER		equ	0x0D
-VARIABLE_ASCII_CODE_NEWLINE		equ	0x0A
-VARIABLE_ASCII_CODE_BACKSPACE		equ	0x08
+start:
+	; procedura pobierz czas systemu
+	mov	ax,	0x0301
+	int	0x40	; wykonaj
 
-VARIABLE_COLOR_DEFAULT			equ	0x00AAAAAA
-VARIABLE_COLOR_WHITE			equ	0x00FFFFFF
-VARIABLE_COLOR_GREEN			equ	0x001CC76A
-VARIABLE_COLOR_BLUE			equ	0x00267BE6
-VARIABLE_COLOR_BLUE_LIGHT		equ	0x00469BFF
-VARIABLE_COLOR_RED			equ	0x00E62626
-VARIABLE_COLOR_GRAY			equ	0x00686868
-VARIABLE_COLOR_ORANGE			equ	0x00FFA500
+	; godzina i data pochodzi z CMOSu, zawsze ustawiam tam czas międzynarodowy GMT
+	; zadaniem systemu jest go modyfikować względem strefy czasu w danym państwie
 
-VARIABLE_COLOR_BACKGROUND_DEFAULT	equ	0x00000000
+	; format:
+	;     _/ dzień tygodnia 1 - niedziela, 7 - sobota
+	;     |  _/ dzień miesiąca
+	;     |  |  _/ miesiąc 1 - styczeń, 12 - grudzień
+	;     |  |  |  _/ rok, ostatnie dwie cyfry
+	;     |  |  |  |  _/ godzina
+	;     |  |  |  |  |  _/ minuta
+	;     |  |  |  |  |  |  _/ sekunda
+	;     |  |  |  |  |  |  |  _/ bit 0 - tryb 24 godzinny, jeśli ustawiony
+	;     |  |  |  |  |  |  |  |
+	; 0x 00 00 00 00 00 00 00 00
 
-%define	VARIABLE_FONT_MATRIX_DEFAULT	"font/sinclair.asm"
+	; wyczyść licznik
+	xor	rcx,	rcx
 
-VARIABLE_PCI_CONFIG_ADDRESS		equ	0x0CF8
-VARIABLE_PCI_CONFIG_DATA		equ	0x0CFC
+	push	rbx
 
-VARIABLE_PIT_CLOCK_HZ			equ	1000	; Hz
+	; pobierz dzień tygodnia ---------------------------------------
+	movzx	r8,	byte [rsp + 0x07]
 
-VARIABLE_KEYBOARD_CACHE_SIZE		equ	16	; / 2 = 8 znaków
+	; licz od zera
+	dec	r8
 
-VARIABLE_PROCESS_LIMIT			equ	256
+	; oblicz numer rekordu w tablicy nazw tygodnia
+	mov	rax,	6
+	mul	r8	; oblicz
 
-VARIABLE_EMPTY				equ	0
+	; załaduj wskaźnik do wyliczonego tekstu
+	mov	rsi,	tablica_dzien_tygodnia
+	add	rsi,	rax	; dodaj przesunięcie ("numer" rekordu)
 
-VARIABLE_CMOS_PORT_IN			equ	0x71
-VARIABLE_CMOS_PORT_OUT			equ	0x70
+	; wypisz tekst na ekranie
+	mov	ax,	0x0101
+	mov	rbx,	VARIABLE_COLOR_DEFAULT
+	mov	rcx,	-1
+	mov	rdx,	VARIABLE_COLOR_BACKGROUND_DEFAULT
+	int	0x40	; wykonaj
+
+	; pobierz dzień miesiąca ---------------------------------------
+	movzx	r8,	byte [rsp + 0x06]
+
+	; wyświetl liczbę
+	mov	ax,	0x0103
+	mov	rcx,	10
+	int	0x40	; wykonaj
+
+	; pobierz miesiąc ----------------------------------------------
+	movzx	r8,	byte [rsp + 0x05]
+
+	; licz od zera
+	dec	r8
+
+	; oblicz numer rekordu w tablicy miesięcy
+	mov	rax,	6
+	mul	r8	; oblicz
+
+	; załaduj wskaźnik do wyliczonego tekstu
+	mov	rsi,	tablica_miesiac
+	add	rsi,	rax	; dodaj przesunięcie ("numer" rekordu)
+
+	; wypisz tekst na ekranie
+	mov	ax,	0x0101
+	mov	rcx,	-1	; wyświetl cały tekst
+	mov	rdx,	VARIABLE_COLOR_BACKGROUND_DEFAULT
+	int	0x40	; wykonaj
+
+	; pobierz rok --------------------------------------------------
+	movzx	r8,	byte [rsp + 0x04]
+
+	; koryguj o tysiąclecie
+	add	r8,	2000
+
+	; wyświetl liczbę
+	mov	ax,	0x0103
+	mov	rcx,	10
+	int	0x40	; wykonaj
+
+	; wyświetl separator -------------------------------------------
+
+	; wyświetl separator bez cyfry wiodącej
+	mov	rcx,	2
+
+	; sprawdź, czy wyświetlić cyfrę wiodącą?
+	cmp	byte [rsp + 0x03],	9
+	ja	.godzina	; godzina powyżej
+
+	; koryguj, wyświetl separator z cyfrą wiodącą
+	inc	rcx
+
+.godzina:
+	; wyświetl tekst
+	mov	ax,	0x0101
+	mov	rsi,	tekst_separator
+	int	0x40	; wykonaj
+
+	; pobierz godzine ----------------------------------------------
+	movzx	r8,	byte [rsp + 0x03]
+
+	; wyświetl liczbę
+	mov	ax,	0x0103
+	mov	rcx,	10
+	int	0x40	; wykonaj
+
+	; wyświetl dwukropek -------------------------------------------
+
+	; wyświetl dwukropek bez cyfry wiodącej
+	mov	rcx,	1
+
+	; sprawdź, czy wyświetlić cyfrę wiodącą?
+	cmp	byte [rsp + 0x02],	9
+	ja	.minuta	; minuta powyżej
+
+	; koryguj, wyświetl dwukropek z cyfrą wiodącą
+	inc	rcx
+
+.minuta:
+	; wyświetl tekst
+	mov	ax,	0x0101
+	mov	rsi,	tekst_dwukropek
+	int	0x40	; wykonaj
+
+	; pobierz minute ----------------------------------------------
+	movzx	r8,	byte [rsp + 0x02]
+
+	; wyświetl liczbę
+	mov	ax,	0x0103
+	mov	rcx,	10
+	int	0x40	; wykonaj
+
+	; wyświetl dwukropek -------------------------------------------
+
+	; wyświetl dwukropek bez cyfry wiodącej
+	mov	rcx,	1
+
+	; sprawdź, czy wyświetlić cyfrę wiodącą?
+	cmp	byte [rsp + 0x01],	9
+	ja	.sekunda	; sekunda powyżej
+
+	; koryguj, wyświetl dwukropek z cyfrą wiodącą
+	inc	rcx
+
+.sekunda:
+	; wyświetl tekst
+	mov	ax,	0x0101
+	mov	rsi,	tekst_dwukropek
+	int	0x40	; wykonaj
+
+	; pobierz sekunde ----------------------------------------------
+	movzx	r8,	byte [rsp + 0x01]
+
+	; wyświetl liczbę
+	mov	ax,	0x0103
+	mov	rcx,	10
+	int	0x40	; wykonaj
+
+	; wyświetl informacje o strefie czasowej -----------------------
+	mov	ax,	0x0101
+	mov	rcx,	-1
+	mov	rsi,	tekst_czas_miedzynarodowy
+	int	0x40	; wykonaj
+
+	; procedura zakończenia działania procesu
+	xor	ax,	ax
+	int	0x40	; wykonaj
+
+tekst_separator	db	', 0'
+tekst_dwukropek	db	':0'
+
+tablica_dzien_tygodnia	db	'Sun, ', VARIABLE_ASCII_CODE_TERMINATOR
+			db	'Mon, ', VARIABLE_ASCII_CODE_TERMINATOR
+			db	'Tue, ', VARIABLE_ASCII_CODE_TERMINATOR
+			db	'Wed, ', VARIABLE_ASCII_CODE_TERMINATOR
+			db	'Thu, ', VARIABLE_ASCII_CODE_TERMINATOR
+			db	'Fri, ', VARIABLE_ASCII_CODE_TERMINATOR
+			db	'Sat, ', VARIABLE_ASCII_CODE_TERMINATOR
+
+tablica_miesiac		db	' Jan ', VARIABLE_ASCII_CODE_TERMINATOR
+			db	' Feb ', VARIABLE_ASCII_CODE_TERMINATOR
+			db	' Mar ', VARIABLE_ASCII_CODE_TERMINATOR
+			db	' Apr ', VARIABLE_ASCII_CODE_TERMINATOR
+			db	' May ', VARIABLE_ASCII_CODE_TERMINATOR
+			db	' Jun ', VARIABLE_ASCII_CODE_TERMINATOR
+			db	' Jul ', VARIABLE_ASCII_CODE_TERMINATOR
+			db	' Aug ', VARIABLE_ASCII_CODE_TERMINATOR
+			db	' Sep ', VARIABLE_ASCII_CODE_TERMINATOR
+			db	' Oct ', VARIABLE_ASCII_CODE_TERMINATOR
+			db	' Nov ', VARIABLE_ASCII_CODE_TERMINATOR
+			db	' Dec ', VARIABLE_ASCII_CODE_TERMINATOR
+
+tekst_czas_miedzynarodowy	db	' UTC', VARIABLE_ASCII_CODE_ENTER, VARIABLE_ASCII_CODE_NEWLINE, VARIABLE_ASCII_CODE_TERMINATOR
