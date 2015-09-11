@@ -66,8 +66,8 @@ cyjon_cmos_date_get:
 
 	; sekunda
 	mov	al,	0x00
-	out	CMOS_PORT_OUT,	al	; wyślij
-	in	al,	CMOS_PORT_IN	; odbierz
+	out	VARIABLE_CMOS_PORT_OUT,	al	; wyślij
+	in	al,	VARIABLE_CMOS_PORT_IN	; odbierz
 	; sprawdź czy nastąpiła modyfikacja
 	cmp	al,	byte [variable_cmos_second]
 	je	.minute	; jeśli brak zmian, kontynuuj
@@ -80,8 +80,8 @@ cyjon_cmos_date_get:
 .minute:
 	; minuta
 	mov	al,	0x02
-	out	CMOS_PORT_OUT,	al
-	in	al,	CMOS_PORT_IN
+	out	VARIABLE_CMOS_PORT_OUT,	al
+	in	al,	VARIABLE_CMOS_PORT_IN
 	; sprawdź czy wystąpiła modyfikacja
 	cmp	al,	byte [variable_cmos_minute]
 	je	.hour	; jeśli brak zmian, kontynuuj
@@ -94,8 +94,8 @@ cyjon_cmos_date_get:
 .hour:
 	; godzina
 	mov	al,	0x04
-	out	CMOS_PORT_OUT,	al
-	in	al,	CMOS_PORT_IN
+	out	VARIABLE_CMOS_PORT_OUT,	al
+	in	al,	VARIABLE_CMOS_PORT_IN
 	; sprawdź czy wystąpiła modyfikacja
 	cmp	al,	byte [variable_cmos_hour]
 	je	.day	; jeśli brak zmian, kontynuuj
@@ -108,8 +108,8 @@ cyjon_cmos_date_get:
 .day:
 	; dzień
 	mov	al,	0x07
-	out	CMOS_PORT_OUT,	al
-	in	al,	CMOS_PORT_IN
+	out	VARIABLE_CMOS_PORT_OUT,	al
+	in	al,	VARIABLE_CMOS_PORT_IN
 	; sprawdź czy wystąpiła modyfikacja
 	cmp	al,	byte [variable_cmos_day_of_month]
 	je	.week	; jeśli brak zmian, kontynuuj
@@ -122,8 +122,8 @@ cyjon_cmos_date_get:
 .week:
 	; tydzien
 	mov	al,	0x06
-	out	CMOS_PORT_OUT,	al
-	in	al,	CMOS_PORT_IN
+	out	VARIABLE_CMOS_PORT_OUT,	al
+	in	al,	VARIABLE_CMOS_PORT_IN
 	; sprawdź czy wystąpiła modyfikacja
 	cmp	al,	byte [variable_cmos_day_of_week]
 	je	.month	; jeśli brak zmian, kontynuuj
@@ -136,8 +136,8 @@ cyjon_cmos_date_get:
 .month:
 	; miesiąc
 	mov	al,	0x08
-	out	CMOS_PORT_OUT,	al
-	in	al,	CMOS_PORT_IN
+	out	VARIABLE_CMOS_PORT_OUT,	al
+	in	al,	VARIABLE_CMOS_PORT_IN
 	; sprawdź czy wystąpiła modyfikacja
 	cmp	al,	byte [variable_cmos_month]
 	je	.year	; jeśli brak zmian, kontynuuj
@@ -150,8 +150,8 @@ cyjon_cmos_date_get:
 .year:
 	; rok
 	mov	al,	0x09
-	out	CMOS_PORT_OUT,	al
-	in	al,	CMOS_PORT_IN
+	out	VARIABLE_CMOS_PORT_OUT,	al
+	in	al,	VARIABLE_CMOS_PORT_IN
 	; sprawdź czy wystąpiła modyfikacja
 	cmp	al,	byte [variable_cmos_year]
 	je	.end	; jeśli brak zmian, kontynuuj
@@ -269,11 +269,11 @@ cyjon_translate_number_BCD_binary:
 variable_cmos_date_get_semaphore	db	0x00
 
 ; cmos
-variable_cmos_hour	dw	0x0000
-variable_cmos_minute	db	0x00
-variable_cmos_second	db	0x00
-variable_cmos_day_of_week	db	0x00
-variable_cmos_day_of_month	db	0x00
-variable_cmos_month		db	0x00
-variable_cmos_year		db	0x00	; 00..99
+variable_cmos_hour			dw	0x0000
+variable_cmos_minute			db	0x00
+variable_cmos_second			db	0x00
+variable_cmos_day_of_week		db	0x00
+variable_cmos_day_of_month		db	0x00
+variable_cmos_month			db	0x00
+variable_cmos_year			db	0x00	; 00..99
 variable_cmos_register_b		dw	0x0000
