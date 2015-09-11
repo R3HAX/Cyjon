@@ -25,9 +25,8 @@ Prosty system operacyjny dla procesorów z rodziny x86-64.
 Emulatory pod systemem z rodziny MS/Windows nie obsługują prawidłowo klawiszy strzałek/kursorów. Nie mam pojęcia kogo to wina - emulatora czy systemu.
 
 #Uruchomienie:
-2 MiB pamięci RAM z czego pierwszy jest przeznaczony dla BIOSu.
 
-    qemu-system-x86_64 -hda build/disk.raw -m 2
+    qemu-system-x86_64 -hda build/disk.raw
 
 
 
