@@ -141,9 +141,6 @@ irq64_process:
 	; zapamiętaj
 	push	rdi
 
-	; przeszukane rekordy
-	xor	rbx,	rbx
-
 	; pomiń nagłówek
 	add	rdi,	0x08
 
@@ -164,18 +161,17 @@ irq64_process:
 	; następny rekord
 	add	rdi,	STATIC_PROCESS_RECORD.SIZE
 
-	; przeszukano rekord
-	inc	rbx
-
 	; koniec części serpentyny?
-	cmp	rbx,	STATIC_PROCESS_RECORDS_PER_PAGE
-	jb	.process_check_loop
+	mov	bx,	di
+	and	bx,	0x0FFF
+	cmp	bx,	0x0FF8
+	jne	.process_check_loop
 
 	; przejdź do następnej części
 	mov	rdi,	qword [rdi]
 
 	; wykonaliśmy pętlę?
-	cmp	rdi,	qword [rsp]
+	cmp	rdi,	qword [variable_process_serpentine_start_address]
 	je	.process_check_not_found
 
 	; pomiń nagłówek
