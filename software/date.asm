@@ -11,269 +11,49 @@
 ; Use:
 ; nasm - http://www.nasm.us/
 
-; 64 Bitowy kod programu
-[BITS 64]
+%define	VARIABLE_KERNEL_VERSION		"0.455"
 
-;===============================================================================
-; procedura ustawia częstotliwość wywołania przerwania sprzęrowego IRQ0
-; IN:
-;	brak
-; OUT:
-;	brak
-;
-; wszystkie rejestry zachowane
-programmable_interval_timer:
-	; zachowaj oryginalne rejestry
-	push	rax
-	push	rcx
-	push	rdx
+VARIABLE_KERNEL_PHYSICAL_ADDRESS	equ	0x0000000000100000
 
-	mov	rax,	1193182	; częstotliwość kryształu 1193182 Hz
-	xor	rdx,	rdx	; czyścimy starszą część / resztę
-	mov	rcx,	VARIABLE_PIT_CLOCK_HZ	; częstotliwość w Hz
-	div	rcx	; rdx:rax / rcx
+VARIABLE_MEMORY_PAGE_SIZE		equ	0x1000
+VARIABLE_MEMORY_HIGH_ADDRESS		equ	0xFFFF000000000000
+VARIABLE_MEMORY_HIGH_REAL_ADDRESS	equ	0xFFFF800000000000
+VARIABLE_MEMORY_HIGH_VIRTUAL_ADDRESS	equ	VARIABLE_MEMORY_HIGH_REAL_ADDRESS - VARIABLE_MEMORY_HIGH_ADDRESS
+; adres umowny, jest to przestrzeń gdzie jądro systemu może operować na
+; różnej wielkości fragmentach pamięci logicznej, gdzie pamięć fizyczna
+; nie sięga
+VARIABLE_MEMORY_FREE_LOGICAL_ADDRESS	equ	0x0000400000000000
 
-	; zachowaj wynik
-	push	rax
+VARIABLE_KERNEL_STACK_ADDRESS		equ	VARIABLE_MEMORY_HIGH_VIRTUAL_ADDRESS - 0x1000
 
-	; przygotuj kanał 0
-	mov	al,	0x36	; kanał nr 0
-	out	0x43,	al
+VARIABLE_ASCII_CODE_TERMINATOR		equ	0x00
+VARIABLE_ASCII_CODE_ENTER		equ	0x0D
+VARIABLE_ASCII_CODE_NEWLINE		equ	0x0A
+VARIABLE_ASCII_CODE_BACKSPACE		equ	0x08
 
-	; przywróć wynik
-	pop	rax
+VARIABLE_COLOR_DEFAULT			equ	0x00AAAAAA
+VARIABLE_COLOR_WHITE			equ	0x00FFFFFF
+VARIABLE_COLOR_GREEN			equ	0x001CC76A
+VARIABLE_COLOR_BLUE			equ	0x00267BE6
+VARIABLE_COLOR_BLUE_LIGHT		equ	0x00469BFF
+VARIABLE_COLOR_RED			equ	0x00E62626
+VARIABLE_COLOR_GRAY			equ	0x00686868
+VARIABLE_COLOR_ORANGE			equ	0x00FFA500
 
-	; wprowadź dane do kanału 0
-	out	0x40,	al	; młodsza część wyniku
-	xchg	al,	ah
-	out	0x40,	al	; starsza część wyniku
+VARIABLE_COLOR_BACKGROUND_DEFAULT	equ	0x00000000
 
-	; przywróć oryginalne rejestry
-	pop	rdx
-	pop	rcx
-	pop	rax
+%define	VARIABLE_FONT_MATRIX_DEFAULT	"font/sinclair.asm"
 
-	; powrót z procedury
-	ret
+VARIABLE_PCI_CONFIG_ADDRESS		equ	0x0CF8
+VARIABLE_PCI_CONFIG_DATA		equ	0x0CFC
 
-cyjon_cmos_date_get:
-	push	rax
-	push	rbx
+VARIABLE_PIT_CLOCK_HZ			equ	1000	; Hz
 
-.loop:
-	; pobierz prawidłowy czas
-	mov	byte [variable_cmos_date_get_semaphore],	0x00
+VARIABLE_KEYBOARD_CACHE_SIZE		equ	16	; / 2 = 8 znaków
 
-	; sekunda
-	mov	al,	0x00
-	out	VARIABLE_CMOS_PORT_OUT,	al	; wyślij
-	in	al,	VARIABLE_CMOS_PORT_IN	; odbierz
-	; sprawdź czy nastąpiła modyfikacja
-	cmp	al,	byte [variable_cmos_second]
-	je	.minute	; jeśli brak zmian, kontynuuj
+VARIABLE_PROCESS_LIMIT			equ	256
 
-	; zapisz
-	mov	byte [variable_cmos_second],	al
-	; modyfikacja!
-	mov	byte [variable_cmos_date_get_semaphore],	0x01
+VARIABLE_EMPTY				equ	0
 
-.minute:
-	; minuta
-	mov	al,	0x02
-	out	VARIABLE_CMOS_PORT_OUT,	al
-	in	al,	VARIABLE_CMOS_PORT_IN
-	; sprawdź czy wystąpiła modyfikacja
-	cmp	al,	byte [variable_cmos_minute]
-	je	.hour	; jeśli brak zmian, kontynuuj
-
-	; zapisz
-	mov	byte [variable_cmos_minute],	al
-	; modyfikacja!
-	mov	byte [variable_cmos_date_get_semaphore],	0x01
-
-.hour:
-	; godzina
-	mov	al,	0x04
-	out	VARIABLE_CMOS_PORT_OUT,	al
-	in	al,	VARIABLE_CMOS_PORT_IN
-	; sprawdź czy wystąpiła modyfikacja
-	cmp	al,	byte [variable_cmos_hour]
-	je	.day	; jeśli brak zmian, kontynuuj
-
-	; zapisz
-	mov	byte [variable_cmos_hour],	al
-	; modyfikacja!
-	mov	byte [variable_cmos_date_get_semaphore],	0x01
-
-.day:
-	; dzień
-	mov	al,	0x07
-	out	VARIABLE_CMOS_PORT_OUT,	al
-	in	al,	VARIABLE_CMOS_PORT_IN
-	; sprawdź czy wystąpiła modyfikacja
-	cmp	al,	byte [variable_cmos_day_of_month]
-	je	.week	; jeśli brak zmian, kontynuuj
-
-	; zapisz
-	mov	byte [variable_cmos_day_of_month],	al
-	; modyfikacja!
-	mov	byte [variable_cmos_date_get_semaphore],	0x01
-
-.week:
-	; tydzien
-	mov	al,	0x06
-	out	VARIABLE_CMOS_PORT_OUT,	al
-	in	al,	VARIABLE_CMOS_PORT_IN
-	; sprawdź czy wystąpiła modyfikacja
-	cmp	al,	byte [variable_cmos_day_of_week]
-	je	.month	; jeśli brak zmian, kontynuuj
-
-	; zapisz
-	mov	byte [variable_cmos_day_of_week],	al
-	; modyfikacja!
-	mov	byte [variable_cmos_date_get_semaphore],	0x01
-
-.month:
-	; miesiąc
-	mov	al,	0x08
-	out	VARIABLE_CMOS_PORT_OUT,	al
-	in	al,	VARIABLE_CMOS_PORT_IN
-	; sprawdź czy wystąpiła modyfikacja
-	cmp	al,	byte [variable_cmos_month]
-	je	.year	; jeśli brak zmian, kontynuuj
-
-	; zapisz
-	mov	byte [variable_cmos_month],	al
-	; modyfikacja!
-	mov	byte [variable_cmos_date_get_semaphore],	0x01
-
-.year:
-	; rok
-	mov	al,	0x09
-	out	VARIABLE_CMOS_PORT_OUT,	al
-	in	al,	VARIABLE_CMOS_PORT_IN
-	; sprawdź czy wystąpiła modyfikacja
-	cmp	al,	byte [variable_cmos_year]
-	je	.end	; jeśli brak zmian, kontynuuj
-
-	; zapisz
-	mov	byte [variable_cmos_year],	al
-	; modyfikacja!
-	mov	byte [variable_cmos_date_get_semaphore],	0x01
-
-.end:
-	; sprawdź czy czas z CMOS jest stabilny
-	cmp	byte [variable_cmos_date_get_semaphore],	0x00
-	jne	cyjon_cmos_date_get.loop	; jeśli nie, pobierz czas ponownie
-
-	; konwersja czasu z BCD na Binarny
-	bt	word [variable_cmos_register_b],	2
-	jc	.noBCD
-
-	; zamień sekundy w format Binarny
-	mov	bl,	byte [variable_cmos_second]
-	; konwertuj
-	call	cyjon_translate_number_BCD_binary
-	; zapisz
-	mov	byte [variable_cmos_second],	bl
-
-	; zamień minuty w format Binarny
-	mov	bl,	byte [variable_cmos_minute]
-	; konwertuj
-	call	cyjon_translate_number_BCD_binary
-	; zapisz
-	mov	byte [variable_cmos_minute],	bl
-
-	; sprawdź czy tryb 24 godzinny
-	bt	word [variable_cmos_register_b],	1
-	jc	.convert	; 24 godzinny, brak modyfikacji
-
-	; sprawdź godzinę AM/PM
-	bt	word [variable_cmos_hour],	7
-	jnc	.convert	; AM, brak modyfikacji
-
-	; popołudnie, modyfikuj
-	add	byte [variable_cmos_hour],	0x10
-
-.convert:
-	; zamień godziny w format Binarny
-	mov	bl,	byte [variable_cmos_hour]
-	; konwertuj
-	call	cyjon_translate_number_BCD_binary
-	; zapisz
-	mov	byte [variable_cmos_hour],	bl
-
-	; zamień dzień w format Binarny
-	mov	bl,	byte [variable_cmos_day_of_month]
-	; konwertuj
-	call	cyjon_translate_number_BCD_binary
-	; zapisz
-	mov	byte [variable_cmos_day_of_month],	bl
-
-	; zamień miesiąc w format Binarny
-	mov	bl,	byte [variable_cmos_month]
-	; konwertuj
-	call	cyjon_translate_number_BCD_binary
-	; zapisz
-	mov	byte [variable_cmos_month],	bl
-
-	; zamień rok w format Binarny
-	mov	bl,	byte [variable_cmos_year]
-	; konwertuj
-	call	cyjon_translate_number_BCD_binary
-	; zapisz
-	mov	byte [variable_cmos_year],	bl
-
-.noBCD:
-	pop	rbx
-	pop	rax
-
-	; powrót z procedury
-	ret
-
-cyjon_translate_number_BCD_binary:
-	; zachowaj oryginalne rejestry
-	push	rax
-	push	rcx
-	push	rdx
-
-	mov	al,	bl
-	; usuń starszą cyfrę
-	and	al,	00001111b
-	; zapamiętaj młodszą cyfrę
-	push	rax
-
-	mov	al,	bl
-	; przesuń starszą cyfrę w miejsce młodszej
-	shr	al,	4
-	; zamień na system dziesiętny
-	mov	cl,	10
-	; wykonaj
-	mul	cl
-	; przywróć młodszą cyfrę
-	pop	rcx
-	; dodaj do starszej
-	add	al,	cl
-	; zapamiętaj format Binarny
-	mov	bl,	al
-
-	; przywróć oryginalne rejestry
-	pop	rdx
-	pop	rcx
-	pop	rax
-
-	;powrót z procedury
-	ret
-
-; flaga prawidłowego pobrania czasu
-variable_cmos_date_get_semaphore	db	0x00
-
-; cmos
-variable_cmos_hour			dw	0x0000
-variable_cmos_minute			db	0x00
-variable_cmos_second			db	0x00
-variable_cmos_day_of_week		db	0x00
-variable_cmos_day_of_month		db	0x00
-variable_cmos_month			db	0x00
-variable_cmos_year			db	0x00	; 00..99
-variable_cmos_register_b		dw	0x0000
+VARIABLE_CMOS_PORT_IN				equ	0x71
+VARIABLE_CMOS_PORT_OUT				equ	0x70
