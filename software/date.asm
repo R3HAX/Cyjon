@@ -11,213 +11,269 @@
 ; Use:
 ; nasm - http://www.nasm.us/
 
-; kolory, stałe
-%include	'config.asm'
-
 ; 64 Bitowy kod programu
 [BITS 64]
 
-; adresowanie względne (skoki, etykiety)
-[DEFAULT REL]
+;===============================================================================
+; procedura ustawia częstotliwość wywołania przerwania sprzęrowego IRQ0
+; IN:
+;	brak
+; OUT:
+;	brak
+;
+; wszystkie rejestry zachowane
+programmable_interval_timer:
+	; zachowaj oryginalne rejestry
+	push	rax
+	push	rcx
+	push	rdx
 
-; adres kodu programu w przestrzeni logicznej
-[ORG VARIABLE_MEMORY_HIGH_REAL_ADDRESS]
+	mov	rax,	1193182	; częstotliwość kryształu 1193182 Hz
+	xor	rdx,	rdx	; czyścimy starszą część / resztę
+	mov	rcx,	VARIABLE_PIT_CLOCK_HZ	; częstotliwość w Hz
+	div	rcx	; rdx:rax / rcx
 
-start:
-	; procedura pobierz czas systemu
-	mov	ax,	0x0301
-	int	0x40	; wykonaj
+	; zachowaj wynik
+	push	rax
 
-	; godzina i data pochodzi z CMOSu, zawsze ustawiam tam czas międzynarodowy GMT
-	; zadaniem systemu jest go modyfikować względem strefy czasu w danym państwie
+	; przygotuj kanał 0
+	mov	al,	0x36	; kanał nr 0
+	out	0x43,	al
 
-	; format:
-	;     _/ dzień tygodnia 1 - niedziela, 7 - sobota
-	;     |  _/ dzień miesiąca
-	;     |  |  _/ miesiąc 1 - styczeń, 12 - grudzień
-	;     |  |  |  _/ rok, ostatnie dwie cyfry
-	;     |  |  |  |  _/ godzina
-	;     |  |  |  |  |  _/ minuta
-	;     |  |  |  |  |  |  _/ sekunda
-	;     |  |  |  |  |  |  |  _/ bit 0 - tryb 24 godzinny, jeśli ustawiony
-	;     |  |  |  |  |  |  |  |
-	; 0x 00 00 00 00 00 00 00 00
+	; przywróć wynik
+	pop	rax
 
-	; wyczyść licznik
-	xor	rcx,	rcx
+	; wprowadź dane do kanału 0
+	out	0x40,	al	; młodsza część wyniku
+	xchg	al,	ah
+	out	0x40,	al	; starsza część wyniku
 
+	; przywróć oryginalne rejestry
+	pop	rdx
+	pop	rcx
+	pop	rax
+
+	; powrót z procedury
+	ret
+
+cyjon_cmos_date_get:
+	push	rax
 	push	rbx
 
-	; pobierz dzień tygodnia ---------------------------------------
-	movzx	r8,	byte [rsp + 0x07]
+.loop:
+	; pobierz prawidłowy czas
+	mov	byte [variable_cmos_date_get_semaphore],	0x00
 
-	; licz od zera
-	dec	r8
+	; sekunda
+	mov	al,	0x00
+	out	VARIABLE_CMOS_PORT_OUT,	al	; wyślij
+	in	al,	VARIABLE_CMOS_PORT_IN	; odbierz
+	; sprawdź czy nastąpiła modyfikacja
+	cmp	al,	byte [variable_cmos_second]
+	je	.minute	; jeśli brak zmian, kontynuuj
 
-	; oblicz numer rekordu w tablicy nazw tygodnia
-	mov	rax,	6
-	mul	r8	; oblicz
+	; zapisz
+	mov	byte [variable_cmos_second],	al
+	; modyfikacja!
+	mov	byte [variable_cmos_date_get_semaphore],	0x01
 
-	; załaduj wskaźnik do wyliczonego tekstu
-	mov	rsi,	tablica_dzien_tygodnia
-	add	rsi,	rax	; dodaj przesunięcie ("numer" rekordu)
+.minute:
+	; minuta
+	mov	al,	0x02
+	out	VARIABLE_CMOS_PORT_OUT,	al
+	in	al,	VARIABLE_CMOS_PORT_IN
+	; sprawdź czy wystąpiła modyfikacja
+	cmp	al,	byte [variable_cmos_minute]
+	je	.hour	; jeśli brak zmian, kontynuuj
 
-	; wypisz tekst na ekranie
-	mov	ax,	0x0101
-	mov	rbx,	VARIABLE_COLOR_DEFAULT
-	mov	rcx,	-1
-	mov	rdx,	VARIABLE_COLOR_BACKGROUND_DEFAULT
-	int	0x40	; wykonaj
+	; zapisz
+	mov	byte [variable_cmos_minute],	al
+	; modyfikacja!
+	mov	byte [variable_cmos_date_get_semaphore],	0x01
 
-	; pobierz dzień miesiąca ---------------------------------------
-	movzx	r8,	byte [rsp + 0x06]
+.hour:
+	; godzina
+	mov	al,	0x04
+	out	VARIABLE_CMOS_PORT_OUT,	al
+	in	al,	VARIABLE_CMOS_PORT_IN
+	; sprawdź czy wystąpiła modyfikacja
+	cmp	al,	byte [variable_cmos_hour]
+	je	.day	; jeśli brak zmian, kontynuuj
 
-	; wyświetl liczbę
-	mov	ax,	0x0103
-	mov	rcx,	10
-	int	0x40	; wykonaj
+	; zapisz
+	mov	byte [variable_cmos_hour],	al
+	; modyfikacja!
+	mov	byte [variable_cmos_date_get_semaphore],	0x01
 
-	; pobierz miesiąc ----------------------------------------------
-	movzx	r8,	byte [rsp + 0x05]
+.day:
+	; dzień
+	mov	al,	0x07
+	out	VARIABLE_CMOS_PORT_OUT,	al
+	in	al,	VARIABLE_CMOS_PORT_IN
+	; sprawdź czy wystąpiła modyfikacja
+	cmp	al,	byte [variable_cmos_day_of_month]
+	je	.week	; jeśli brak zmian, kontynuuj
 
-	; licz od zera
-	dec	r8
+	; zapisz
+	mov	byte [variable_cmos_day_of_month],	al
+	; modyfikacja!
+	mov	byte [variable_cmos_date_get_semaphore],	0x01
 
-	; oblicz numer rekordu w tablicy miesięcy
-	mov	rax,	6
-	mul	r8	; oblicz
+.week:
+	; tydzien
+	mov	al,	0x06
+	out	VARIABLE_CMOS_PORT_OUT,	al
+	in	al,	VARIABLE_CMOS_PORT_IN
+	; sprawdź czy wystąpiła modyfikacja
+	cmp	al,	byte [variable_cmos_day_of_week]
+	je	.month	; jeśli brak zmian, kontynuuj
 
-	; załaduj wskaźnik do wyliczonego tekstu
-	mov	rsi,	tablica_miesiac
-	add	rsi,	rax	; dodaj przesunięcie ("numer" rekordu)
+	; zapisz
+	mov	byte [variable_cmos_day_of_week],	al
+	; modyfikacja!
+	mov	byte [variable_cmos_date_get_semaphore],	0x01
 
-	; wypisz tekst na ekranie
-	mov	ax,	0x0101
-	mov	rcx,	-1	; wyświetl cały tekst
-	mov	rdx,	VARIABLE_COLOR_BACKGROUND_DEFAULT
-	int	0x40	; wykonaj
+.month:
+	; miesiąc
+	mov	al,	0x08
+	out	VARIABLE_CMOS_PORT_OUT,	al
+	in	al,	VARIABLE_CMOS_PORT_IN
+	; sprawdź czy wystąpiła modyfikacja
+	cmp	al,	byte [variable_cmos_month]
+	je	.year	; jeśli brak zmian, kontynuuj
 
-	; pobierz rok --------------------------------------------------
-	movzx	r8,	byte [rsp + 0x04]
+	; zapisz
+	mov	byte [variable_cmos_month],	al
+	; modyfikacja!
+	mov	byte [variable_cmos_date_get_semaphore],	0x01
 
-	; koryguj o tysiąclecie
-	add	r8,	2000
+.year:
+	; rok
+	mov	al,	0x09
+	out	VARIABLE_CMOS_PORT_OUT,	al
+	in	al,	VARIABLE_CMOS_PORT_IN
+	; sprawdź czy wystąpiła modyfikacja
+	cmp	al,	byte [variable_cmos_year]
+	je	.end	; jeśli brak zmian, kontynuuj
 
-	; wyświetl liczbę
-	mov	ax,	0x0103
-	mov	rcx,	10
-	int	0x40	; wykonaj
+	; zapisz
+	mov	byte [variable_cmos_year],	al
+	; modyfikacja!
+	mov	byte [variable_cmos_date_get_semaphore],	0x01
 
-	; wyświetl separator -------------------------------------------
+.end:
+	; sprawdź czy czas z CMOS jest stabilny
+	cmp	byte [variable_cmos_date_get_semaphore],	0x00
+	jne	cyjon_cmos_date_get.loop	; jeśli nie, pobierz czas ponownie
 
-	; wyświetl separator bez cyfry wiodącej
-	mov	rcx,	2
+	; konwersja czasu z BCD na Binarny
+	bt	word [variable_cmos_register_b],	2
+	jc	.noBCD
 
-	; sprawdź, czy wyświetlić cyfrę wiodącą?
-	cmp	byte [rsp + 0x03],	9
-	ja	.godzina	; godzina powyżej
+	; zamień sekundy w format Binarny
+	mov	bl,	byte [variable_cmos_second]
+	; konwertuj
+	call	cyjon_translate_number_BCD_binary
+	; zapisz
+	mov	byte [variable_cmos_second],	bl
 
-	; koryguj, wyświetl separator z cyfrą wiodącą
-	inc	rcx
+	; zamień minuty w format Binarny
+	mov	bl,	byte [variable_cmos_minute]
+	; konwertuj
+	call	cyjon_translate_number_BCD_binary
+	; zapisz
+	mov	byte [variable_cmos_minute],	bl
 
-.godzina:
-	; wyświetl tekst
-	mov	ax,	0x0101
-	mov	rsi,	tekst_separator
-	int	0x40	; wykonaj
+	; sprawdź czy tryb 24 godzinny
+	bt	word [variable_cmos_register_b],	1
+	jc	.convert	; 24 godzinny, brak modyfikacji
 
-	; pobierz godzine ----------------------------------------------
-	movzx	r8,	byte [rsp + 0x03]
+	; sprawdź godzinę AM/PM
+	bt	word [variable_cmos_hour],	7
+	jnc	.convert	; AM, brak modyfikacji
 
-	; wyświetl liczbę
-	mov	ax,	0x0103
-	mov	rcx,	10
-	int	0x40	; wykonaj
+	; popołudnie, modyfikuj
+	add	byte [variable_cmos_hour],	0x10
 
-	; wyświetl dwukropek -------------------------------------------
+.convert:
+	; zamień godziny w format Binarny
+	mov	bl,	byte [variable_cmos_hour]
+	; konwertuj
+	call	cyjon_translate_number_BCD_binary
+	; zapisz
+	mov	byte [variable_cmos_hour],	bl
 
-	; wyświetl dwukropek bez cyfry wiodącej
-	mov	rcx,	1
+	; zamień dzień w format Binarny
+	mov	bl,	byte [variable_cmos_day_of_month]
+	; konwertuj
+	call	cyjon_translate_number_BCD_binary
+	; zapisz
+	mov	byte [variable_cmos_day_of_month],	bl
 
-	; sprawdź, czy wyświetlić cyfrę wiodącą?
-	cmp	byte [rsp + 0x02],	9
-	ja	.minuta	; minuta powyżej
+	; zamień miesiąc w format Binarny
+	mov	bl,	byte [variable_cmos_month]
+	; konwertuj
+	call	cyjon_translate_number_BCD_binary
+	; zapisz
+	mov	byte [variable_cmos_month],	bl
 
-	; koryguj, wyświetl dwukropek z cyfrą wiodącą
-	inc	rcx
+	; zamień rok w format Binarny
+	mov	bl,	byte [variable_cmos_year]
+	; konwertuj
+	call	cyjon_translate_number_BCD_binary
+	; zapisz
+	mov	byte [variable_cmos_year],	bl
 
-.minuta:
-	; wyświetl tekst
-	mov	ax,	0x0101
-	mov	rsi,	tekst_dwukropek
-	int	0x40	; wykonaj
+.noBCD:
+	pop	rbx
+	pop	rax
 
-	; pobierz minute ----------------------------------------------
-	movzx	r8,	byte [rsp + 0x02]
+	; powrót z procedury
+	ret
 
-	; wyświetl liczbę
-	mov	ax,	0x0103
-	mov	rcx,	10
-	int	0x40	; wykonaj
+cyjon_translate_number_BCD_binary:
+	; zachowaj oryginalne rejestry
+	push	rax
+	push	rcx
+	push	rdx
 
-	; wyświetl dwukropek -------------------------------------------
+	mov	al,	bl
+	; usuń starszą cyfrę
+	and	al,	00001111b
+	; zapamiętaj młodszą cyfrę
+	push	rax
 
-	; wyświetl dwukropek bez cyfry wiodącej
-	mov	rcx,	1
+	mov	al,	bl
+	; przesuń starszą cyfrę w miejsce młodszej
+	shr	al,	4
+	; zamień na system dziesiętny
+	mov	cl,	10
+	; wykonaj
+	mul	cl
+	; przywróć młodszą cyfrę
+	pop	rcx
+	; dodaj do starszej
+	add	al,	cl
+	; zapamiętaj format Binarny
+	mov	bl,	al
 
-	; sprawdź, czy wyświetlić cyfrę wiodącą?
-	cmp	byte [rsp + 0x01],	9
-	ja	.sekunda	; sekunda powyżej
+	; przywróć oryginalne rejestry
+	pop	rdx
+	pop	rcx
+	pop	rax
 
-	; koryguj, wyświetl dwukropek z cyfrą wiodącą
-	inc	rcx
+	;powrót z procedury
+	ret
 
-.sekunda:
-	; wyświetl tekst
-	mov	ax,	0x0101
-	mov	rsi,	tekst_dwukropek
-	int	0x40	; wykonaj
+; flaga prawidłowego pobrania czasu
+variable_cmos_date_get_semaphore	db	0x00
 
-	; pobierz sekunde ----------------------------------------------
-	movzx	r8,	byte [rsp + 0x01]
-
-	; wyświetl liczbę
-	mov	ax,	0x0103
-	mov	rcx,	10
-	int	0x40	; wykonaj
-
-	; wyświetl informacje o strefie czasowej -----------------------
-	mov	ax,	0x0101
-	mov	rcx,	-1
-	mov	rsi,	tekst_czas_miedzynarodowy
-	int	0x40	; wykonaj
-
-	; procedura zakończenia działania procesu
-	xor	ax,	ax
-	int	0x40	; wykonaj
-
-tekst_separator	db	', 0'
-tekst_dwukropek	db	':0'
-
-tablica_dzien_tygodnia	db	'Sun, ', VARIABLE_ASCII_CODE_TERMINATOR
-			db	'Mon, ', VARIABLE_ASCII_CODE_TERMINATOR
-			db	'Tue, ', VARIABLE_ASCII_CODE_TERMINATOR
-			db	'Wed, ', VARIABLE_ASCII_CODE_TERMINATOR
-			db	'Thu, ', VARIABLE_ASCII_CODE_TERMINATOR
-			db	'Fri, ', VARIABLE_ASCII_CODE_TERMINATOR
-			db	'Sat, ', VARIABLE_ASCII_CODE_TERMINATOR
-
-tablica_miesiac		db	' Jan ', VARIABLE_ASCII_CODE_TERMINATOR
-			db	' Feb ', VARIABLE_ASCII_CODE_TERMINATOR
-			db	' Mar ', VARIABLE_ASCII_CODE_TERMINATOR
-			db	' Apr ', VARIABLE_ASCII_CODE_TERMINATOR
-			db	' May ', VARIABLE_ASCII_CODE_TERMINATOR
-			db	' Jun ', VARIABLE_ASCII_CODE_TERMINATOR
-			db	' Jul ', VARIABLE_ASCII_CODE_TERMINATOR
-			db	' Aug ', VARIABLE_ASCII_CODE_TERMINATOR
-			db	' Sep ', VARIABLE_ASCII_CODE_TERMINATOR
-			db	' Oct ', VARIABLE_ASCII_CODE_TERMINATOR
-			db	' Nov ', VARIABLE_ASCII_CODE_TERMINATOR
-			db	' Dec ', VARIABLE_ASCII_CODE_TERMINATOR
-
-tekst_czas_miedzynarodowy	db	' UTC', VARIABLE_ASCII_CODE_ENTER, VARIABLE_ASCII_CODE_NEWLINE, VARIABLE_ASCII_CODE_TERMINATOR
+; cmos
+variable_cmos_hour			dw	0x0000
+variable_cmos_minute			db	0x00
+variable_cmos_second			db	0x00
+variable_cmos_day_of_week		db	0x00
+variable_cmos_day_of_month		db	0x00
+variable_cmos_month			db	0x00
+variable_cmos_year			db	0x00	; 00..99
+variable_cmos_register_b		dw	0x0000
