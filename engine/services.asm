@@ -560,12 +560,23 @@ irq64_system:
 	cmp	al,	VARIABLE_EMPTY
 	je	.system_uptime
 
+	; pobrać date?
+	cmp	al,	0x01
+	je	.system_date
+
 	; brak obsługi
 	jmp	irq64.end
 
 .system_uptime:
 	; pobierz czas 'uptime'
 	mov	rcx,	qword [variable_system_uptime]
+
+	; koniec obsługi procedury
+	jmp	irq64.end
+
+.system_date:
+	; pobierz czas 'uptime'
+	mov	rbx,	0x050B090F121B2A01
 
 	; koniec obsługi procedury
 	jmp	irq64.end
