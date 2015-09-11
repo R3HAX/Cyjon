@@ -575,8 +575,36 @@ irq64_system:
 	jmp	irq64.end
 
 .system_date:
-	; pobierz czas 'uptime'
-	mov	rbx,	0x050B090F121B2A01
+	xor	rbx,	rbx
+	; załaduj dzień tygodnia
+	mov	bl,	byte [variable_cmos_day_of_week]
+	; przeładuj
+	shl	rbx,	8
+	; załaduj dzień miesiąca
+	mov	bl,	byte [variable_cmos_day_of_month]
+	; przełąduj
+	shl	rbx,	8
+	; załaduj miesiąc
+	mov	bl,	byte [variable_cmos_month]
+	; przeładuj
+	shl	rbx,	8
+	; załaduj rok
+	mov	bl,	byte [variable_cmos_year]
+	; przeładuj
+	shl	rbx,	8
+	; załaduj godzine
+	mov	bl,	byte [variable_cmos_hour]
+	; przeładuj
+	shl	rbx,	8
+	; załaduj minute
+	mov	bl,	byte [variable_cmos_minute]
+	; przeładuj
+	shl	rbx,	8
+	; załaduj sekunde
+	mov	bl,	byte [variable_cmos_second]
+	; przeładuj
+	shl	rbx,	8
+	mov	bl,	00000001b	; tryb 24 godzinny
 
 	; koniec obsługi procedury
 	jmp	irq64.end
