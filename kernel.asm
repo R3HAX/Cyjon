@@ -241,6 +241,12 @@ files_table:
 	dq	file_ps_end
 	db	'ps'
 
+	dq	4
+	dq	file_date_end - file_date
+	dq	file_date
+	dq	file_date_end
+	db	'date'
+
 	; koniec tablicy plików
 	dq	VARIABLE_EMPTY
 
@@ -254,7 +260,7 @@ file_login:		incbin	'login.bin'
 file_login_end:
 
 file_help:		incbin	'help.bin'
-file_help_end:
+file_help_end: 
 
 file_uptime:		incbin	'uptime.bin'
 file_uptime_end:
@@ -264,6 +270,9 @@ file_moko_end:
 
 file_ps:		incbin	'ps.bin'
 file_ps_end:
+
+file_date:		incbin	'date.bin'
+file_date_end:
 
 text_virtial_file_system	db	" Virtual file system initialized.", VARIABLE_ASCII_CODE_ENTER, VARIABLE_ASCII_CODE_NEWLINE, VARIABLE_ASCII_CODE_TERMINATOR
 
