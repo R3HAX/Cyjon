@@ -78,8 +78,8 @@ command_table:
 	db	'clear  '
 	dq	text_clear
 
-;	db	'date   '
-;	dq	text_date
+	db	'date   '
+	dq	text_date
 
 	db	'exit   '
 	dq	text_exit
@@ -90,8 +90,8 @@ command_table:
 ;	db	'ls     '
 ;	dq	text_ls
 
-;	db	'moko   '
-;	dq	text_moko
+	db	'moko   '
+	dq	text_moko
 
 	db	'uptime '
 	dq	text_uptime
