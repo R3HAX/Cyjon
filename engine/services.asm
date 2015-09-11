@@ -61,17 +61,20 @@ irq64_process:
 	cmp	al,	0x03
 	je	.process_more_memory
 
+	; lista procesów aktywnych
+	cmp	al,	0x04
+	je	.process_active_list
+
 	; brak obsługi
 	jmp	irq64.end
 
 .process_kill:
-	; sprawdź czy jądro jest gotowe przyjąć polecenie zamknięcia procesu
-	cmp	qword [variable_process_close],	VARIABLE_EMPTY
-	ja	.process_kill	; czekaj
-
 	; zatrzymaj aktualnie uruchomiony proces
-	mov	rax,	qword [variable_process_table_record_active]
-	mov	qword [variable_process_close],	rax
+	mov	rdi,	qword [variable_process_serpentine_record_active]
+
+	; ustaw flagę "gotowy do zamknięcia" i "proces nieaktywny"
+	and	byte [rdi + STATIC_PROCESS_RECORD.FLAGS],	11111110b
+	or	byte [rdi + STATIC_PROCESS_RECORD.FLAGS],	00000100b
 
 	; zatrzymaj dalsze wykonywanie kodu procesu
 	jmp	$
@@ -127,26 +130,67 @@ irq64_process:
 
 .process_check:
 	; zachowaj oryginalne rejestry
+	push	rax
+	push	rbx
 	push	rcx
 	push	rdi
 
 	; pobierz adres tablicy procesów
-	mov	rdi,	qword [variable_process_table_address]
+	mov	rdi,	qword [variable_process_serpentine_start_address]
 
-	; zamień numer PID na przesunięcie
-	shl	rcx,	4
+	; zapamiętaj
+	push	rdi
 
-	; sprawdź czy proces jest uruchomiony
-	cmp	qword [rdi + rcx],	VARIABLE_EMPTY
-	jne	.process_check_exists
+	; pomiń nagłówek
+	add	rdi,	0x08
 
-	; brak procesu
-	mov	qword [rsp + 0x08],	VARIABLE_EMPTY
+.process_check_loop:
+	; sprawdź numer PID procesu w rekordzie
+	cmp	qword [rdi + STATIC_PROCESS_RECORD.PID],	rcx
+	jne	.process_check_continue
+
+	; sprawdź czy proces jest aktywny
+	mov	al,	byte [rdi + STATIC_PROCESS_RECORD.FLAGS]
+	bt	ax,	0
+	jnc	.process_check_not_found
+
+	; proces istnieje i jest aktywny
+	jmp	.process_check_exists
+
+.process_check_continue:
+	; następny rekord
+	add	rdi,	STATIC_PROCESS_RECORD.SIZE
+
+	; koniec części serpentyny?
+	mov	bx,	di
+	and	bx,	0x0FFF
+	cmp	bx,	0x0FF8
+	jne	.process_check_loop
+
+	; przejdź do następnej części
+	mov	rdi,	qword [rdi]
+
+	; wykonaliśmy pętlę?
+	cmp	rdi,	qword [variable_process_serpentine_start_address]
+	je	.process_check_not_found
+
+	; pomiń nagłówek
+	add	rdi,	0x08
+
+	; kontynuuj z nastepnymi rekordami
+	jmp	.process_check_loop
+
+.process_check_not_found:
+	; zwróć brak uruchomionego procesu
+	mov	qword [rsp + 0x10],	VARIABLE_EMPTY
 
 .process_check_exists:
 	; przywróć oryginalne rejestry
 	pop	rdi
+	pop	rdi
 	pop	rcx
+	pop	rbx
+	pop	rax
 
 	; koniec obsługi procedury
 	jmp	irq64.end
@@ -174,6 +218,119 @@ irq64_process:
 	pop	r11
 	pop	rdi
 	pop	rcx
+	pop	rbx
+	pop	rax
+
+	; koniec obsługi procedury
+	jmp	irq64.end
+
+.process_active_list:
+	push	rax
+	push	rbx
+	push	rdx
+	push	rsi
+	push	rdi
+	push	r11
+	push	r8
+
+	mov	rax,	STATIC_PROCESS_RECORD.SIZE
+	mov	rcx,	qword [variable_process_serpentine_record_count]
+	mul	rcx
+
+	xchg	rax,	rdi
+	call	library_align_address_up_to_page
+	xchg	rax,	rdi
+	xchg	rax,	rcx
+	shr	rcx,	12
+
+	; wyrównaj adres do pełnej strony
+	call	library_align_address_up_to_page
+
+	; przygotuj przestrzeń pod dane
+	mov	rax,	rdi
+	mov	rdi,	VARIABLE_MEMORY_HIGH_ADDRESS
+	sub	rax,	rdi
+	mov	rbx,	0x07	; flagi: Użytkownik, 4 KiB, Odczyt/Zapis, Dostępna
+	mov	r11,	cr3
+	call	cyjon_page_map_logical_area
+
+	; znajdź wolny rekord w tablicy procesów
+	mov	rsi,	qword [variable_process_serpentine_start_address]
+
+	; pomiń nagłówek
+	add	rsi,	0x08
+
+	add	rdi,	rax
+
+	; licznik elemtów w utworzonej tablicy
+	xor	r8,	r8
+
+	; nagłówek tworzonej tablicy (rozmiar jednego rekordu w Bajtach)
+	mov	rax,	41
+	stosq
+
+.process_active_list_loop:
+	; flaga
+	xor	bx,	bx
+
+	; licznik rekordów
+	xor	rcx,	rcx
+
+.process_active_list_next:
+	; przesuń na następny rekord
+	add	rsi,	STATIC_PROCESS_RECORD.SIZE
+
+	; rekord zajęty
+	inc	rcx
+
+	; koniec rekordów w części serpentyny?
+	cmp	rcx,	STATIC_PROCESS_RECORDS_PER_PAGE
+	jb	.process_active_list_in_page
+
+	; zładuj adres kolejnej części serpentyny
+	mov	rsi,	qword [rsi]
+
+	; koniec serpentyny
+	cmp	rsi,	qword [variable_process_serpentine_start_address]
+	je	.process_active_list_end
+
+	; pomiń nagłówek
+	add	rsi,	0x08
+
+	; zresetuj licznik rekordów na część serpentyny
+	xor	rcx,	rcx
+
+.process_active_list_in_page:
+	; sprawdź czy rekord jest aktywny
+	bt	word [rsi + STATIC_PROCESS_RECORD.FLAGS],	bx
+	jnc	.process_active_list_next	; jeśli tak
+
+	push	rcx
+	push	rsi
+	mov	rcx,	8
+	rep	movsb
+	add	rsi,	0x18
+	mov	rcx,	32
+	rep	movsb
+	; dodaj terminator na koniec rekordu
+	xor	al,	al
+	stosb
+	pop	rsi
+	pop	rcx
+
+	; dodano element to tablicy
+	inc	r8
+
+	jmp	.process_active_list_next
+
+.process_active_list_end:
+	mov	rcx,	r8
+
+	pop	r11
+	pop	r8
+	pop	rdi
+	pop	rsi
+	pop	rdx
 	pop	rbx
 	pop	rax
 
@@ -399,12 +556,51 @@ irq64_system:
 	cmp	al,	VARIABLE_EMPTY
 	je	.system_uptime
 
+	; pobrać date?
+	cmp	al,	0x01
+	je	.system_date
+
 	; brak obsługi
 	jmp	irq64.end
 
 .system_uptime:
 	; pobierz czas 'uptime'
 	mov	rcx,	qword [variable_system_uptime]
+
+	; koniec obsługi procedury
+	jmp	irq64.end
+
+.system_date:
+	xor	rbx,	rbx
+	; załaduj dzień tygodnia
+	mov	bl,	byte [variable_cmos_day_of_week]
+	; przeładuj
+	shl	rbx,	8
+	; załaduj dzień miesiąca
+	mov	bl,	byte [variable_cmos_day_of_month]
+	; przełąduj
+	shl	rbx,	8
+	; załaduj miesiąc
+	mov	bl,	byte [variable_cmos_month]
+	; przeładuj
+	shl	rbx,	8
+	; załaduj rok
+	mov	bl,	byte [variable_cmos_year]
+	; przeładuj
+	shl	rbx,	8
+	; załaduj godzine
+	mov	bl,	byte [variable_cmos_hour]
+	; przeładuj
+	shl	rbx,	8
+	; załaduj minute
+	mov	bl,	byte [variable_cmos_minute]
+	; przeładuj
+	shl	rbx,	8
+	; załaduj sekunde
+	mov	bl,	byte [variable_cmos_second]
+	; przeładuj
+	shl	rbx,	8
+	mov	bl,	00000001b	; tryb 24 godzinny
 
 	; koniec obsługi procedury
 	jmp	irq64.end

@@ -41,6 +41,9 @@ alive:
 	inc	qword [variable_system_uptime]
 
 .uptime_no_change:
+	; pobierz aktualny czas z systemu (trzeba to zmienić, za często będzie pobierany, lepiej zamienić czas na początku na EPOCH i dodawać do niego UPTIME)
+	call	cyjon_cmos_date_get
+
 	; jądro systemu zakończyło analize zgłoszeń
 	hlt
 
