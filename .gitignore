@@ -1,0 +1,12 @@
+
+
+*.raw
+*.exe
+qemu
+build
+bochs
+qemu.bat
+*.rc
+*.bak
+*.bat
+*.ini
