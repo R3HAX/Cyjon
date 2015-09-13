@@ -113,7 +113,7 @@ start:
 %include	"engine/process.asm"
 %include	"engine/services.asm"
 
-%include	"daemon/garbage_collector.asm"
+%include	"engine/daemon/garbage_collector.asm"
 
 %include	"engine/drivers/pci.asm"
 
