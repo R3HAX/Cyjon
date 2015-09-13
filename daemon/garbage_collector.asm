@@ -65,7 +65,7 @@ daemon_init_garbage_collector:
 	stosq	; zapisz
 
 	; RSP
-	mov	rax,	VARIABLE_EMPTY
+	mov	rax,	VARIABLE_MEMORY_HIGH_VIRTUAL_ADDRESS
 	stosq	; zapisz
 
 	; DS
