@@ -571,7 +571,7 @@ itd_hardware_interrupt:
 	call	cyjon_screen_print_string	; plik: engine/screen.asm
 
 	; wstrzymaj przełączanie procesów
-	inc	qword [variable_process_serpentine_blocked]
+	inc	qword [variable_multitasking_serpentine_blocked]
 
 	; zatrzymaj dalsze wykonywanie kodu jądra
 	jmp	$
@@ -597,7 +597,7 @@ itd_software_interrupt:
 	call	cyjon_screen_print_string	; plik: engine/screen.asm
 
 	; wstrzymaj przełączanie procesów
-	inc	qword [variable_process_serpentine_blocked]
+	inc	qword [variable_multitasking_serpentine_blocked]
 
 	; zatrzymaj dalsze wykonywanie kodu jądra
 	jmp	$
