@@ -10,5 +10,3 @@ qemu.bat
 *.bak
 *.bat
 *.ini
-*.sh
-*.txt
