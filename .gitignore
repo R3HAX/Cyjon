@@ -10,3 +10,5 @@ qemu.bat
 *.bak
 *.bat
 *.ini
+*.sh
+modyfikacje.txt

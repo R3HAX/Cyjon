@@ -70,11 +70,11 @@ irq64_process:
 
 .process_kill:
 	; zatrzymaj aktualnie uruchomiony proces
-	mov	rdi,	qword [variable_process_serpentine_record_active]
+	mov	rdi,	qword [variable_multitasking_serpentine_record_active_address]
 
 	; ustaw flagę "gotowy do zamknięcia" i "proces nieaktywny"
-	and	byte [rdi + STATIC_PROCESS_RECORD.FLAGS],	11111110b
-	or	byte [rdi + STATIC_PROCESS_RECORD.FLAGS],	00000100b
+	and	byte [rdi + VARIABLE_TABLE_SERPENTINE_RECORD.FLAGS],	11111110b
+	or	byte [rdi + VARIABLE_TABLE_SERPENTINE_RECORD.FLAGS],	00000100b
 
 	; zatrzymaj dalsze wykonywanie kodu procesu
 	jmp	$
@@ -136,7 +136,7 @@ irq64_process:
 	push	rdi
 
 	; pobierz adres tablicy procesów
-	mov	rdi,	qword [variable_process_serpentine_start_address]
+	mov	rdi,	qword [variable_multitasking_serpentine_start_address]
 
 	; zapamiętaj
 	push	rdi
@@ -146,11 +146,11 @@ irq64_process:
 
 .process_check_loop:
 	; sprawdź numer PID procesu w rekordzie
-	cmp	qword [rdi + STATIC_PROCESS_RECORD.PID],	rcx
+	cmp	qword [rdi + VARIABLE_TABLE_SERPENTINE_RECORD.PID],	rcx
 	jne	.process_check_continue
 
 	; sprawdź czy proces jest aktywny
-	mov	al,	byte [rdi + STATIC_PROCESS_RECORD.FLAGS]
+	mov	al,	byte [rdi + VARIABLE_TABLE_SERPENTINE_RECORD.FLAGS]
 	bt	ax,	0
 	jnc	.process_check_not_found
 
@@ -159,7 +159,7 @@ irq64_process:
 
 .process_check_continue:
 	; następny rekord
-	add	rdi,	STATIC_PROCESS_RECORD.SIZE
+	add	rdi,	VARIABLE_TABLE_SERPENTINE_RECORD.SIZE
 
 	; koniec części serpentyny?
 	mov	bx,	di
@@ -171,7 +171,7 @@ irq64_process:
 	mov	rdi,	qword [rdi]
 
 	; wykonaliśmy pętlę?
-	cmp	rdi,	qword [variable_process_serpentine_start_address]
+	cmp	rdi,	qword [variable_multitasking_serpentine_start_address]
 	je	.process_check_not_found
 
 	; pomiń nagłówek
@@ -233,8 +233,8 @@ irq64_process:
 	push	r11
 	push	r8
 
-	mov	rax,	STATIC_PROCESS_RECORD.SIZE
-	mov	rcx,	qword [variable_process_serpentine_record_count]
+	mov	rax,	VARIABLE_TABLE_SERPENTINE_RECORD.SIZE
+	mov	rcx,	qword [variable_multitasking_serpentine_record_counter]
 	mul	rcx
 
 	xchg	rax,	rdi
@@ -255,7 +255,7 @@ irq64_process:
 	call	cyjon_page_map_logical_area
 
 	; znajdź wolny rekord w tablicy procesów
-	mov	rsi,	qword [variable_process_serpentine_start_address]
+	mov	rsi,	qword [variable_multitasking_serpentine_start_address]
 
 	; pomiń nagłówek
 	add	rsi,	0x08
@@ -278,7 +278,7 @@ irq64_process:
 
 .process_active_list_next:
 	; przesuń na następny rekord
-	add	rsi,	STATIC_PROCESS_RECORD.SIZE
+	add	rsi,	VARIABLE_TABLE_SERPENTINE_RECORD.SIZE
 
 	; rekord zajęty
 	inc	rcx
@@ -291,7 +291,7 @@ irq64_process:
 	mov	rsi,	qword [rsi]
 
 	; koniec serpentyny
-	cmp	rsi,	qword [variable_process_serpentine_start_address]
+	cmp	rsi,	qword [variable_multitasking_serpentine_start_address]
 	je	.process_active_list_end
 
 	; pomiń nagłówek
@@ -302,7 +302,7 @@ irq64_process:
 
 .process_active_list_in_page:
 	; sprawdź czy rekord jest aktywny
-	bt	word [rsi + STATIC_PROCESS_RECORD.FLAGS],	bx
+	bt	word [rsi + VARIABLE_TABLE_SERPENTINE_RECORD.FLAGS],	bx
 	jnc	.process_active_list_next	; jeśli tak
 
 	push	rcx

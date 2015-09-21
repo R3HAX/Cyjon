@@ -172,65 +172,16 @@ cyjon_process_init:
 	; załaduj adres tablicy PML4 procesu
 	mov	rax,	qword [rsp]
 
-.wait:
-	; sprawdź czy tablica procesów jest dostępna
-	cmp	byte [variable_process_serpentine_blocked],	0x01
-	je	.wait	; jeśli nie, czekaj
-
-	; zablokuj tablice procesów
-	mov	byte [variable_process_serpentine_blocked],	0x01
-
 	; znajdź wolny rekord w tablicy procesów
-	mov	rdi,	qword [variable_process_serpentine_start_address]
-
-	; pomiń nagłówek
-	add	rdi,	0x08
+	mov	rdi,	qword [variable_multitasking_serpentine_start_address]
 
 	; flaga
 	xor	bx,	bx
 
-.next:
-	; przesuń na następny rekord
-	add	rdi,	STATIC_PROCESS_RECORD.SIZE
+	call	cyjon_multitasking_serpentine_find_record
 
-	; koniec rekordów w części serpentyny?
-	mov	cx,	di
-	and	cx,	0x0FFF
-	cmp	cx,	0x0FF8
-	jne	.in_page
-
-	; zładuj adres kolejnej części serpentyny
-	mov	rcx,	qword [rdi]
-
-	; koniec serpentyny?
-	cmp	rcx,	qword [variable_process_serpentine_start_address]
-	jne	.not_at_end
-
-	; rozszerz serpentynę
-	mov	rcx,	rdi
-	call	cyjon_page_allocate
-	call	cyjon_page_clear
-	push	rcx
-	mov	rcx,	qword [variable_process_serpentine_start_address]
-	mov	qword [rdi + VARIABLE_MEMORY_PAGE_SIZE - 0x08],	rcx
-	pop	rcx
-	mov	qword [rcx],	rdi
-	mov	rdi,	rcx
-
-.not_at_end:
-	mov	rdi,	qword [rdi]
-
-	; pomiń nagłówek
-	add	rdi,	0x08
-
-.in_page:
-	; sprawdź czy rekord jest niedostepny
-	cmp	qword [rdi + STATIC_PROCESS_RECORD.FLAGS],	VARIABLE_EMPTY
-	ja	.next	; jeśli tak
-
-.found:
 	; pobierz dostępny identyfikator procesu
-	mov	rax,	qword [variable_process_pid_next]
+	mov	rax,	qword [variable_multitasking_pid_value_next]
 
 	; zachowaj
 	push	rax
@@ -253,7 +204,7 @@ cyjon_process_init:
 
 .pid:
 	; zapisz
-	pop	qword [variable_process_pid_next]
+	pop	qword [variable_multitasking_pid_value_next]
 
 	; przywróć
 	pop	rax
@@ -283,10 +234,7 @@ cyjon_process_init:
 	rep	movsb
 
 	; zwiększ ilość rekordów/procesów przechowywanych w tablicy
-	inc	qword [variable_process_serpentine_record_count]
-
-	; odblokuj tablice procesów dla planisty
-	mov	byte [variable_process_serpentine_blocked],	VARIABLE_EMPTY
+	inc	qword [variable_multitasking_serpentine_record_counter]
 
 	; wysprzątaj tablice PML4 jądra z zainicjalizowanego procesu
 	xor	rax,	rax	; wyczyść rekordy
@@ -327,7 +275,7 @@ cyjon_process_close:
 	mov	qword [rdi],	VARIABLE_EMPTY
 
 	; zmniejsz ilość procesów przechowywanych w tablicy
-	dec	qword [variable_process_serpentine_record_count]
+	dec	qword [variable_multitasking_serpentine_record_counter]
 
 	; zwolnij pamięć zajętą przez proces
 	mov	rdi,	rbx	; załaduj adres tablicy PML4 procesu

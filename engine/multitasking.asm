@@ -14,6 +14,9 @@
 ; 64 Bitowy kod programu
 [BITS 64]
 
+; śmieć
+STATIC_PROCESS_RECORDS_PER_PAGE	equ	51
+
 struc VARIABLE_TABLE_SERPENTINE_RECORD
 	.PID		resq	1
 	.CR3		resq	1
@@ -23,6 +26,10 @@ struc VARIABLE_TABLE_SERPENTINE_RECORD
 	.ARGS		resq	1
 	.SIZE		resb	1
 endstruc
+
+STATIC_SERPENTINE_RECORD_FLAG_USED	equ	00000001b	; rekord w serpentynie jest zajęty przez uruchomiony proces
+STATIC_SERPENTINE_RECORD_FLAG_ACTIVE	equ	00000010b	; proces bierze czynny udział w pracy systemu
+STATIC_SERPENTINE_RECORD_FLAG_CLOSED	equ	00000100b
 
 ; następny wolny numer PID procesu
 variable_multitasking_pid_value_next				dq	VARIABLE_EMPTY
@@ -66,15 +73,8 @@ multitasking:
 	; przy pierwszym przełączeniu procesów, zostanie uzupełniony poprawną wartością
 	add	rdi,	0x08	; pomiń
 
-	; FLAGI:
-	;	111b
-	;	|||
-	;	||rekord zajęty, 0 pusty
-	;	|proces aktywny, 0 uśpiony
-	;	proces zakończony, 0 działający
-
 	; zapisz flagi procesu
-	mov	rax,	11b	; rekord aktywny, zajęty
+	mov	rax,	STATIC_SERPENTINE_RECORD_FLAG_USED | STATIC_SERPENTINE_RECORD_FLAG_ACTIVE
 	stosq
 
 	; ustaw nazwę procesu
@@ -143,14 +143,9 @@ irq32:
 	mov	rdx,	qword [variable_multitasking_serpentine_record_counter_handle]
 
 .loop:
-	; flaga ACTIVE
-	xor	bx,	bx
+	mov	bx,	STATIC_SERPENTINE_RECORD_FLAG_USED | STATIC_SERPENTINE_RECORD_FLAG_ACTIVE
 
 	call	cyjon_multitasking_serpentine_find_record.next_record
-
-	inc	bx
-	bt	word [rdi + VARIABLE_TABLE_SERPENTINE_RECORD.FLAGS],	bx
-	jnc	.loop
 
 .found:
 	mov	qword [variable_multitasking_serpentine_record_counter_left_in_page],	rcx
@@ -226,7 +221,9 @@ cyjon_multitasking_serpentine_find_record:
 	mov	rcx,	( VARIABLE_MEMORY_PAGE_SIZE - 0x08 ) / VARIABLE_TABLE_SERPENTINE_RECORD.SIZE
 
 .in_page:
-	bt	word [rdi + VARIABLE_TABLE_SERPENTINE_RECORD.FLAGS],	bx
-	jnc	.next_record
+	mov	ax,	word [rdi + VARIABLE_TABLE_SERPENTINE_RECORD.FLAGS]
+	and	ax,	bx
+	cmp	ax,	bx
+	jne	.next_record
 
 	ret

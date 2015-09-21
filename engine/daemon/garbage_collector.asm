@@ -75,26 +75,15 @@ daemon_init_garbage_collector:
 	; załaduj adres tablicy PML4 procesu
 	mov	rax,	qword [rsp]
 
-.wait:
-	; sprawdź czy tablica procesów jest dostępna
-	cmp	byte [variable_process_serpentine_blocked],	0x01
-	je	.wait	; jeśli nie, czekaj
-
-	; zablokuj tablice procesów
-	mov	byte [variable_process_serpentine_blocked],	0x01
-
 	; znajdź wolny rekord w tablicy procesów
-	mov	rdi,	qword [variable_process_serpentine_start_address]
-
-	; pomiń nagłówek
-	add	rdi,	0x08
+	mov	rdi,	qword [variable_multitasking_serpentine_start_address]
 
 	; flaga
 	xor	bx,	bx
 
 .next:
 	; przesuń na następny rekord
-	add	rdi,	STATIC_PROCESS_RECORD.SIZE
+	add	rdi,	VARIABLE_TABLE_SERPENTINE_RECORD.SIZE
 
 	; koniec rekordów w części serpentyny?
 	mov	cx,	di
@@ -106,7 +95,7 @@ daemon_init_garbage_collector:
 	mov	rcx,	qword [rdi]
 
 	; koniec serpentyny?
-	cmp	rcx,	qword [variable_process_serpentine_start_address]
+	cmp	rcx,	qword [variable_multitasking_serpentine_start_address]
 	jne	.not_at_end
 
 	; rozszerz serpentynę
@@ -114,7 +103,7 @@ daemon_init_garbage_collector:
 	call	cyjon_page_allocate
 	call	cyjon_page_clear
 	push	rcx
-	mov	rcx,	qword [variable_process_serpentine_start_address]
+	mov	rcx,	qword [variable_multitasking_serpentine_start_address]
 	mov	qword [rdi + VARIABLE_MEMORY_PAGE_SIZE - 0x08],	rcx
 	pop	rcx
 	mov	qword [rcx],	rdi
@@ -123,17 +112,14 @@ daemon_init_garbage_collector:
 .not_at_end:
 	mov	rdi,	qword [rdi]
 
-	; pomiń nagłówek
-	add	rdi,	0x08
-
 .in_page:
 	; sprawdź czy rekord jest niedostepny
-	cmp	qword [rdi + STATIC_PROCESS_RECORD.FLAGS],	VARIABLE_EMPTY
+	cmp	qword [rdi + VARIABLE_TABLE_SERPENTINE_RECORD.FLAGS],	VARIABLE_EMPTY
 	ja	.next	; jeśli tak
 
 .found:
 	; pobierz dostępny identyfikator procesu
-	mov	rax,	qword [variable_process_pid_next]
+	mov	rax,	qword [variable_multitasking_pid_value_next]
 
 	; zachowaj
 	push	rax
@@ -156,7 +142,7 @@ daemon_init_garbage_collector:
 
 .pid:
 	; zapisz
-	pop	qword [variable_process_pid_next]
+	pop	qword [variable_multitasking_pid_value_next]
 
 	; przywróć
 	pop	rax
@@ -173,7 +159,7 @@ daemon_init_garbage_collector:
 	stosq
 
 	; ustaw flagę rekordu na aktywny
-	mov	rax,	0x01
+	mov	rax,	STATIC_SERPENTINE_RECORD_FLAG_USED | STATIC_SERPENTINE_RECORD_FLAG_ACTIVE
 	stosq
 
 	; ustaw wskaźnik do nazwy pliku
@@ -186,10 +172,7 @@ daemon_init_garbage_collector:
 	rep	movsb
 
 	; zwiększ ilość rekordów/procesów przechowywanych w tablicy
-	inc	qword [variable_process_serpentine_record_count]
-
-	; odblokuj tablice procesów dla planisty
-	mov	byte [variable_process_serpentine_blocked],	VARIABLE_EMPTY
+	inc	qword [variable_multitasking_serpentine_record_counter]
 
 	; usuń adres tablicy PML4 demona
 	add	rsp,	0x08
