@@ -11,6 +11,21 @@
 ; Use:
 ; nasm - http://www.nasm.us/
 
+struc VARIABLE_TABLE_SERPENTINE_RECORD
+	.PID		resq	1
+	.CR3		resq	1
+	.RSP		resq	1
+	.FLAGS		resq	1
+	.NAME		resb	32
+	.ARGS		resq	1
+	.SIZE		resb	1
+endstruc
+
+STATIC_SERPENTINE_RECORD_FLAG_USED	equ	0	; rekord w serpentynie jest zajęty przez uruchomiony proces
+STATIC_SERPENTINE_RECORD_FLAG_ACTIVE	equ	1	; proces bierze czynny udział w pracy systemu
+STATIC_SERPENTINE_RECORD_FLAG_CLOSED	equ	2
+STATIC_SERPENTINE_RECORD_FLAG_DAEMON	equ	3
+
 ; kolory, stałe
 %include	'config.asm'
 
@@ -32,9 +47,6 @@ start:
 	mov	ax,	0x0004
 	int	0x40
 
-	; zachowaj licznik elementów
-	push	rcx
-
 	; wyświetl nagłówek
 	mov	rax,	0x0101
 	mov	rbx,	VARIABLE_COLOR_DEFAULT
@@ -43,17 +55,28 @@ start:
 	mov	rsi,	text_header
 	int	0x40
 
-	; przywróć licznik
-	pop	rcx
-
 	; pobierz rozmiar rekordu
 	mov	r9,	qword [rdi]
-	; przejdź do piwerszego rekordu
+
+	; przejdź do pierwszego rekordu
 	add	rdi,	0x08
 
 .loop:
 	push	rdi
 
+	mov	bx,	STATIC_SERPENTINE_RECORD_FLAG_DAEMON
+	bt	[rdi + 	VARIABLE_TABLE_SERPENTINE_RECORD.FLAGS],	bx
+	jnc	.color_default
+
+	mov	ebx,	VARIABLE_COLOR_GRAY
+
+	jmp	.color_ok
+
+.color_default:
+	mov	ebx,	VARIABLE_COLOR_DEFAULT
+
+.color_ok:
+	; wyświetl numer PID
 	mov	ax,	0x0103
 	mov	ecx,	10
 	mov	r8,	qword [rdi]
@@ -73,9 +96,9 @@ start:
 
 	pop	rbx
 	mov	ax,	0x0101
-	mov	rcx,	-1
+	mov	rcx,	32	; maksymalna ilość znaków na nazwę procesu
 	mov	rsi,	rdi
-	add	rsi,	0x08
+	add	rsi,	VARIABLE_TABLE_SERPENTINE_RECORD.NAME
 	int	0x40
 
 	mov	rsi,	text_paragraph
@@ -83,9 +106,9 @@ start:
 
 	pop	rdi
 
-	add	rdi,	r9
+	add	rdi,	VARIABLE_TABLE_SERPENTINE_RECORD.SIZE
 
-	cmp	qword [rdi],	VARIABLE_EMPTY
+	cmp	qword [rdi + VARIABLE_TABLE_SERPENTINE_RECORD.FLAGS],	VARIABLE_EMPTY
 	jne	.loop
 
 	xor	ax,	ax

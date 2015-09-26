@@ -62,6 +62,9 @@ start:
 	; wirtualny system plików zostanie przygotowany na nowo (wzorem z ext2), aby mieć obsługe katalogów
 	call	virtual_file_systems
 
+	; uruchom niezbędne demony
+	call	daemon_init_garbage_collector
+
 	; załaduj do wirtualnego systemu plików, dołączone oprogramowanie
 	call	save_included_files
 	; oblicz rozmiar przestrzeni do zwolnienia w Bajtach
@@ -109,6 +112,8 @@ start:
 %include	"engine/virtual_file_system.asm"
 %include	"engine/process.asm"
 %include	"engine/services.asm"
+
+%include	"engine/daemon/garbage_collector.asm"
 
 %include	"engine/drivers/pci.asm"
 
