@@ -30,6 +30,7 @@ endstruc
 STATIC_SERPENTINE_RECORD_FLAG_USED	equ	00000001b	; rekord w serpentynie jest zajęty przez uruchomiony proces
 STATIC_SERPENTINE_RECORD_FLAG_ACTIVE	equ	00000010b	; proces bierze czynny udział w pracy systemu
 STATIC_SERPENTINE_RECORD_FLAG_CLOSED	equ	00000100b
+STATIC_SERPENTINE_RECORD_FLAG_DAEMON	equ	00001000b
 
 ; następny wolny numer PID procesu
 variable_multitasking_pid_value_next				dq	VARIABLE_EMPTY
@@ -137,7 +138,11 @@ irq32:
 	inc	qword [variable_system_microtime]
 
 	mov	rdi,	qword [variable_multitasking_serpentine_record_active_address]
+
 	mov	qword [rdi + VARIABLE_TABLE_SERPENTINE_RECORD.RSP],	rsp
+
+	mov	rax,	cr3
+	mov	qword [rdi + VARIABLE_TABLE_SERPENTINE_RECORD.CR3],	rax
 
 	mov	rcx,	qword [variable_multitasking_serpentine_record_counter_left_in_page]
 	mov	rdx,	qword [variable_multitasking_serpentine_record_counter_handle]

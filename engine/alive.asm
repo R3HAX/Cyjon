@@ -23,14 +23,6 @@
 ;
 ; brak rejestrów zachowanych
 alive:
-	; sprawdź czy zakończyć jakikolwiek proces
-	cmp	qword [variable_process_close],	VARIABLE_EMPTY
-	jne	cyjon_process_close
-
-	; sprawdź czy uruchomić nowy proces
-	cmp	qword [variable_process_new],	VARIABLE_EMPTY
-	jne	cyjon_process_init.ready	; pomiń poszukiwania za plikiem
-
 	; sprawdź czy skorygować czas o jedną sekunde
 	cmp	qword [variable_system_microtime],	VARIABLE_PIT_CLOCK_HZ
 	jb	.uptime_no_change	; nie

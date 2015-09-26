@@ -159,7 +159,7 @@ daemon_init_garbage_collector:
 	stosq
 
 	; ustaw flagę rekordu na aktywny
-	mov	rax,	STATIC_SERPENTINE_RECORD_FLAG_USED | STATIC_SERPENTINE_RECORD_FLAG_ACTIVE
+	mov	rax,	STATIC_SERPENTINE_RECORD_FLAG_USED | STATIC_SERPENTINE_RECORD_FLAG_ACTIVE | STATIC_SERPENTINE_RECORD_FLAG_DAEMON
 	stosq
 
 	; ustaw wskaźnik do nazwy pliku
@@ -181,7 +181,35 @@ daemon_init_garbage_collector:
 	ret
 
 garbage_collector:
-	nop
+	; szukaj procesu gotowego do zamknięcia
+	mov	bx,	101b
+
+	call	cyjon_multitasking_serpentine_find_record
+
+	; pobierz adres tablicy PML4 procesu do zamknięcia
+	mov	rbx,	qword [rdi + VARIABLE_TABLE_SERPENTINE_RECORD.CR3]
+
+	; zapamiętaj adres tablicy PML4 procesu
+	push	rbx
+
+	; zmniejsz ilość procesów przechowywanych w tablicy
+	dec	qword [variable_multitasking_serpentine_record_counter]
+
+	; wyczyść rekord w tablicy
+	mov	qword [rdi + VARIABLE_TABLE_SERPENTINE_RECORD.FLAGS],	VARIABLE_EMPTY
+
+	; zwolnij pamięć zajętą przez proces
+	mov	rdi,	rbx	; załaduj adres tablicy PML4 procesu
+	add	rdi,	255 * 0x08	; rozpocznij zwalnianie przestrzeni od rekordu stosu kontekstu procesu
+	mov	rbx,	4	; ustaw poziom tablicy przetwarzanej
+	mov	rcx,	257	; ile pozostało rekordów w tablicy PML4 do zwolnienia
+	call	cyjon_page_release_area.loop
+
+	; przywróć adres tablicy PML4 procesu
+	pop	rdi
+
+	; zwolnij przestrzeń spod tablicy PML4 procesu
+	call	cyjon_page_release
 
 	hlt
 
