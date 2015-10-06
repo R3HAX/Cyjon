@@ -20,163 +20,95 @@ initialization:
 	call	library_align_address_up_to_page
 
 	; zapisz adres początku dokumentu
-	mov	qword [document_address_start],	rdi
-	; zapisz adres końca dokumentu
-	mov	qword [document_address_end],	rdi
-	add	qword [document_address_end],	0x1000
+	mov	qword [variable_document_address_start],	rdi
+	mov	qword [variable_cursor_indicator],	rdi	; wskaźnik kursora na początku dokumentu
 
-	; poproś o przestrzeń o rozmiarze 4096 Bajtów pod danym adresem
-	mov	rcx,	1	; 1x4096
+	; zapisz adres końca dokumentu
+	mov	qword [variable_document_address_end],	rdi
+	add	qword [variable_document_address_end],	VARIABLE_MEMORY_PAGE_SIZE
+
+	; poproś o przestrzeń o rozmiarze jednej strony
+	mov	rcx,	1
 
 	; zarezerwuj miejsce (rejestracja w tablicy stronicowania programu)
 	mov	ax,	0x0003
 	int	0x40	; wykonaj
 
 	; pobierz informacje o ekranie
-	mov	rax,	0x0106
+	mov	ax,	0x0106
 	int	0x40
 
 	; zapisz rozmiar ekranu w znakach
-	mov	qword [screen_xy],	rbx
+	mov	qword [variable_screen_size],	rbx
 
-.reload:
-	; wyświetl interfejs -------------------------------------------
-
-	; wyświetlaj cały ciąg znaków zakończony terminatorem
-	xor	rcx,	-1
+	;-----------------------------------------------------------------------
+	; wyświetl interfejs ---------------------------------------------------
 
 	; wyczyść ekran
 	mov	ax,	0x0100
 	int	0x40	; wykonaj
 
-	; nagłówek - nazwa dokumentu aktualnie obrabianego, ew. rozmiar dokumentu w Bajtach/KiB/MiB, numer wiersza/kolumny, status dokumentu [zmodyfikowany]
+	xor	rcx,	-1
 
 	; ustaw tło nagłówka
 	mov	ax,	0x0102
 	mov	rbx,	VARIABLE_COLOR_BACKGROUND_DEFAULT
-	mov	ecx,	dword [screen_xy]	; szerokość ekranu w znakach
-	mov	r8,	' '	; spacja
+	mov	ecx,	dword [variable_screen_size]
+	mov	r8,	VARIABLE_ASCII_CODE_SPACE
 	mov	rdx,	VARIABLE_COLOR_DEFAULT
-	int	0x40	; wykonaj
-
-	; zresetuj kursor
-	mov	ax,	0x0105
-	mov	rbx,	0x0000000000000001
-	int	0x40	; wykonaj
-
-	; wyświetl informacje w nagłówku
-	mov	ax,	0x0101	; wypisz tekst
-	mov	rbx,	VARIABLE_COLOR_BACKGROUND_DEFAULT
-	mov	rdx,	VARIABLE_COLOR_DEFAULT
-
-	; sprawdź czy plik posiada nazwę
-	cmp	qword [file_name_count],	0x00
-	je	.new_file
-
-	mov	rcx,	qword [file_name_count]
-	mov	rsi,	file_name_cache
-	jmp	.settled
-
-.new_file:
-	mov	rcx,	-1
-	mov	rsi,	text_header
-
-.settled:
-	int	0x40	; wykonaj
-
-	; wyświetl stopke ----------------------------------------------
-
-	; przesuń kursor w miejsce stopki
-	mov	ax,	0x0105
-	; ostatni wiersz, kolumna 0
-	mov	ebx,	dword [screen_xy + 0x04]
-	dec	rbx
-	shl	rbx,	32
-	; wykonaj
 	int	0x40
 
-	; wyświetl skrót X =============================================
+	; ustaw kursor w pozycji nazwy pliku
+	mov	ax,	0x0105
+	mov	ebx,	1	; wiersz 0, kolumna 1
+	int	0x40
+
+	; wyświetl nazwę pliku
 	mov	ax,	0x0101
 	mov	rbx,	VARIABLE_COLOR_BACKGROUND_DEFAULT
-	mov	rcx,	-1
-	mov	rdx,	VARIABLE_COLOR_DEFAULT	; czare tło
-	mov	rsi,	text_shortcut_exit
-	int	0x40	; wykonaj
+	mov	rdx,	VARIABLE_COLOR_DEFAULT
 
-	; wyświetl opis skrótu
+	; sprawdź czy plik został wczytany lub zapisany pod konkretną nazwą
+	cmp	qword [variable_file_name_chars_count],	VARIABLE_EMPTY
+	je	.new_file
+
+	; plik posiada nazwę własną
+	mov	rcx,	qword [variable_file_name_chars_count]
+	mov	rsi,	variable_file_name_buffor
+
+	jmp	.named
+
+.new_file:
+	mov	rsi,	text_header_default
+
+.named:
+	int	0x40
+
+	mov	rcx,	-1
+
+	; ustaw kursor w pozycji menu
+	mov	ax,	0x0105
+	mov	ebx,	dword [variable_screen_size + 0x04]
+	dec	rbx	; liczymy od ZERA
+	shl	rbx,	32
+	int	0x40
+
+	; skrót X ==============================================================
+	mov	ax,	0x0101
+	mov	rbx,	VARIABLE_COLOR_BACKGROUND_DEFAULT
+	mov	rdx,	VARIABLE_COLOR_DEFAULT
+	mov	rsi,	text_exit_shortcut
+	int	0x40
+
+	; opis
 	xchg	rbx,	rdx
 	mov	rsi,	text_exit
-	int	0x40	; wykonaj
+	int	0x40
 	
-;	; wyświetl skrót R =============================================
-;	xchg	rbx,	rdx
-;	mov	rsi,	text_shortcut_open
-;	int	0x40	; wykonaj
-;
-;	; wyświetl opis skrótu
-;	xchg	rbx,	rdx
-;	mov	rsi,	text_open
-;	int	0x40	; wykonaj
-;
-;	; wyświetl skrót O =============================================
-;	xchg	rbx,	rdx
-;	mov	rsi,	text_shortcut_save
-;	int	0x40	; wykonaj
-;
-;	; wyświetl opis skrótu
-;	xchg	rbx,	rdx
-;	mov	rsi,	text_save
-;	int	0x40	; wykonaj
-;
-;	; wyświetl skrót K =============================================
-;	xchg	rbx,	rdx
-;	mov	rsi,	text_shortcut_cut
-;	int	0x40	; wykonaj
-;
-;	; wyświetl opis skrótu
-;	xchg	rbx,	rdx
-;	mov	rsi,	text_cut
-;	int	0x40	; wykonaj
-
-	; sprawdź czy ustawić kursor na początek ekranu
-	cmp	byte [semaphore_reinit],	0x00
-	je	.end	; nie, to jest reinicjalizacja
-
 	; inicjalizuj początkową pozycje kursora na ekranie
-	mov	rax,	0x0000000200000000
-	mov	qword [cursor_yx],	rax
-
-	; ustaw kursor na początek tworzonego/edytowanego dokumentu
 	mov	ax,	0x0105
-	mov	rbx,	qword [cursor_yx]
-	int	0x40	; wykonaj
+	mov	rbx,	VARIABLE_CURSOR_POSITION_INIT
+	int	0x40
 
-	; inicjalizacja zakończona
-	mov	byte [semaphore_reinit],	0x00
-	
-.end:
 	; powrót z procedury
 	ret
-
-semaphore_reinit	db	0x01
-
-document_address_start	dq	0x0000000000000000
-document_address_end	dq	0x0000000000000000
-
-interface_all_height	dq	4	; -1
-interface_height	dq	3	; -1
-interface_menu_height	dq	1	
-screen_xy		dq	0x0000000000000000
-
-text_header	db	'New file', 0x00
-
-;text_shortcut_open	db	'^r', 0x00
-;text_open	db	' Open  ', 0x00
-;text_shortcut_save	db	'^o', 0x00
-;text_save	db	' Save  ', 0x00
-text_shortcut_exit	db	'^x', 0x00
-text_exit	db	' Exit  ', 0x00
-;text_shortcut_cut	db	'^k',	0x00
-;text_cut	db	' Cut  ', 0x00
-;text_shortcut_paste	db	'^u', 0x00
-;text_paste	db	' UnCut  ', 0x00
