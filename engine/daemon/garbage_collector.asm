@@ -198,6 +198,12 @@ garbage_collector:
 	; wyczyść rekord w tablicy
 	mov	qword [rdi + VARIABLE_TABLE_SERPENTINE_RECORD.FLAGS],	VARIABLE_EMPTY
 
+	; wyczyść nazwę pliku z rekordu
+	xor	al,	al
+	mov	rcx,	32
+	add	rdi,	VARIABLE_TABLE_SERPENTINE_RECORD.NAME
+	rep	stosb
+
 	; zwolnij pamięć zajętą przez proces
 	mov	rdi,	rbx	; załaduj adres tablicy PML4 procesu
 	add	rdi,	255 * 0x08	; rozpocznij zwalnianie przestrzeni od rekordu stosu kontekstu procesu

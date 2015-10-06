@@ -311,6 +311,10 @@ irq64_screen:
 	cmp	al,	0x08
 	je	.screen_cursor_show
 
+	; przewiń zawartość ekranu
+	cmp	al,	0x09
+	je	.screen_scroll
+
 	; brak obsługi
 	jmp	irq64.end
 
@@ -423,6 +427,56 @@ irq64_screen:
 	je	irq64.end
 
 	call	cyjon_screen_cursor_unlock
+
+	; koniec obsługi procedury
+	jmp	irq64.end
+
+.screen_scroll:
+	push	rax
+	push	rcx
+	push	rdx
+	push	rsi
+	push	rdi
+
+	; oblicz adres lini źródłowej
+	mov	rax,	qword [variable_video_mode_char_line_in_bytes]
+	mul	rdx
+	mov	rsi,	rax
+	add	rsi,	qword [variable_video_mode_memory_address]
+	; oblicz adres linii docelowej
+	mov	rdi,	rsi
+	sub	rdi,	qword [variable_video_mode_char_line_in_bytes]
+
+	; oblicz rozmiar przestrzemi pamięci do przesunięcia
+	mov	rax,	qword [variable_video_mode_char_line_in_bytes]
+	mul	rcx
+	mov	rcx,	rax
+
+	cmp	bl,	VARIABLE_EMPTY
+	je	.screen_scroll_down
+
+	; przewiń w górę
+	rep	movsb
+	jmp	.screen_scroll_end
+
+.screen_scroll_down:
+	; przesuń wskaźniki na koniec
+	xchg	rdi,	rsi
+	add	rdi,	rcx
+	add	rsi,	rcx
+
+.screen_scroll_loop:
+	movsb
+	sub	rdi,	2
+	sub	rsi,	2
+	loop	.screen_scroll_loop
+
+.screen_scroll_end:
+	pop	rdi
+	pop	rsi
+	pop	rdx
+	pop	rcx
+	pop	rax
 
 	; koniec obsługi procedury
 	jmp	irq64.end
