@@ -28,21 +28,24 @@ start:
 	; przygotowanie przestrzeni pod dokument i interfejsu
 	call	initialization
 
+.debug:
+	call	debug
+
 .noKey:
 	; pobierz znak z bufora klawiatury
 	mov	ax,	0x0200
 	int	0x40	; wykonaj
 
 	; nic?
-	cmp	ax,	0x0000
+	cmp	ax,	VARIABLE_EMPTY	
 	je	.noKey
 
-;	; naciśnięcie klawisza enter?
-;	cmp	ax,	VARIABLE_ASCII_CODE_ENTER
-;	je	key_enter
-;
+	; klawisz enter
+	cmp	ax,	VARIABLE_ASCII_CODE_ENTER
+	je	key_enter
+
 ;	; naciśnięcie klawisza backspace?
-;	cmp	ax,	0x0008
+;	cmp	ax,	VARIABLE_ASCII_CODE_BACKSPACE
 ;	je	key_backspace
 ;
 ;	; naciśnięcie klawisza Home?
@@ -134,9 +137,10 @@ start:
 	ja	.noKey	; jeśli większe, pomiń
 
 	; zapisz znak do dokumentu
-	jmp	save_into_document
+	call	save_into_document
+	jmp	screen_update
 
-%include	'software/moko/init.asm'
+%include	"software/moko/init.asm"
 
 ;%include	'software/moko/key_home.asm'
 ;%include	'software/moko/key_end.asm'
@@ -145,7 +149,7 @@ start:
 ;%include	'software/moko/key_pageup.asm'
 ;%include	'software/moko/key_pagedown.asm'
 ;%include	'software/moko/key_backspace.asm'
-;%include	'software/moko/key_enter.asm'
+%include	"software/moko/key_enter.asm"
 ;%include	'software/moko/key_arrow_left.asm'
 ;%include	'software/moko/key_arrow_right.asm'
 ;%include	'software/moko/key_arrow_up.asm'
@@ -156,29 +160,34 @@ start:
 ;%include	'software/moko/function_key_exit.asm'
 ;%include	'software/moko/function_key_cut.asm'
 
-;%include	'software/moko/count_chars_in_document_line.asm'
+%include	"software/moko/procedure_count_chars_in_previous_line.asm"
 ;%include	'software/moko/get_address_of_shown_line.asm'
-%include	'software/moko/save_into_document.asm'
+%include	"software/moko/save_into_document.asm"
 ;%include	'software/moko/allocate_memory_in_document.asm'
 ;%include	'software/moko/move_part_of_memory_up.asm'
 ;%include	'software/moko/count_chars_in_previous_line.asm'
-%include	'software/moko/check_cursor.asm'
 
 ; pokaż zawartość dokumentu na ekranie :)
 ;%include	'software/moko/the_show_must_go_on.asm'
 
 ;%include	'library/find_first_word.asm'
 ;%include	'library/input.asm'
-%include	'library/align_address_up_to_page.asm'
+%include	"library/align_address_up_to_page.asm"
+
+%include	"software/moko/debug.asm"
 
 variable_document_address_start			dq	VARIABLE_EMPTY
 variable_document_address_end			dq	VARIABLE_EMPTY
 variable_document_chars_count			dq	VARIABLE_EMPTY
+variable_document_show_from_line		dq	VARIABLE_EMPTY
 variable_line_chars_count			dq	VARIABLE_EMPTY
 variable_line_show_from_char			dq	VARIABLE_EMPTY
+variable_line_count				dq	VARIABLE_EMPTY
+variable_line_current				dq	VARIABLE_EMPTY
 variable_screen_size				dq	VARIABLE_EMPTY
 variable_cursor_position			dq	VARIABLE_CURSOR_POSITION_INIT
 variable_cursor_indicator			dq	VARIABLE_EMPTY
+variable_cursor_in_line				dq	VARIABLE_EMPTY
 
 variable_file_name_chars_count			dq	VARIABLE_EMPTY
 variable_file_name_buffor	times	256	db	VARIABLE_EMPTY

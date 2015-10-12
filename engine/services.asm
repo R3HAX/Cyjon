@@ -438,6 +438,8 @@ irq64_screen:
 	push	rsi
 	push	rdi
 
+	call	cyjon_screen_cursor_lock
+
 	; oblicz adres lini źródłowej
 	mov	rax,	qword [variable_video_mode_char_line_in_bytes]
 	mul	rdx
@@ -477,6 +479,8 @@ irq64_screen:
 	pop	rdx
 	pop	rcx
 	pop	rax
+
+	call	cyjon_screen_cursor_unlock
 
 	; koniec obsługi procedury
 	jmp	irq64.end

@@ -16,9 +16,11 @@
 
 save_into_document:
 	; sprawdź dostępność miejsca w dokumencie
-	mov	rdi,	qword [variable_cursor_indicator]
+	mov	rdi,	qword [variable_document_address_start]
+	add	rdi,	qword [variable_document_chars_count]
+
 	cmp	rdi,	qword [variable_document_address_end]
-	jb	.ok
+	jb	.space_available
 
 	push	rax
 
@@ -31,134 +33,86 @@ save_into_document:
 
 	pop	rax
 
-.ok:
-	; zapisz znak na koniec dokumentu?
+.space_available:
+	; wstaw znak na koniec dokumentu?
 	mov	rdi,	qword [variable_document_address_start]
 	add	rdi,	qword [variable_document_chars_count]
 	cmp	rdi,	qword [variable_cursor_indicator]
-	je	.save
+	je	.at_end_of_document
 
-	jmp	$
+	; wstaw znak gdzieś w dokumencie
 
-.save:
+	; utwórz miejsce dla znaku w dokumencie
+	mov	rcx,	rdi
+	mov	rsi,	rdi
+	dec	rsi
+	sub	rcx,	qword [variable_cursor_indicator]
+	rep	movsb
+
+.at_end_of_document:
 	; zapisz znak do dokumentu
 	mov	rdi,	qword [variable_cursor_indicator]
 	stosb
 
-	mov	qword [variable_cursor_indicator],	rdi
-	inc	qword [variable_document_chars_count]
+	ret
+
+screen_update:
 	inc	qword [variable_line_chars_count]
+	inc	qword [variable_cursor_indicator]
+	inc	qword [variable_cursor_in_line]
+	inc	qword [variable_document_chars_count]
+
+	; sprawdź pozycje kursora
+	mov	ebx,	dword [variable_screen_size]
+	dec	ebx
+
+	cmp	ebx,	dword [variable_cursor_position]
+	je	.cursor_at_end_of_screen
+
 	inc	qword [variable_cursor_position]
 
-	call	check_cursor
+	jmp	.cursor_ok
 
-	; pobierz następny znak
-	jmp	start.noKey
+.cursor_at_end_of_screen:
+	inc	qword [variable_line_show_from_char]
 
-;	; sprawdź czy zmieścimy w linii kojelny znak
-;	movzx	rcx,	byte [screen_xy]
-;	dec	rcx
-;	cmp	byte [line_chars_count],	cl
-;	je	start.loop	; brak miejsca, limit znaków na linie
-;
-;	; sprawdź czy znak zapisać na końcu dokumentu
-;	mov	rdi,	qword [cursor_position]
-;	cmp	rdi,	qword [document_chars_count]
-;	je	.document_end
-;
-;	; utwórz miejsce na znak w dokumencie --------------------------
-;	; czyli, przesuń zawartość dokumentu od pozycji kursora w dokumencie o jedną pozycję do przodu
-;
-;	; ustaw wskaźnik docelowy
-;	mov	rdi,	qword [document_address_start]
-;	add	rdi,	qword [document_chars_count]
-;	; ustaw wskaźnik źródłowy
-;	mov	rsi,	rdi
-;	dec	rsi	; znak z poprzedniej pozycji skopiuj do aktualnej
-;
-;	; ustaw rozmiar dokumentu w znakach za pozycją kursora w dokumencie
-;	mov	rcx,	qword [document_chars_count]
-;	sub	rcx,	qword [cursor_position]
-;
-;	; przesuń zawartość dokumenu o ustanowioną ilość znaków
-;	call	move_memory_up
-;
-;	; miejsce dla znaku zostało utworzone, zachowaj w dokumencie
-;	jmp	.space
-;
-;.document_end:
-;	; przesuń wskaźnik na pozycje do zapisania znaku
-;	add	rdi,	qword [document_address_start]
-;
-;	; sprawdź czy jest miejsce
-;	cmp	rdi,	qword [document_address_end]
-;	jb	.space
-;
-;	; rozszerz przestrzeń dokumentu o kolejne 4096 Bajtów/stronę
-;	call	allocate_new_memory
-;
-;.space:
-;	; zapisz znak do przestrzeni dokumentu w ustalone miejsce
-;	stosb
-;
-;	; zachowaj informacje o zmodyfikowanym dokumencie
-;	mov	byte [semaphore_modified],	0x01
-;
-;.end:
-;	; zwiększ ilość znaków przechowywanych w dokumencie
-;	inc	qword [document_chars_count]
-;
-;	; przesuń aktualną pozycję w dokumencie na następną wolną pozycję
-;	inc	qword [cursor_position]
-;
-;	; zwiększ ilość znaków przechowywanych w aktualnej linii
-;	inc	qword [line_chars_count]
-;
-;	; wyświetl zaaktualizowaną zawartość dokumentu
-;	call	print
-;
-;	; przesuń kursor w prawo
-;	inc	byte [cursor_yx]
-;
-;	; wyświetl nową pozycję kursora
-;	call	set_cursor
-;
-;	; powrót z procedury
-;	jmp	start.loop
-;
-;modified:
-;	; zachowaj znak ASCII
-;	push	rax
-;	push	rbx
-;	push	rcx
-;	push	rsi
-;
-;	; ustaw kursora w polu informacyjnym nagłówka
-;	mov	ax,	0x0105
-;	xor	bx,	bx
-;	mov	ebx,	dword [screen_xy]
-;	sub	ebx,	10 + 1	; ilość znaków w ciągu + odstęp
-;	int	0x40	; wykonaj
-;
-;	; wyświetl informację
-;	mov	ax,	0x0101
-;	mov	rbx,	VARIABLE_COLOR_BACKGROUND_DEFAULT	; czcionka
-;	mov	rcx,	-1	; wyświetl całą zawartość ciągu
-;	mov	rdx,	VARIABLE_COLOR_DEFAULT	; tło
-;	mov	rsi,	text_file_modified
-;	int	0x40	; wykonaj
-;
-;	; ustaw kursor na swoją pozycję
-;	call	set_cursor
-;
-;	; przywróć znak ASCII
-;	pop	rsi
-;	pop	rcx
-;	pop	rbx
-;	pop	rax
-;
-;	; powrót z procedury
-;	ret
-;
-;semaphore_modified		db	VARIABLE_EMPTY
-;text_file_modified	db	'[modified]', VARIABLE_ASCII_CODE_TERMINATOR
+.cursor_ok:
+	mov	ax,	0x0105
+	mov	ebx,	dword [variable_cursor_position + 0x04]
+	shl	rbx,	32
+	int	0x40
+
+	mov	ax,	0x0101
+	mov	rbx,	VARIABLE_COLOR_DEFAULT
+	mov	rcx,	qword [variable_cursor_in_line]
+	sub	rcx,	qword [variable_line_show_from_char]
+	mov	rdx,	VARIABLE_COLOR_BACKGROUND_DEFAULT
+	mov	rsi,	qword [variable_cursor_indicator]
+	sub	rsi,	rcx
+	int	0x40
+
+	mov	rcx,	qword [variable_cursor_in_line]
+	sub	rcx,	qword [variable_line_show_from_char]
+	sub	ecx,	dword [variable_cursor_position]
+	jz	.nothing_left
+
+.nothing_left:
+	; wyczyść pozostałą część linii, jeśli jest
+	mov	ax,	0x0104
+	int	0x40
+
+	mov	ecx,	dword [variable_screen_size]
+	dec	rcx
+	sub	ecx,	ebx
+	jz	start.debug
+
+	mov	ax,	0x0102
+	mov	rbx,	VARIABLE_COLOR_DEFAULT
+	mov	r8,	" "
+	int	0x40
+
+	mov	ax,	0x0105
+	mov	rbx,	qword [variable_cursor_position]
+	int	0x40
+
+	jmp	start.debug
