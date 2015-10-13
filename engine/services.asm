@@ -458,7 +458,10 @@ irq64_screen:
 	je	.screen_scroll_down
 
 	; przewiń w górę
-	rep	movsb
+.screen_scroll_loop_1:
+	movsq
+	sub	rcx,	8
+	jnz	.screen_scroll_loop_1
 	jmp	.screen_scroll_end
 
 .screen_scroll_down:
@@ -467,11 +470,12 @@ irq64_screen:
 	add	rdi,	rcx
 	add	rsi,	rcx
 
-.screen_scroll_loop:
-	movsb
-	sub	rdi,	2
-	sub	rsi,	2
-	loop	.screen_scroll_loop
+.screen_scroll_loop_2:
+	movsq
+	sub	rsi,	16
+	sub	rdi,	16
+	sub	rcx,	8
+	jnz	.screen_scroll_loop_2
 
 .screen_scroll_end:
 	pop	rdi
