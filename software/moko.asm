@@ -161,11 +161,11 @@ start:
 ;%include	'software/moko/function_key_cut.asm'
 
 %include	"software/moko/procedure_count_chars_in_previous_line.asm"
+%include	"software/moko/procedure_count_chars_in_document_line.asm"
 ;%include	'software/moko/get_address_of_shown_line.asm'
 %include	"software/moko/save_into_document.asm"
 ;%include	'software/moko/allocate_memory_in_document.asm'
 ;%include	'software/moko/move_part_of_memory_up.asm'
-;%include	'software/moko/count_chars_in_previous_line.asm'
 
 ; pokaż zawartość dokumentu na ekranie :)
 ;%include	'software/moko/the_show_must_go_on.asm'
@@ -182,7 +182,7 @@ variable_document_chars_count			dq	VARIABLE_EMPTY
 variable_document_show_from_line		dq	VARIABLE_EMPTY
 variable_line_chars_count			dq	VARIABLE_EMPTY
 variable_line_show_from_char			dq	VARIABLE_EMPTY
-variable_line_count				dq	VARIABLE_EMPTY
+variable_line_count				dq	1
 variable_line_current				dq	VARIABLE_EMPTY
 variable_screen_size				dq	VARIABLE_EMPTY
 variable_cursor_position			dq	VARIABLE_CURSOR_POSITION_INIT
