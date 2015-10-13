@@ -15,68 +15,59 @@
 [BITS 64]
 
 key_arrow_up:
-	; oblicz poczatek linii aktualnej
-	mov	rsi,	qword [document_address_start] 
-	add	rsi,	qword [cursor_position]
-	mov	ecx,	dword [cursor_yx]
+	mov	rsi,	qword [variable_cursor_indicator]
+	mov	rcx,	qword [variable_cursor_in_line]
 	sub	rsi,	rcx
 
-	; sprawdź czy znajdujemy się na początku dokumentu
-	cmp	rsi,	qword [document_address_start]
-	je	start.loop	; nie można przestawić kursora o jedną linię w górę
+	mov	qword [variable_cursor_indicator],	rsi
 
-	; oblicz początek i rozmiar poprzedniej linii ------------------
+	cmp	qword [variable_line_show_from_char],	VARIABLE_EMPTY
+	je	.line_ok
 
-	; pomiń znak nowej linii
+	mov	ax,	0x0105
+	mov	ebx,	dword [variable_cursor_position + 0x04]
+	shl	rbx,	32
+	int	0x40
+
+	cmp	ecx,	dword [variable_screen_size]
+	jb	.size_ok
+
+	mov	ecx,	dword [variable_screen_size]
+	dec	rcx
+
+.size_ok:
+	mov	ax,	0x0101
+	mov	rbx,	VARIABLE_COLOR_DEFAULT
+	mov	rdx,	VARIABLE_COLOR_BACKGROUND_DEFAULT
+	int	0x40
+
+	mov	ebx,	dword [variable_screen_size]
+	sub	ebx,	ecx
+	jz	.line_ok
+
+	mov	ax,	0x0102
+	mov	rcx,	VARIABLE_COLOR_DEFAULT
+	xchg	rbx,	rcx
+	mov	r8,	" "
+	int	0x40
+
+.line_ok:
 	dec	rsi
-
-	; zliczaj
 	call	count_chars_in_previous_line
 
-	; zapisz rozmiar poprzedniej linii
-	mov	qword [line_chars_count],	rcx
+	mov	qword [variable_cursor_indicator],	rsi
 
-	; zapisz pozycje kursora wewnątrz dokumentu
-	mov	qword [cursor_position],	rsi
+	cmp	ecx,	dword [variable_screen_size]
+	jb	.cursor_ok
 
-	; sprawdź czy można ustawić kursor w tej samej kolumnie
-	cmp	dword [cursor_yx],	ecx
-	jbe	.ok	; jeśli tak, zmnień tylko wiersz
+	mov	ecx,	dword [variable_screen_size]
 
-	; ustaw kursor na końcu poprzedniej linii
-	mov	dword [cursor_yx],	ecx
+.cursor_ok:
+	mov	dword [variable_cursor_position],	ecx
+	mov	qword [variable_cursor_in_line],	rcx
 
-	; przesuń pozycje kursora wewnątrz dokumentu na koniec poprzedniej linii
-	add	qword [cursor_position],	rcx
+	mov	ax,	0x0105
+	mov	rbx,	qword [variable_cursor_position]
+	int	0x40
 
-	; kontynuuj
-	jmp	.updated
-
-.ok:
-	; przesuń pozycje kursora wewnątrz dokumentu w miejsce kursora
-	mov	ecx,	dword [cursor_yx]
-	add	qword [cursor_position],	rcx
-
-.updated:
-	; sprawdź czy kursor znajduje się na początku ekranu (wiersz 0)
-	cmp	dword [cursor_yx + 0x04],	0x02
-	ja	.no	; jeśli nie, zmień numer wiersza
-
-	; kursor znajduje się na początku ekranu, zmień numer wiersza od którego wyświetlamy dokument na wcześniejszy
-	dec	qword [show_line]
-
-	; aktualizuj zawartość ekranu
-	call	print
-
-	; koniec obsługi klawisza
-	jmp	start.loop
-
-.no:
-	; ustaw nową pozycję kursora
-	dec	dword [cursor_yx + 0x04]
-
-	; aktualizuj pozycje kursora
-	call	set_cursor
-
-	; koniec obsługi klawisza
-	jmp	start.loop
+	jmp	$

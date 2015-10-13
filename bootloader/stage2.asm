@@ -75,30 +75,32 @@ start:
 	mov	edi,	dword [edi]
 
 .search:
+	mov	ax,	word [di]
+
 	; sprawdź czy koniec tablicy
-	cmp	word [edi],	0xFFFF
+	cmp	ax,	0xFFFF
 	je	.missing	; pozostaw tryb tekstowy
 
 	; szukaj zalecanego trybu graficznego
-	cmp	word [edi],	0x0115	; 800x600@32bpp
+	cmp	ax,	0x0112	; 640x480@24bpp
 	je	.found
 
 	; przesuń wskaźnik na następną pozycję
 	add	edi,	0x02
 
 	; kontynuuj przeszukiwanie
-	jmp	.search
+	jmp	.search	
 
 .found:
 	; pobierz informacje o trybie graficznym
 	mov	ax,	0x4F01
-	mov	ecx,	0x0115	; 800x600@32bpp
+	mov	ecx,	0x0112	; 640x480@24bpp
 	mov	edi,	supervga_mode
 	int	0x10	; wykonaj
 
 	; przełącz na tryb graficzny
 	mov	ax,	0x4F02
-	mov	ebx,	0x4115	; wyłącz banki pamięci, linear frame buffer
+	mov	ebx,	0x4112	; wyłącz banki pamięci, linear frame buffer
 	int	0x10	; wykonaj
 
 .missing:
@@ -110,8 +112,8 @@ start:
 	xor	ebx,	ebx
 
 	; sprawdź czy włączono tryb graficzny
-	cmp	word [ds:supervga_mode + 0x12],	800	; rozdzielczość X
-	jne	.text_mode
+	cmp	word [ds:supervga_mode + 0x12],	0x0000	; rozdzielczość X
+	je	.text_mode
 
 	; poinformuj jądro systemu o pozycji tablicy informacyjnej trybu graficznego
 	mov	ebx,	supervga_mode
@@ -692,8 +694,8 @@ protected_mode:
 	xor	edi,	edi
 
 	; sprawdź czy włączono tryb graficzny
-	cmp	word [supervga_mode + 0x12],	800	; rozdzielczość X
-	jne	.text_mode
+	cmp	word [supervga_mode + 0x12],	0x0000	; rozdzielczość X
+	je	.text_mode
 
 	; poinformuj jądro systemu o pozycji tablicy informacyjnej trybu graficznego
 	mov	ebx,	supervga_mode
@@ -844,8 +846,8 @@ long_mode:
 	xor	rdi,	rdi
 
 	; sprawdź czy włączono tryb graficzny
-	cmp	word [supervga_mode + 0x12],	800	; rozdzielczość X
-	jne	.text_mode
+	cmp	word [supervga_mode + 0x12],	0x0000	; rozdzielczość X
+	je	.text_mode
 
 	; poinformuj jądro systemu o pozycji tablicy informacyjnej trybu graficznego
 	mov	ebx,	supervga_mode

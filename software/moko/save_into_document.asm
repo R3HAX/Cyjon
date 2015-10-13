@@ -60,6 +60,8 @@ screen_update:
 	inc	qword [variable_line_chars_count]
 	inc	qword [variable_cursor_indicator]
 	inc	qword [variable_cursor_in_line]
+	mov	rax,	qword [variable_cursor_in_line]
+	mov	qword [variable_cursor_in_line_was],	rax
 	inc	qword [variable_document_chars_count]
 
 	; sprawdź pozycje kursora

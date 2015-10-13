@@ -21,10 +21,11 @@ key_enter:
 
 	inc	qword [variable_cursor_indicator]
 	inc	qword [variable_document_chars_count]
-	mov	qword [variable_line_show_from_char],	VARIABLE_EMPTY
 	inc	qword [variable_line_count]
 	inc	qword [variable_line_current]
+	mov	qword [variable_line_show_from_char],	VARIABLE_EMPTY
 	mov	qword [variable_cursor_in_line],	VARIABLE_EMPTY
+	mov	qword [variable_cursor_in_line_was],	VARIABLE_EMPTY
 
 	mov	ax,	0x0105
 	mov	ebx,	dword [variable_cursor_position + 0x04]

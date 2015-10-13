@@ -44,6 +44,10 @@ start:
 	cmp	ax,	VARIABLE_ASCII_CODE_ENTER
 	je	key_enter
 
+	; naciśnięcie klawisza ArrowUp
+	cmp	ax,	0x8004
+	je	key_arrow_up
+
 ;	; naciśnięcie klawisza backspace?
 ;	cmp	ax,	VARIABLE_ASCII_CODE_BACKSPACE
 ;	je	key_backspace
@@ -75,10 +79,6 @@ start:
 ;	; naciśnięcie klawisza ArrowRight
 ;	cmp	ax,	0x8003
 ;	je	key_arrow_right
-;
-;	; naciśnięcie klawisza ArrowUp
-;	cmp	ax,	0x8004
-;	je	key_arrow_up
 ;
 ;	; naciśnięcie klawisza ArrowDown
 ;	cmp	ax,	0x8005
@@ -152,7 +152,7 @@ start:
 %include	"software/moko/key_enter.asm"
 ;%include	'software/moko/key_arrow_left.asm'
 ;%include	'software/moko/key_arrow_right.asm'
-;%include	'software/moko/key_arrow_up.asm'
+%include	"software/moko/key_arrow_up.asm"
 ;%include	'software/moko/key_arrow_down.asm'
 
 ;%include	'software/moko/function_key_read_file.asm'
@@ -188,6 +188,7 @@ variable_screen_size				dq	VARIABLE_EMPTY
 variable_cursor_position			dq	VARIABLE_CURSOR_POSITION_INIT
 variable_cursor_indicator			dq	VARIABLE_EMPTY
 variable_cursor_in_line				dq	VARIABLE_EMPTY
+variable_cursor_in_line_was			dq	VARIABLE_EMPTY
 
 variable_file_name_chars_count			dq	VARIABLE_EMPTY
 variable_file_name_buffor	times	256	db	VARIABLE_EMPTY
