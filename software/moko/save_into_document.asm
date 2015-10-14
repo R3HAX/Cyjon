@@ -47,11 +47,25 @@ save_into_document:
 	mov	rsi,	rdi
 	dec	rsi
 	sub	rcx,	qword [variable_cursor_indicator]
-	rep	movsb
+
+	push	rax
+
+.looper:
+	mov	al,	byte [rsi]
+	mov	byte [rdi],	al
+	sub	rdi,	1
+	sub	rsi,	1
+	sub	rcx,	1
+	jnz	.looper
+
+	pop	rax
+
+	jmp	.save_char
 
 .at_end_of_document:
 	; zapisz znak do dokumentu
 	mov	rdi,	qword [variable_cursor_indicator]
+.save_char:
 	stosb
 
 	ret
@@ -59,9 +73,17 @@ save_into_document:
 screen_update:
 	inc	qword [variable_line_chars_count]
 	inc	qword [variable_cursor_indicator]
+
+	cmp	ax,	VARIABLE_ASCII_CODE_NEWLINE
+	je	.enter
+
 	inc	qword [variable_cursor_in_line]
-	mov	rax,	qword [variable_cursor_in_line]
-	mov	qword [variable_cursor_in_line_was],	rax
+	jmp	.char
+
+.enter:
+	mov	qword [variable_cursor_in_line],	VARIABLE_EMPTY
+
+.char:
 	inc	qword [variable_document_chars_count]
 
 	; sprawdź pozycje kursora
