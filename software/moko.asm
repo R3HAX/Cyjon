@@ -28,104 +28,20 @@ start:
 	; przygotowanie przestrzeni pod dokument i interfejsu
 	call	initialization
 
-.debug:
-	call	debug
-
 .noKey:
 	; pobierz znak z bufora klawiatury
 	mov	ax,	0x0200
 	int	0x40	; wykonaj
 
-	; nic?
 	cmp	ax,	VARIABLE_EMPTY	
 	je	.noKey
 
-	; klawisz enter
-	cmp	ax,	VARIABLE_ASCII_CODE_ENTER
-	je	key_enter
+	cmp	ax,	0x8002
+	je	key_arrow_left
 
-	; naciśnięcie klawisza ArrowUp
-	cmp	ax,	0x8004
-	je	key_arrow_up
+	cmp	ax,	0x8003
+	je	key_arrow_right
 
-;	; naciśnięcie klawisza backspace?
-;	cmp	ax,	VARIABLE_ASCII_CODE_BACKSPACE
-;	je	key_backspace
-;
-;	; naciśnięcie klawisza Home?
-;	cmp	ax,	0x8007
-;	je	key_home
-;
-;	; naciśnięcie klawisza End?
-;	cmp	ax,	0x8008
-;	je	key_end
-;
-;	; naciśnięcie klawisza Delete?
-;	cmp	ax,	0x8009
-;	je	key_delete
-;
-;	; naciśnięcie klawisza PageUp?
-;	cmp	ax,	0x800A
-;	je	key_pageup
-;
-;	; naciśnięcie klawisza PageDown?
-;	cmp	ax,	0x800B
-;	je	key_pagedown
-;
-;	; naciśnięcie klawisza ArrowLeft
-;	cmp	ax,	0x8002
-;	je	key_arrow_left
-;
-;	; naciśnięcie klawisza ArrowRight
-;	cmp	ax,	0x8003
-;	je	key_arrow_right
-;
-;	; naciśnięcie klawisza ArrowDown
-;	cmp	ax,	0x8005
-;	je	key_arrow_down
-;
-;	; klawisz CTRL -------------------------------------------------
-;
-;	; naciśnięcie lewego klawisza ctrl?
-;	cmp	ax,	0x001D
-;	je	key_ctrl_push
-;
-;	; naciśnięcie prawego klawisza ctrl?
-;	cmp	ax,	0x8006
-;	je	key_ctrl_push
-;
-;	; puszczenie lewego klawisza ctrl?
-;	cmp	ax,	0x009D
-;	je	key_ctrl_pull
-;
-;	; puszczenie prawego klawisza ctrl?
-;	cmp	ax,	0xB006
-;	je	key_ctrl_pull
-;
-;	; klawisze funkcyjne -------------------------------------------
-;
-;	; sprawdź czy wywołano skrót klawiszowy
-;	cmp	byte [semaphore_ctrl],	0x00
-;	je	.noShortcut
-;
-;	; sprawdź skrót klawiszowy Ctrl + x
-;	cmp	ax,	"x"
-;	je	key_function_exit
-;
-;	; sprawdź skrót klawiszowy Ctrl + r
-;	cmp	ax,	"r"
-;	je	key_function_read
-;
-;	; sprawdź skrót klawiszowy Ctrl + o
-;	cmp	ax,	"o"
-;	je	key_function_save
-;
-;	; sprawdź skrót klawiszowy Ctrl + k
-;	cmp	ax,	"k"
-;	je	key_function_cut
-;
-;.noShortcut:
-	;-----------------------------------------------------------------------
 	; sprawdź czy znak jest możliwy do wyświetlenia ------------------------
 
 	; test pierwszy
@@ -138,59 +54,41 @@ start:
 
 	; zapisz znak do dokumentu
 	call	save_into_document
-	jmp	screen_update
+
+	inc	qword [variable_document_count_of_chars]
+	inc	qword [variable_line_count_of_chars]
+	inc	qword [variable_cursor_indicator]
+	inc	dword [variable_cursor_position]
+	inc	qword [variable_cursor_position_on_line]
+
+	call	check_cursor
+	call	update_line_on_screen
+
+	jmp	start.noKey
 
 %include	"software/moko/init.asm"
 
-;%include	'software/moko/key_home.asm'
-;%include	'software/moko/key_end.asm'
-;%include	'software/moko/key_delete.asm'
-;%include	'software/moko/key_ctrl.asm'
-;%include	'software/moko/key_pageup.asm'
-;%include	'software/moko/key_pagedown.asm'
-;%include	'software/moko/key_backspace.asm'
-%include	"software/moko/key_enter.asm"
-;%include	'software/moko/key_arrow_left.asm'
-;%include	'software/moko/key_arrow_right.asm'
-%include	"software/moko/key_arrow_up.asm"
-;%include	'software/moko/key_arrow_down.asm'
+%include	"software/moko/key_arrow_left.asm"
+%include	"software/moko/key_arrow_right.asm"
 
-;%include	'software/moko/function_key_read_file.asm'
-;%include	'software/moko/function_key_save.asm'
-;%include	'software/moko/function_key_exit.asm'
-;%include	'software/moko/function_key_cut.asm'
-
-%include	"software/moko/procedure_count_chars_in_previous_line.asm"
-%include	"software/moko/procedure_count_chars_in_document_line.asm"
-;%include	'software/moko/get_address_of_shown_line.asm'
 %include	"software/moko/save_into_document.asm"
-;%include	'software/moko/allocate_memory_in_document.asm'
-;%include	'software/moko/move_part_of_memory_up.asm'
+%include	"software/moko/update_line_on_screen.asm"
+%include	"software/moko/check_cursor.asm"
 
-; pokaż zawartość dokumentu na ekranie :)
-;%include	'software/moko/the_show_must_go_on.asm'
-
-;%include	'library/find_first_word.asm'
-;%include	'library/input.asm'
 %include	"library/align_address_up_to_page.asm"
-
-%include	"software/moko/debug.asm"
 
 variable_document_address_start			dq	VARIABLE_EMPTY
 variable_document_address_end			dq	VARIABLE_EMPTY
-variable_document_chars_count			dq	VARIABLE_EMPTY
-variable_document_show_from_line		dq	VARIABLE_EMPTY
-variable_line_chars_count			dq	VARIABLE_EMPTY
-variable_line_show_from_char			dq	VARIABLE_EMPTY
-variable_line_count				dq	1
-variable_line_current				dq	VARIABLE_EMPTY
-variable_screen_size				dq	VARIABLE_EMPTY
-variable_cursor_position			dq	VARIABLE_CURSOR_POSITION_INIT
+variable_document_count_of_chars		dq	VARIABLE_EMPTY
+variable_document_line_start			dq	VARIABLE_EMPTY
+variable_line_count_of_chars			dq	VARIABLE_EMPTY
+variable_line_print_start			dq	VARIABLE_EMPTY
 variable_cursor_indicator			dq	VARIABLE_EMPTY
-variable_cursor_in_line				dq	VARIABLE_EMPTY
-variable_cursor_in_line_was			dq	VARIABLE_EMPTY
+variable_cursor_position			dq	VARIABLE_CURSOR_POSITION_INIT
+variable_cursor_position_on_line		dq	VARIABLE_EMPTY
+variable_screen_size				dq	VARIABLE_EMPTY
 
-variable_file_name_chars_count			dq	VARIABLE_EMPTY
+variable_file_name_count_of_chars		dq	VARIABLE_EMPTY
 variable_file_name_buffor	times	256	db	VARIABLE_EMPTY
 
 text_header_default	db	"New file", VARIABLE_ASCII_CODE_TERMINATOR

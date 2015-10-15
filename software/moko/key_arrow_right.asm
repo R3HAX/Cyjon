@@ -15,62 +15,38 @@
 [BITS 64]
 
 key_arrow_right:
-	; sprawdź czy jesteśmy na końcu dokumentu
-	mov	rsi,	qword [cursor_position]
-	cmp	rsi,	qword [document_chars_count]
-	je	start.loop	; brak możliwości przesunięcia kursora
+	mov	rsi,	qword [variable_cursor_indicator]
+	cmp	byte [rsi],	VARIABLE_EMPTY
+	je	start.noKey	; daleszej części dokumentu
 
-	; sprawdź czy jesteśmy na końcu linii
-	add	rsi,	qword [document_address_start]
-	cmp	byte [rsi],	0x0A
-	je	.line_end	; przesuń kursor na początek nowej linii
+	mov	rax,	qword [variable_cursor_position_on_line]
+	cmp	rax,	qword [variable_line_count_of_chars]
+	je	.change_line
 
-	; przesuń kursor w prawo
-	inc	dword [cursor_yx]
+	mov	eax,	dword [variable_screen_size]
+	sub	eax,	1
+	cmp	dword [variable_cursor_position],	eax
+	jb	.cursor_ok
+
+	inc	qword [variable_cursor_indicator]
+	inc	qword [variable_cursor_position_on_line]
+	inc	qword [variable_line_print_start]
+	call	update_line_on_screen
+
+	jmp	start.noKey
+
+.cursor_ok:
+	inc	qword [variable_cursor_indicator]
+	inc	dword [variable_cursor_position]
+	inc	qword [variable_cursor_position_on_line]
+
+	mov	ax,	0x0105
+	mov	rbx,	qword [variable_cursor_position]
+	int	0x40
+
+	jmp	start.noKey
+
+.change_line:
 
 .end:
-	; aktualizuj pozycje kursora
-	call	set_cursor
-
-	; przesuń pozycję kursora w dokumencie o jeden znak w prawo
-	inc	qword [cursor_position]
-
-	; koniec obsługi klawisza
-	jmp	start.loop
-
-.line_end:
-	; przesuń wskaźnik na początek następnej linii
-	inc	rsi
-
-	; oblicz rozmiar następnej linii
-	call	count_chars_in_line
-
-	; zapisz
-	mov	qword [line_chars_count],	rcx
-
-	; sprawdź czy jesteśmy na końcu ekranu
-	mov	rax,	qword [screen_xy]
-	shr	rax,	32
-	sub	rax,	qword [interface_height]
-	cmp	dword [cursor_yx + 0x04],	eax
-	jb	.move
-
-	; zmień numer linii wyświetlanej
-	inc	qword [show_line]
-
-	; aktualizuj zawartość dokumentu na ekranie
-	call	print
-
-	; nie zmieniaj wiersza dla kursora
-	jmp	.no_change
-
-.move:
-	; przesuń kursor o jeden wiersz w dół
-	inc	dword [cursor_yx + 0x04]
-
-.no_change:
-	; ustaw kursor na początku wiersza
-	mov	dword [cursor_yx],	0
-
-	; kontynuuj
-	jmp	.end
+	jmp	start.noKey

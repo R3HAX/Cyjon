@@ -69,11 +69,11 @@ initialization:
 	mov	rdx,	VARIABLE_COLOR_DEFAULT
 
 	; sprawdź czy plik został wczytany lub zapisany pod konkretną nazwą
-	cmp	qword [variable_file_name_chars_count],	VARIABLE_EMPTY
+	cmp	qword [variable_file_name_count_of_chars],	VARIABLE_EMPTY
 	je	.new_file
 
 	; plik posiada nazwę własną
-	mov	rcx,	qword [variable_file_name_chars_count]
+	mov	rcx,	qword [variable_file_name_count_of_chars]
 	mov	rsi,	variable_file_name_buffor
 
 	jmp	.named
