@@ -15,6 +15,11 @@
 [BITS 64]
 
 update_line_on_screen:
+	push	rax
+	push	rbx
+	push	rcx
+	push	rdx
+
 	; kursor na początek linii
 	mov	ax,	0x0105
 	mov	ebx,	dword [variable_cursor_position + 0x04]
@@ -55,6 +60,11 @@ update_line_on_screen:
 	mov	ax,	0x0105
 	mov	rbx,	qword [variable_cursor_position]
 	int	0x40
+
+	pop	rdx
+	pop	rcx
+	pop	rbx
+	pop	rax
 
 	; powrót z procedury
 	ret

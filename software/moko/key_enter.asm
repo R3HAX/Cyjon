@@ -19,111 +19,59 @@ key_enter:
 	mov	ax,	VARIABLE_ASCII_CODE_NEWLINE
 	call	save_into_document
 
-	inc	qword [variable_cursor_indicator]
-	inc	qword [variable_document_chars_count]
-	inc	qword [variable_line_count]
-	mov	qword [variable_line_show_from_char],	VARIABLE_EMPTY
-	mov	qword [variable_cursor_in_line],	VARIABLE_EMPTY
+	add	qword [variable_document_count_of_chars],	0x01
 
-	mov	ax,	0x0105
-	mov	ebx,	dword [variable_cursor_position + 0x04]
-	shl	rbx,	32
-	int	0x40
+	; aktualizuj nowy rozmiar aktualnej linii
+	mov	rax,	qword [variable_cursor_position_on_line]
+	mov	qword [variable_line_count_of_chars],	rax
 
-	mov 	rsi,	qword [variable_cursor_indicator]
-	dec	rsi
+	; wyświetl aktualną linię od początku
+	mov	qword [variable_cursor_position_on_line],	rax
+	mov	qword [variable_line_print_start],	VARIABLE_EMPTY
 
-	call	count_chars_in_previous_line
+	call	update_line_on_screen
 
-	cmp	ecx,	dword [variable_screen_size]
-	jb	.size_ok
-
-	mov	ecx,	dword [variable_screen_size]
-	dec	rcx
-
-.size_ok:
-	mov	ax,	0x0101
-	mov	rbx,	VARIABLE_COLOR_DEFAULT
-	mov	rdx,	VARIABLE_COLOR_BACKGROUND_DEFAULT
-	int	0x40
-
-	; wyczyść pozostałą część linii, jeśli jest
-	;mov	ax,	0x0104
-	;int	0x40
-
-	mov	ebx,	dword [variable_screen_size]
-	sub	ebx,	ecx
-	jz	.nothing_left
-
-	mov	ax,	0x0102
-	mov	rcx,	VARIABLE_COLOR_DEFAULT
-	xchg	rbx,	rcx
-	mov	r8,	" "
-	int	0x40
-
-.nothing_left:
-	mov	eax,	dword [variable_screen_size + 0x04]
-	sub	rax,	VARIABLE_INTERFACE_MENU_HEIGHT
-	dec	rax
-	mov	ebx,	dword [variable_cursor_position + 0x04]
-	cmp	eax,	ebx
-	je	.no_cursor_move_down
-
-	inc	dword [variable_cursor_position + 0x04]
-
-.no_cursor_move_down:
 	mov	dword [variable_cursor_position],	VARIABLE_EMPTY
 
-	cmp	eax,	ebx
-	je	.screen_scroll_up
+	; utwórz miejsce na ekranie dokumentu dla nowej linii
 
-	; przewiń pozostałe linie dokumentu na ekranie o jedną w dół
+	mov	ecx,	dword [variable_screen_size + 0x04]
+	sub	ecx,	VARIABLE_INTERFACE_MENU_HEIGHT
+	sub	ecx,	1
+	mov	ebx,	dword [variable_cursor_position + 0x04]
+	cmp	ebx,	ecx
+	je	.scroll_up
+
+	; scroll down
 	mov	ax,	0x0109
-	xor	bl,	bl
+	mov	bl,	0	 ; w dół
 	mov	ecx,	dword [variable_screen_size + 0x04]
 	sub	ecx,	dword [variable_cursor_position + 0x04]
-	sub	ecx,	VARIABLE_INTERFACE_MENU_HEIGHT
+	sub	ecx,	VARIABLE_INTERFACE_HEIGHT - 1
 	mov	edx,	dword [variable_cursor_position + 0x04]
+	add	edx,	VARIABLE_INTERFACE_MENU_HEIGHT
 	int	0x40
 
-.screen_scroll_done:
-	mov 	rsi,	qword [variable_cursor_indicator]
+	add	dword [variable_cursor_position + 0x04],	0x01
+
+	jmp	.show_new_line
+
+.scroll_up:
+	mov	ax,	0x0109
+	mov	bl,	1	; w górę
+	mov	ecx,	dword [variable_screen_size + 0x04]
+	sub	rcx,	VARIABLE_INTERFACE_HEIGHT - 1
+	mov	rdx,	VARIABLE_INTERFACE_HEADER_HEIGHT + 1
+	int	0x40
+
+.show_new_line:
+	; pomiń znak nowej linii
+	xchg	rdi,	rsi
 	call	count_chars_in_line
-	mov	qword [variable_line_chars_count],	rcx
-	mov	ax,	0x0101
-	mov	rbx,	VARIABLE_COLOR_DEFAULT
-	mov	rdx,	VARIABLE_COLOR_BACKGROUND_DEFAULT
-	int	0x40
 
-	mov	ebx,	dword [variable_screen_size]
-	sub	ebx,	ecx
-	jz	.nothing_left
-
-	mov	ax,	0x0102
-	mov	rcx,	VARIABLE_COLOR_DEFAULT
-	xchg	rbx,	rcx
-	mov	r8,	" "
-	int	0x40
-
-	mov	ax,	0x0105
-	mov	rbx,	qword [variable_cursor_position]
-	int	0x40
+	mov	qword [variable_cursor_indicator],	rsi
+	mov	qword [variable_line_count_of_chars],	rcx
+	mov	qword [variable_cursor_position_on_line],	VARIABLE_EMPTY
+	call	update_line_on_screen
 
 	jmp	start.noKey
-
-.screen_scroll_up:
-	; przewiń pozostałe linie dokumentu na ekranie o jedną w dół
-	mov	ax,	0x0109
-	mov	bl,	1
-	mov	edx,	VARIABLE_INTERFACE_HEADER_HEIGHT + 1
-	mov	ecx,	dword [variable_screen_size + 0x04]
-	sub	rcx,	VARIABLE_INTERFACE_HEIGHT
-	int	0x40
-
-	;dec	dword [variable_cursor_position + 0x04]
-
-	mov	ax,	0x0105
-	mov	rbx,	qword [variable_cursor_position]
-	int	0x40
-
-	jmp	.screen_scroll_done

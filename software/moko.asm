@@ -36,6 +36,9 @@ start:
 	cmp	ax,	VARIABLE_EMPTY	
 	je	.noKey
 
+	cmp	ax,	VARIABLE_ASCII_CODE_ENTER
+	je	key_enter
+
 	cmp	ax,	0x8002
 	je	key_arrow_left
 
@@ -68,12 +71,14 @@ start:
 
 %include	"software/moko/init.asm"
 
+%include	"software/moko/key_enter.asm"
 %include	"software/moko/key_arrow_left.asm"
 %include	"software/moko/key_arrow_right.asm"
 
 %include	"software/moko/save_into_document.asm"
 %include	"software/moko/update_line_on_screen.asm"
 %include	"software/moko/check_cursor.asm"
+%include	"software/moko/count_chars_in_line.asm"
 
 %include	"library/align_address_up_to_page.asm"
 
