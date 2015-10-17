@@ -26,7 +26,8 @@ key_enter:
 	mov	qword [variable_line_count_of_chars],	rax
 
 	; wyświetl aktualną linię od początku
-	mov	qword [variable_cursor_position_on_line],	rax
+	sub	qword [variable_cursor_indicator],	rax
+	mov	qword [variable_cursor_position_on_line],	VARIABLE_EMPTY
 	mov	qword [variable_line_print_start],	VARIABLE_EMPTY
 
 	call	update_line_on_screen

@@ -79,6 +79,7 @@ start:
 %include	"software/moko/update_line_on_screen.asm"
 %include	"software/moko/check_cursor.asm"
 %include	"software/moko/count_chars_in_line.asm"
+%include	"software/moko/count_chars_in_previous_line.asm"
 
 %include	"library/align_address_up_to_page.asm"
 

@@ -17,7 +17,7 @@
 key_arrow_right:
 	mov	rsi,	qword [variable_cursor_indicator]
 	cmp	byte [rsi],	VARIABLE_EMPTY
-	je	start.noKey	; daleszej części dokumentu
+	je	start.noKey
 
 	mov	rax,	qword [variable_cursor_position_on_line]
 	cmp	rax,	qword [variable_line_count_of_chars]
