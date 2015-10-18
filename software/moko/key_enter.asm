@@ -50,7 +50,7 @@ key_enter:
 	sub	ecx,	dword [variable_cursor_position + 0x04]
 	sub	ecx,	VARIABLE_INTERFACE_HEIGHT - 1
 	mov	edx,	dword [variable_cursor_position + 0x04]
-	add	edx,	VARIABLE_INTERFACE_MENU_HEIGHT
+	add	edx,	VARIABLE_INTERFACE_HEADER_HEIGHT
 	int	0x40
 
 	add	dword [variable_cursor_position + 0x04],	0x01
