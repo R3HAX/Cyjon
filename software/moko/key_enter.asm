@@ -45,10 +45,10 @@ key_enter:
 
 	; scroll down
 	mov	ax,	0x0109
-	mov	bl,	0	 ; w dół
+	mov	bl,	VARIABLE_FALSE	 ; w dół
 	mov	ecx,	dword [variable_screen_size + 0x04]
 	sub	ecx,	dword [variable_cursor_position + 0x04]
-	sub	ecx,	VARIABLE_INTERFACE_HEIGHT - 1
+	sub	ecx,	VARIABLE_INTERFACE_HEIGHT - VARIABLE_DECREMENT
 	mov	edx,	dword [variable_cursor_position + 0x04]
 	add	edx,	VARIABLE_INTERFACE_HEADER_HEIGHT
 	int	0x40
@@ -59,11 +59,13 @@ key_enter:
 
 .scroll_up:
 	mov	ax,	0x0109
-	mov	bl,	1	; w górę
+	mov	bl,	VARIABLE_TRUE	; w górę
 	mov	ecx,	dword [variable_screen_size + 0x04]
 	sub	rcx,	VARIABLE_INTERFACE_HEIGHT - 1
 	mov	rdx,	VARIABLE_INTERFACE_HEADER_HEIGHT + 1
 	int	0x40
+
+	add	qword [variable_document_line_start],	0x01
 
 .show_new_line:
 	; pomiń znak nowej linii
