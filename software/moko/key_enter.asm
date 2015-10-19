@@ -38,7 +38,7 @@ key_enter:
 
 	mov	ecx,	dword [variable_screen_size + 0x04]
 	sub	ecx,	VARIABLE_INTERFACE_MENU_HEIGHT
-	sub	ecx,	1
+	sub	ecx,	VARIABLE_DECREMENT
 	mov	ebx,	dword [variable_cursor_position + 0x04]
 	cmp	ebx,	ecx
 	je	.scroll_up
@@ -48,11 +48,15 @@ key_enter:
 	mov	bl,	VARIABLE_FALSE	 ; w dół
 	mov	ecx,	dword [variable_screen_size + 0x04]
 	sub	ecx,	dword [variable_cursor_position + 0x04]
-	sub	ecx,	VARIABLE_INTERFACE_HEIGHT - VARIABLE_DECREMENT
+	; druga dekrementacja dotyczy pozycji kursora liczonej od zera, a nie od 1
+	sub	ecx,	VARIABLE_INTERFACE_MENU_HEIGHT + VARIABLE_DECREMENT + VARIABLE_DECREMENT
+	jz	.last_line
+
 	mov	edx,	dword [variable_cursor_position + 0x04]
 	add	edx,	VARIABLE_INTERFACE_HEADER_HEIGHT
 	int	0x40
 
+.last_line:
 	add	dword [variable_cursor_position + 0x04],	0x01
 
 	jmp	.show_new_line
