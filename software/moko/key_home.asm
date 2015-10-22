@@ -16,16 +16,21 @@
 
 key_home:
 	; pobierz pozycje kursora - kolumna
-	mov	ecx,	dword [cursor_yx]
+	mov	rcx,	qword [variable_cursor_position_on_line]
+	sub	qword [variable_cursor_indicator],	rcx
 
-	; przesuń wskaźnik kursora wewnątrz przestrzeni dokumentu na pocżatek aktualnej linii
-	sub	qword [cursor_position],	rcx
+	mov	dword [variable_cursor_position],	VARIABLE_EMPTY
+	mov	qword [variable_cursor_position_on_line],	VARIABLE_EMPTY
 
-	; ustaw pozycje kursora na poczatek linii (kolumna 0)
-	mov	dword [cursor_yx],	VARIABLE_EMPTY
+	cmp	qword [variable_line_print_start],	VARIABLE_EMPTY
+	je	.ok
 
-	; przestaw fizyczny kursor w odpowiednie miejsce
-	call	set_cursor
+	mov	qword [variable_line_print_start],	VARIABLE_EMPTY
+	call	update_line_on_screen
 
-	; koniec funkcji
-	jmp	start.loop
+.ok:
+	mov	ax,	0x0105
+	mov	rbx,	qword [variable_cursor_position]
+	int	0x40
+
+	jmp	start.noKey

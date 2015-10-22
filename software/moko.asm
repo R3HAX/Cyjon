@@ -45,6 +45,34 @@ start:
 	cmp	ax,	0x8003
 	je	key_arrow_right
 
+	cmp	ax,	0x8004
+	je	key_arrow_up
+
+	cmp	ax,	0x8007
+	je	key_home
+
+	cmp	ax,	0x8008
+	je	key_end
+
+	cmp	ax,	0x001D
+	je	key_ctrl_push	; lewy
+
+	cmp	ax,	0x8006
+	je	key_ctrl_push	; prawy
+
+	cmp	ax,	0x009D
+	je	key_ctrl_pull	; lewy
+
+	cmp	ax,	0xB006
+	je	key_ctrl_pull	; prawy
+
+	cmp	byte [variable_semaphore_key_ctrl],	VARIABLE_FALSE
+	je	.no_shortcut
+
+	cmp	ax,	"x"
+	je	key_function_exit
+
+.no_shortcut:
 	; sprawdź czy znak jest możliwy do wyświetlenia ------------------------
 
 	; test pierwszy
@@ -72,8 +100,14 @@ start:
 %include	"software/moko/init.asm"
 
 %include	"software/moko/key_enter.asm"
+%include	"software/moko/key_home.asm"
+%include	"software/moko/key_end.asm"
 %include	"software/moko/key_arrow_left.asm"
 %include	"software/moko/key_arrow_right.asm"
+%include	"software/moko/key_arrow_up.asm"
+%include	"software/moko/key_ctrl.asm"
+
+%include	"software/moko/function_key_exit.asm"
 
 %include	"software/moko/save_into_document.asm"
 %include	"software/moko/update_line_on_screen.asm"
@@ -94,12 +128,16 @@ variable_cursor_position			dq	VARIABLE_CURSOR_POSITION_INIT
 variable_cursor_position_on_line		dq	VARIABLE_EMPTY
 variable_screen_size				dq	VARIABLE_EMPTY
 
+variable_semaphore_key_ctrl			db	VARIABLE_EMPTY
+variable_semaphore_status			db	VARIABLE_EMPTY
+
 variable_file_name_count_of_chars		dq	VARIABLE_EMPTY
 variable_file_name_buffor	times	256	db	VARIABLE_EMPTY
 
+text_new_line		db	VARIABLE_ASCII_CODE_ENTER, VARIABLE_ASCII_CODE_NEWLINE, VARIABLE_ASCII_CODE_TERMINATOR
 text_header_default	db	"New file", VARIABLE_ASCII_CODE_TERMINATOR
 
-text_exit_shortcut	db	'^x', 0x00
-text_exit		db	' Exit  ', 0x00
+text_exit_shortcut	db	'^x', VARIABLE_ASCII_CODE_TERMINATOR
+text_exit		db	' Exit  ', VARIABLE_ASCII_CODE_TERMINATOR
 
 stop:

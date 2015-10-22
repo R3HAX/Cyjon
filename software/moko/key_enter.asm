@@ -19,7 +19,7 @@ key_enter:
 	mov	ax,	VARIABLE_ASCII_CODE_NEWLINE
 	call	save_into_document
 
-	add	qword [variable_document_count_of_chars],	0x01
+	add	qword [variable_document_count_of_chars],	VARIABLE_INCREMENT
 
 	; aktualizuj nowy rozmiar aktualnej linii
 	mov	rax,	qword [variable_cursor_position_on_line]
@@ -65,8 +65,8 @@ key_enter:
 	mov	ax,	0x0109
 	mov	bl,	VARIABLE_TRUE	; w górę
 	mov	ecx,	dword [variable_screen_size + 0x04]
-	sub	rcx,	VARIABLE_INTERFACE_HEIGHT - 1
-	mov	rdx,	VARIABLE_INTERFACE_HEADER_HEIGHT + 1
+	sub	rcx,	VARIABLE_INTERFACE_HEIGHT - VARIABLE_DECREMENT
+	mov	rdx,	VARIABLE_INTERFACE_HEADER_HEIGHT + VARIABLE_INCREMENT
 	int	0x40
 
 	add	qword [variable_document_line_start],	0x01

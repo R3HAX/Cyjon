@@ -15,20 +15,29 @@
 [BITS 64]
 
 key_end:
-	; pobierz rozmiar edytowanej linii
-	mov	rcx,	qword [line_chars_count]
+	mov	rax,	qword [variable_cursor_position_on_line]
+	mov	rcx,	qword [variable_line_count_of_chars]
+	mov	qword [variable_cursor_position_on_line],	rcx
+	sub	qword [variable_cursor_indicator],	rax
+	add	qword [variable_cursor_indicator],	rcx
 
-	; oblicz ilość znaków pozostałych do końca linii
-	sub	ecx,	dword [cursor_yx]
+	mov	dword [variable_cursor_position],	ecx
 
-	; przesuń wskaźnik kursora wewnątrz przestrzeni dokumentu na koniec aktualnej linii
-	add	qword [cursor_position],	rcx
+	cmp	ecx,	dword [variable_screen_size]
+	jb	.ok
 
-	; ustaw pozycje kursora na koniec linii
-	add	dword [cursor_yx],	ecx
+	sub	ecx,	dword [variable_screen_size]
+	sub	rcx,	VARIABLE_DECREMENT
+	mov	qword [variable_line_print_start],	rcx
+	mov	ecx,	dword [variable_screen_size]
+	sub	rcx,	VARIABLE_DECREMENT
+	mov	dword [variable_cursor_position],	ecx
 
-	; przestaw fizyczny kursor w odpowiednie miejsce
-	call	set_cursor
+	call	update_line_on_screen
 
-	; koniec funkji
-	jmp	start.loop
+.ok:
+	mov	ax,	0x0105
+	mov	rbx,	qword [variable_cursor_position]
+	int	0x40
+
+	jmp	start.noKey

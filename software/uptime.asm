@@ -150,6 +150,7 @@ start:
 	; wyświetl liczbę
 	mov	ax,	0x0103
 	mov	rcx,	10	; system dziesiętny
+	mov	rdx,	VARIABLE_COLOR_BACKGROUND_DEFAULT
 	int	0x40	; wykonaj
 
 	; była wyświetlana godzina?
