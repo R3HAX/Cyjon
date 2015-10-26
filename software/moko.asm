@@ -39,6 +39,12 @@ start:
 	cmp	ax,	VARIABLE_ASCII_CODE_ENTER
 	je	key_enter
 
+;	cmp	ax,	VARIABLE_ASCII_CODE_BACKSPACE
+;	je	key_backspace
+
+;	cmp	ax,	VARIABLE_ASCII_CODE_DELETE
+;	je	key_delete
+
 	cmp	ax,	0x8002
 	je	key_arrow_left
 
@@ -48,11 +54,20 @@ start:
 	cmp	ax,	0x8004
 	je	key_arrow_up
 
+	cmp	ax,	0x8005
+	je	key_arrow_down
+
 	cmp	ax,	0x8007
 	je	key_home
 
 	cmp	ax,	0x8008
 	je	key_end
+
+	cmp	ax,	0x800A
+	je	key_pageup
+
+;	cmp	ax,	0x800B
+;	je	key_pagedown
 
 	cmp	ax,	0x001D
 	je	key_ctrl_push	; lewy
@@ -80,7 +95,7 @@ start:
 	jb	.noKey	; jeśli mniejsze, pomiń
 
 	; test drugi
-	cmp	ax,	0x007E	; ostatni znak z tablicy ASCII
+	cmp	ax,	VARIABLE_ASCII_CODE_TILDE	; ostatni znak z tablicy ASCII
 	ja	.noKey	; jeśli większe, pomiń
 
 	; zapisz znak do dokumentu
@@ -105,6 +120,8 @@ start:
 %include	"software/moko/key_arrow_left.asm"
 %include	"software/moko/key_arrow_right.asm"
 %include	"software/moko/key_arrow_up.asm"
+%include	"software/moko/key_arrow_down.asm"
+%include	"software/moko/key_pageup.asm"
 %include	"software/moko/key_ctrl.asm"
 
 %include	"software/moko/function_key_exit.asm"
@@ -120,6 +137,7 @@ start:
 variable_document_address_start			dq	VARIABLE_EMPTY
 variable_document_address_end			dq	VARIABLE_EMPTY
 variable_document_count_of_chars		dq	VARIABLE_EMPTY
+variable_document_count_of_lines		dq	VARIABLE_EMPTY
 variable_document_line_start			dq	VARIABLE_EMPTY
 variable_line_count_of_chars			dq	VARIABLE_EMPTY
 variable_line_print_start			dq	VARIABLE_EMPTY

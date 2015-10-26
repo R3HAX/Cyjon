@@ -20,6 +20,7 @@ key_enter:
 	call	save_into_document
 
 	add	qword [variable_document_count_of_chars],	VARIABLE_INCREMENT
+	add	qword [variable_document_count_of_lines],	VARIABLE_INCREMENT
 
 	; aktualizuj nowy rozmiar aktualnej linii
 	mov	rax,	qword [variable_cursor_position_on_line]
