@@ -34,6 +34,9 @@ save_into_document:
 	pop	rax
 
 .space_available:
+	cmp	ax,	VARIABLE_ASCII_CODE_BACKSPACE
+	je	.backspace
+
 	; wstaw znak na koniec dokumentu?
 	mov	rdi,	qword [variable_document_address_start]
 	add	rdi,	qword [variable_document_count_of_chars]
@@ -68,5 +71,25 @@ save_into_document:
 
 .save_char:
 	stosb
+
+	ret
+
+.backspace:
+	mov	rsi,	qword [variable_cursor_indicator]
+	mov	rdi,	rsi
+	sub	rdi,	VARIABLE_DECREMENT
+	mov	rax,	rsi
+	sub	rax,	qword [variable_document_address_start]
+	mov	rcx,	qword [variable_document_count_of_chars]
+	sub	rcx,	rax
+	add	rcx,	VARIABLE_INCREMENT
+
+.delete_char:
+	mov	al,	byte [rsi]
+	mov	byte [rdi],	al
+	add	rdi,	VARIABLE_INCREMENT
+	add	rsi,	VARIABLE_INCREMENT
+	sub	rcx,	VARIABLE_DECREMENT
+	jnz	.delete_char
 
 	ret

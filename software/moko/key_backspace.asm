@@ -15,71 +15,81 @@
 [BITS 64]
 
 key_backspace:
-	; sprawdź czy linia zawiera znaki
-	cmp	byte [line_chars_count],	0x00
-	je	start.loop	; jeśli nie, brak obsługi
+	mov	rsi,	qword [variable_cursor_indicator]
+	cmp	rsi,	qword [variable_document_address_start]
+	je	start.noKey
 
-	; sprawdź czy pozycja kursora jest na końcu dokumentu
-	mov	rsi,	qword [cursor_position]
-	cmp	rsi,	qword [document_chars_count]
-	jne	.into
+	call	save_into_document
 
-	; usuń znak z końca dokumentu
-	add	rsi,	qword [document_address_start]
-	mov	byte [rsi - 0x01],	0x00
+	sub	qword [variable_cursor_indicator],	VARIABLE_DECREMENT
+	sub	qword [variable_document_count_of_chars],	VARIABLE_DECREMENT
 
-	; kontynuuj
-	jmp	.continue
+	cmp	qword [variable_cursor_position_on_line],	VARIABLE_EMPTY
+	je	.change_line
 
-.into:
-	; koryguj adres źródłowy
-	add	rsi,	qword [document_address_start]
+	sub	qword [variable_cursor_position_on_line],	VARIABLE_DECREMENT
+	sub	qword [variable_line_count_of_chars],	VARIABLE_DECREMENT
 
-	; sprawdź czy jesteśmy na początku linii
-	cmp	byte [cursor_yx],	0x00
-	je	start.loop	; jeśli tak, brak obsługi
+	cmp	dword [variable_cursor_position],	VARIABLE_EMPTY
+	je	.change_line_start
 
-	; przesuń wszystkie znaki za backspace o jeden znak w lewo
+	sub	dword [variable_cursor_position],	VARIABLE_DECREMENT
+	jmp	.cursor_moved
 
-	; ustaw wskaźnik docelowy
-	mov	rdi,	rsi
-	; pozycja o jeden znak wcześniej
-	dec	rdi
+.change_line_start:
+	sub	qword [variable_line_print_start],	VARIABLE_DECREMENT
 
-	; ustaw ilość znaków do przesunięcia
-	mov	rcx,	qword [document_chars_count]
-	sub	rcx,	qword [cursor_position]
+.cursor_moved:
+	call	update_line_on_screen
 
-.loop:
-	; pobierz znak z aktualnego miejsca
-	lodsb
-	; zapisz do poprzedniego
-	stosb
-	; kontynuuj dla pozostałych znaków
-	loop	.loop
+	jmp	start.noKey
 
-	; ustaw znak końca dokumentu
-	xor	al,	al
-	stosb	; zapisz
+.change_line:
+	mov	rsi,	qword [variable_cursor_indicator]
+	call	count_chars_in_previous_line
 
-.continue:
-	; zmniejsz ilość znaków przechowywanych w dokumencie
-	dec	qword [document_chars_count]
+	sub	dword [variable_cursor_position + 0x04],	VARIABLE_DECREMENT
+	sub	qword [variable_document_count_of_lines],		VARIABLE_DECREMENT
 
-	; zmniejsz rozmiar aktualnej linii
-	dec	byte [line_chars_count]
+	mov	qword [variable_cursor_indicator],	rsi
+	add	qword [variable_line_count_of_chars],	rcx
+	mov	qword [variable_cursor_position_on_line],	rcx
 
-	; przesuń aktywną pozycję na poprzedni znak w dokumencie
-	dec	qword [cursor_position]
+	mov	eax,	dword [variable_screen_size]
+	sub	eax,	VARIABLE_DECREMENT
+	
+	cmp	rcx,	rax
+	jb	.cursor_indicator
 
-	; przesuń kursor w lewo
-	dec	byte [cursor_yx]
+	mov	qword [variable_line_print_start],	VARIABLE_EMPTY
+	mov	qword [variable_cursor_position_on_line],	VARIABLE_EMPTY
 
-	; wyświetl nową zawartość dokumentu
-	call	print
+	cmp	rcx,	rax
+	jbe	.cursor_was_good
 
-	; ustaw kursor na prawidłową pozycję
-	call	set_cursor
+.cursor_fix:
+	cmp	rcx,	rax
+	jbe	.cursor_indicator
 
-	;powrót z funkcji
-	jmp	start.loop
+	sub	rcx,	rax
+	add	qword [variable_line_print_start],	rax
+	add	qword [variable_cursor_indicator],	rax
+	add	qword [variable_cursor_position_on_line],	rax
+	jmp	.cursor_fix
+
+.cursor_was_good:
+	add	qword [variable_cursor_position_on_line],	rcx
+	mov	dword [variable_cursor_position],	ecx
+	jmp	.cursor_indicator
+
+.cursor_indicator:
+	add	qword [variable_cursor_indicator],	rcx
+	mov	dword [variable_cursor_position],	ecx
+	call	update_line_on_screen
+
+	mov	ax,	0x0105
+	mov	rbx,	qword [variable_cursor_position]
+	int	0x40
+
+.end:
+	jmp	start.noKey
