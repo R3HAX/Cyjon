@@ -39,8 +39,8 @@ start:
 	cmp	ax,	VARIABLE_ASCII_CODE_ENTER
 	je	key_enter
 
-;	cmp	ax,	VARIABLE_ASCII_CODE_BACKSPACE
-;	je	key_backspace
+	cmp	ax,	VARIABLE_ASCII_CODE_BACKSPACE
+	je	key_backspace
 
 ;	cmp	ax,	VARIABLE_ASCII_CODE_DELETE
 ;	je	key_delete
@@ -62,12 +62,6 @@ start:
 
 	cmp	ax,	0x8008
 	je	key_end
-
-	cmp	ax,	0x800A
-	je	key_pageup
-
-;	cmp	ax,	0x800B
-;	je	key_pagedown
 
 	cmp	ax,	0x001D
 	je	key_ctrl_push	; lewy
@@ -115,13 +109,13 @@ start:
 %include	"software/moko/init.asm"
 
 %include	"software/moko/key_enter.asm"
+%include	"software/moko/key_backspace.asm"
 %include	"software/moko/key_home.asm"
 %include	"software/moko/key_end.asm"
 %include	"software/moko/key_arrow_left.asm"
 %include	"software/moko/key_arrow_right.asm"
 %include	"software/moko/key_arrow_up.asm"
 %include	"software/moko/key_arrow_down.asm"
-%include	"software/moko/key_pageup.asm"
 %include	"software/moko/key_ctrl.asm"
 
 %include	"software/moko/function_key_exit.asm"
