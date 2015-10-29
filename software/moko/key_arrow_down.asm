@@ -15,19 +15,19 @@
 [BITS 64]
 
 key_arrow_down:
+	; czy numer linii jest równy z ilością linii w dokumencie?
+	mov	rax,	qword [variable_document_line_start]
+	add	eax,	dword [variable_cursor_position + 0x04]
+	sub	eax,	VARIABLE_INTERFACE_HEADER_HEIGHT
+	cmp	rax,	qword [variable_document_count_of_lines]
+	je	.end
+
 	push	qword [variable_line_print_start]
 
 	mov	qword [variable_line_print_start],	VARIABLE_EMPTY
 	call	update_line_on_screen
 
 	pop	qword [variable_line_print_start]
-
-	; czy numer linii jest równy z ilością linii w dokumencie?
-	mov	rax,	qword [variable_line_print_start]
-	add	eax,	dword [variable_cursor_position + 0x04]
-	sub	eax,	VARIABLE_INTERFACE_HEADER_HEIGHT
-	cmp	rax,	qword [variable_document_count_of_lines]
-	je	.end
 
 	; czy znajdujemy się w przedostatniej linii? (lub wcześniejszej)
 	mov	ecx,	dword [variable_screen_size + 0x04]

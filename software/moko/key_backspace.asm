@@ -51,41 +51,26 @@ key_backspace:
 	sub	dword [variable_cursor_position + 0x04],	VARIABLE_DECREMENT
 	sub	qword [variable_document_count_of_lines],		VARIABLE_DECREMENT
 
-	mov	qword [variable_cursor_indicator],	rsi
 	add	qword [variable_line_count_of_chars],	rcx
 	mov	qword [variable_cursor_position_on_line],	rcx
 
 	mov	eax,	dword [variable_screen_size]
 	sub	eax,	VARIABLE_DECREMENT
-	
-	cmp	rcx,	rax
-	jb	.cursor_indicator
-
-	mov	qword [variable_line_print_start],	VARIABLE_EMPTY
-	mov	qword [variable_cursor_position_on_line],	VARIABLE_EMPTY
-
-	cmp	rcx,	rax
-	jbe	.cursor_was_good
 
 .cursor_fix:
 	cmp	rcx,	rax
-	jbe	.cursor_indicator
+	jbe	.cursor_fixed
 
 	sub	rcx,	rax
 	add	qword [variable_line_print_start],	rax
-	add	qword [variable_cursor_indicator],	rax
-	add	qword [variable_cursor_position_on_line],	rax
 	jmp	.cursor_fix
 
-.cursor_was_good:
-	add	qword [variable_cursor_position_on_line],	rcx
-	mov	dword [variable_cursor_position],	ecx
-	jmp	.cursor_indicator
-
-.cursor_indicator:
-	add	qword [variable_cursor_indicator],	rcx
+.cursor_fixed:
 	mov	dword [variable_cursor_position],	ecx
 	call	update_line_on_screen
+
+	; przesuń dolną część ekranu do góry
+	
 
 	mov	ax,	0x0105
 	mov	rbx,	qword [variable_cursor_position]
