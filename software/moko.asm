@@ -125,6 +125,7 @@ start:
 %include	"software/moko/check_cursor.asm"
 %include	"software/moko/count_chars_in_line.asm"
 %include	"software/moko/count_chars_in_previous_line.asm"
+%include	"software/moko/find_line_indicator.asm"
 
 %include	"library/align_address_up_to_page.asm"
 
@@ -142,6 +143,7 @@ variable_screen_size				dq	VARIABLE_EMPTY
 
 variable_semaphore_key_ctrl			db	VARIABLE_EMPTY
 variable_semaphore_status			db	VARIABLE_EMPTY
+variable_semaphore_backspace			db	VARIABLE_EMPTY
 
 variable_file_name_count_of_chars		dq	VARIABLE_EMPTY
 variable_file_name_buffor	times	256	db	VARIABLE_EMPTY
