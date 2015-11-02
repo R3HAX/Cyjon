@@ -15,74 +15,96 @@
 [BITS 64]
 
 key_arrow_down:
-	;oblicz koniec linii aktualnej
-	mov	rsi,	qword [cursor_position]
-	mov	ecx,	dword [cursor_yx]
-	sub	rsi,	rcx
-	add	rsi,	qword [line_chars_count]
+	; czy numer linii jest równy z ilością linii w dokumencie?
+	mov	rax,	qword [variable_document_line_start]
+	add	eax,	dword [variable_cursor_position + 0x04]
+	sub	eax,	VARIABLE_INTERFACE_HEADER_HEIGHT
+	cmp	rax,	qword [variable_document_count_of_lines]
+	je	.end
 
-	; sprawdź czy znajdujemy się na końcu dokumentu
-	cmp	rsi,	qword [document_chars_count]
-	je	start.loop	; nie można przestawić kursora o jedną linię w dół
+	push	qword [variable_line_print_start]
 
-	; oblicz rozmiar następnej linii -------------------------------
+	mov	qword [variable_line_print_start],	VARIABLE_EMPTY
+	call	update_line_on_screen
 
-	; pomiń znak nowej linii
-	inc	rsi
+	pop	qword [variable_line_print_start]
 
-	; zapisz pozycje kursora wewnątrz dokumentu
-	mov	qword [cursor_position],	rsi
+	; czy znajdujemy się w przedostatniej linii? (lub wcześniejszej)
+	mov	ecx,	dword [variable_screen_size + 0x04]
+	sub	ecx,	VARIABLE_INTERFACE_MENU_HEIGHT
+	sub	ecx,	VARIABLE_DECREMENT
+	mov	ebx,	dword [variable_cursor_position + 0x04]
+	cmp	ebx,	ecx
+	jb	.lines_available
 
-	; przygotuj adres pozycji kursora do obliczeń
-	add	rsi,	qword [document_address_start]
+	mov	rax,	qword [variable_cursor_indicator]
+	sub	rax,	qword [variable_cursor_position_on_line]
+	add	rax,	qword [variable_line_count_of_chars]
+	sub	rax,	qword [variable_document_address_start]
+	cmp	rax,	qword [variable_document_count_of_chars]
+	je	.end
 
-	; zliczaj
+	mov	ax,	0x0109
+	mov	bl,	VARIABLE_TRUE	; w górę
+	mov	ecx,	dword [variable_screen_size + 0x04]
+	sub	rcx,	VARIABLE_INTERFACE_HEIGHT - VARIABLE_DECREMENT
+	mov	rdx,	VARIABLE_INTERFACE_HEADER_HEIGHT + VARIABLE_INCREMENT
+	int	0x40
+
+	add	qword [variable_document_line_start],	0x01
+
+	jmp	.scrolled
+
+.lines_available:
+	add	dword [variable_cursor_position + 0x04],	VARIABLE_INCREMENT
+	
+.scrolled:
+	mov	rsi,	qword [variable_cursor_indicator]
+	sub	rsi,	qword [variable_cursor_position_on_line]
+	add	rsi,	qword [variable_line_count_of_chars]
+	add	rsi,	VARIABLE_INCREMENT
 	call	count_chars_in_line
 
-	; zapisz rozmiar następnej linii
-	mov	qword [line_chars_count],	rcx
+	mov	qword [variable_cursor_indicator],	rsi
+	mov	qword [variable_line_count_of_chars],	rcx
 
-	; sprawdź czy można ustawić kursor w tej samej kolumnie
-	cmp	dword [cursor_yx],	ecx
-	jbe	.right_position	; jeśli tak, zmnień tylko wiersz
+	cmp	qword [variable_cursor_position_on_line],	rcx
+	jb	.cursor_good
 
-	; ustaw kursor na końcu następnej linii
-	mov	dword [cursor_yx],	ecx
+	mov	eax,	dword [variable_screen_size]
+	sub	eax,	VARIABLE_DECREMENT
 
-	; przesuń pozycje kursora wewnątrz dokumentu na koniec następnej linii
-	add	qword [cursor_position],	rcx
+	mov	qword [variable_line_print_start],	VARIABLE_EMPTY
+	mov	qword [variable_cursor_position_on_line],	VARIABLE_EMPTY
 
-	; kontynuuj
-	jmp	.coretted
+	cmp	rcx,	rax
+	jbe	.cursor_was_good
 
-.right_position:
-	; przesuń pozycje kursora wewnątrz dokumentu w miejsce kursora
-	mov	ecx,	dword [cursor_yx]
-	add	qword [cursor_position],	rcx
+.cursor_fix:
+	cmp	rcx,	rax
+	jbe	.cursor_good
 
-.coretted:
-	; sprawdź czy kursor znajduje się na końcu ekranu (wiersz 0)
-	mov	rax,	qword [screen_xy]
-	shr	rax,	32
-	sub	rax,	qword [interface_height]
-	cmp	dword [cursor_yx + 0x04],	eax
-	jb	.no	; jeśli nie, zmień numer wiersza
+	sub	rcx,	rax
+	add	qword [variable_line_print_start],	rax
+	add	qword [variable_cursor_indicator],	rax
+	add	qword [variable_cursor_position_on_line],	rax
+	jmp	.cursor_fix
 
-	; kursor znajduje się na początku ekranu, zmień numer wiersza od którego wyświetlamy dokument na wcześniejszy
-	inc	qword [show_line]
+.cursor_was_good:
+	add	qword [variable_cursor_position_on_line],	rcx
+	mov	dword [variable_cursor_position],	ecx
+	jmp	.cursor_indicator
 
-	; aktualizuj zawartość ekranu
-	call	print
+.cursor_good:
+	mov	rcx,	qword [variable_cursor_position_on_line]
 
-	; koniec obsługi klawisza
-	jmp	start.loop
+.cursor_indicator:
+	add	qword [variable_cursor_indicator],	rcx
+	call	update_line_on_screen
 
-.no:
-	; ustaw nową pozycję kursora
-	inc	dword [cursor_yx + 0x04]
+	mov	ax,	0x0105
+	mov	rbx,	qword [variable_cursor_position]
+	int	0x40
 
-	; aktualizuj pozycje kursora
-	call	set_cursor
-
-	; koniec obsługi klawisza
-	jmp	start.loop
+.end:
+	jmp	start.noKey

@@ -96,8 +96,21 @@ cyjon_page_clear:
 	xor	rax,	rax
 
 	; ustaw licznik, rozmiar strony 4096 Bajtów / 8 Bajtów na rejestr
-	mov	rcx,	4096 / 8
-	rep	stosq	; zapisz zawartość rejestru RAX pod adres w rejestrze RDI, zwiększ rejestr RDI o 8 Bajtów, jeśli rejestr RCX > 0, wykonaj raz jeszcze
+	mov	rcx,	VARIABLE_MEMORY_PAGE_SIZE / 8
+
+.loop:
+	mov	qword [rdi],	rax
+	mov	qword [rdi + 0x08],	rax
+	mov	qword [rdi + 0x10],	rax
+	mov	qword [rdi + 0x18],	rax
+	mov	qword [rdi + 0x20],	rax
+	mov	qword [rdi + 0x28],	rax
+	mov	qword [rdi + 0x30],	rax
+	mov	qword [rdi + 0x38],	rax
+
+	add	rdi,	0x40
+	sub	rcx,	8
+	jnz	.loop
 
 	; przywróć oryginalne rejestry
 	pop	rdi
@@ -837,6 +850,7 @@ cyjon_page_release_area:
 
 	; przywróć adres tablicy PML aktualnie przetwarzanego rekordu
 	pop	rdi
+
 	; zwolnij przestrzeń
 	call	cyjon_page_release
 
@@ -879,6 +893,7 @@ cyjon_page_release_area:
 	and	di,	0xFF00	; usuń flagi
 
 	; zwolnij przestrzeń
+	call	cyjon_page_clear
 	call	cyjon_page_release
 
 	;przywróć oryginalny rejestr

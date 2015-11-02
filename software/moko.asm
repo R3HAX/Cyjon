@@ -14,7 +14,11 @@
 %include	"config.asm"
 
 %define	VARIABLE_PROGRAM_VERSION		""
-VARIABLE_CURSOR_POSITION_INITIAL	equ	0x0000000200000000
+
+VARIABLE_CURSOR_POSITION_INIT		equ	0x0000000200000000
+VARIABLE_INTERFACE_HEADER_HEIGHT	equ	2
+VARIABLE_INTERFACE_MENU_HEIGHT		equ	3
+VARIABLE_INTERFACE_HEIGHT		equ	VARIABLE_INTERFACE_HEADER_HEIGHT + VARIABLE_INTERFACE_MENU_HEIGHT
 
 [BITS 64]
 [DEFAULT REL]
@@ -24,166 +28,130 @@ start:
 	; przygotowanie przestrzeni pod dokument i interfejsu
 	call	initialization
 
-.loop:
-	; call	debug
-
-	; sprawdź czy dokument jest zmodyfikowany
-	cmp	byte [semaphore_modified],	0x00
-	je	.noKey	; nie
-
-	; tak, wyświetl informacje
-	call	modified
-
 .noKey:
 	; pobierz znak z bufora klawiatury
 	mov	ax,	0x0200
 	int	0x40	; wykonaj
 
-	; nic?
-	cmp	ax,	0x0000
+	cmp	ax,	VARIABLE_EMPTY	
 	je	.noKey
 
-	; naciśnięcie klawisza enter?
 	cmp	ax,	VARIABLE_ASCII_CODE_ENTER
 	je	key_enter
 
-	; naciśnięcie klawisza backspace?
-	cmp	ax,	0x0008
+	cmp	ax,	VARIABLE_ASCII_CODE_BACKSPACE
 	je	key_backspace
 
-	; naciśnięcie klawisza Home?
-	cmp	ax,	0x8007
-	je	key_home
+;	cmp	ax,	VARIABLE_ASCII_CODE_DELETE
+;	je	key_delete
 
-	; naciśnięcie klawisza End?
-	cmp	ax,	0x8008
-	je	key_end
-
-	; naciśnięcie klawisza Delete?
-	cmp	ax,	0x8009
-	je	key_delete
-
-	; naciśnięcie klawisza PageUp?
-	cmp	ax,	0x800A
-	je	key_pageup
-
-	; naciśnięcie klawisza PageDown?
-	cmp	ax,	0x800B
-	je	key_pagedown
-
-	; naciśnięcie klawisza ArrowLeft
 	cmp	ax,	0x8002
 	je	key_arrow_left
 
-	; naciśnięcie klawisza ArrowRight
 	cmp	ax,	0x8003
 	je	key_arrow_right
 
-	; naciśnięcie klawisza ArrowUp
 	cmp	ax,	0x8004
 	je	key_arrow_up
 
-	; naciśnięcie klawisza ArrowDown
 	cmp	ax,	0x8005
 	je	key_arrow_down
 
-	; klawisz CTRL -------------------------------------------------
+	cmp	ax,	0x8007
+	je	key_home
 
-	; naciśnięcie lewego klawisza ctrl?
+	cmp	ax,	0x8008
+	je	key_end
+
 	cmp	ax,	0x001D
-	je	key_ctrl_push
+	je	key_ctrl_push	; lewy
 
-	; naciśnięcie prawego klawisza ctrl?
 	cmp	ax,	0x8006
-	je	key_ctrl_push
+	je	key_ctrl_push	; prawy
 
-	; puszczenie lewego klawisza ctrl?
 	cmp	ax,	0x009D
-	je	key_ctrl_pull
+	je	key_ctrl_pull	; lewy
 
-	; puszczenie prawego klawisza ctrl?
 	cmp	ax,	0xB006
-	je	key_ctrl_pull
+	je	key_ctrl_pull	; prawy
 
-	; klawisze funkcyjne -------------------------------------------
+	cmp	byte [variable_semaphore_key_ctrl],	VARIABLE_FALSE
+	je	.no_shortcut
 
-	; sprawdź czy wywołano skrót klawiszowy
-	cmp	byte [semaphore_ctrl],	0x00
-	je	.noShortcut
-
-	; sprawdź skrót klawiszowy Ctrl + x
 	cmp	ax,	"x"
 	je	key_function_exit
 
-;	; sprawdź skrót klawiszowy Ctrl + r
-;	cmp	ax,	"r"
-;	je	key_function_read
-;
-;	; sprawdź skrót klawiszowy Ctrl + o
-;	cmp	ax,	"o"
-;	je	key_function_save
-;
-;	; sprawdź skrót klawiszowy Ctrl + k
-;	cmp	ax,	"k"
-;	je	key_function_cut
-
-.noShortcut:
-	; sprawdź czy znak do wyświetlenia jest drukowalny -------------
+.no_shortcut:
+	; sprawdź czy znak jest możliwy do wyświetlenia ------------------------
 
 	; test pierwszy
-	cmp	ax,	0x0020	; spacja
-	jb	.loop	; jeśli mniejsze, pomiń
+	cmp	ax,	VARIABLE_ASCII_CODE_SPACE	; pierwszy znak z tablicy ASCII
+	jb	.noKey	; jeśli mniejsze, pomiń
 
 	; test drugi
-	cmp	ax,	0x007E	; ostatni drukowalny znak z tablicy ASCII
-	ja	.loop	; jeśli większe, pomiń
+	cmp	ax,	VARIABLE_ASCII_CODE_TILDE	; ostatni znak z tablicy ASCII
+	ja	.noKey	; jeśli większe, pomiń
 
 	; zapisz znak do dokumentu
-	jmp	save_into_document
+	call	save_into_document
 
-%include	'software/moko/init.asm'
+	inc	qword [variable_document_count_of_chars]
+	inc	qword [variable_line_count_of_chars]
+	inc	qword [variable_cursor_indicator]
+	inc	dword [variable_cursor_position]
+	inc	qword [variable_cursor_position_on_line]
 
-%include	'software/moko/key_home.asm'
-%include	'software/moko/key_end.asm'
-%include	'software/moko/key_delete.asm'
-%include	'software/moko/key_ctrl.asm'
-%include	'software/moko/key_pageup.asm'
-%include	'software/moko/key_pagedown.asm'
-%include	'software/moko/key_backspace.asm'
-%include	'software/moko/key_enter.asm'
-%include	'software/moko/key_arrow_left.asm'
-%include	'software/moko/key_arrow_right.asm'
-%include	'software/moko/key_arrow_up.asm'
-%include	'software/moko/key_arrow_down.asm'
+	call	check_cursor
+	call	update_line_on_screen
 
-%include	'software/moko/function_key_read_file.asm'
-%include	'software/moko/function_key_save.asm'
-%include	'software/moko/function_key_exit.asm'
-%include	'software/moko/function_key_cut.asm'
+	jmp	start.noKey
 
-%include	'software/moko/count_chars_in_document_line.asm'
-%include	'software/moko/get_address_of_shown_line.asm'
-%include	'software/moko/save_char_into_document.asm'
-%include	'software/moko/allocate_memory_in_document.asm'
-%include	'software/moko/move_part_of_memory_up.asm'
-%include	'software/moko/count_chars_in_previous_line.asm'
-%include	'software/moko/set_cursor_position.asm'
+%include	"software/moko/init.asm"
 
-; pokaż zawartość dokumentu na ekranie :)
-%include	'software/moko/the_show_must_go_on.asm'
+%include	"software/moko/key_enter.asm"
+%include	"software/moko/key_backspace.asm"
+%include	"software/moko/key_home.asm"
+%include	"software/moko/key_end.asm"
+%include	"software/moko/key_arrow_left.asm"
+%include	"software/moko/key_arrow_right.asm"
+%include	"software/moko/key_arrow_up.asm"
+%include	"software/moko/key_arrow_down.asm"
+%include	"software/moko/key_ctrl.asm"
 
-%include	'library/find_first_word.asm'
-%include	'library/input.asm'
-%include	'library/align_address_up_to_page.asm'
+%include	"software/moko/function_key_exit.asm"
 
-document_chars_count	dq	0x0000000000000000
-document_lines_count	dq	0x0000000000000000
-line_chars_count	dq	0x0000000000000000
-cursor_position		dq	0x0000000000000000
-show_line		dq	0x0000000000000000
-cursor_yx		dq	0x0000000000000000
+%include	"software/moko/save_into_document.asm"
+%include	"software/moko/update_line_on_screen.asm"
+%include	"software/moko/check_cursor.asm"
+%include	"software/moko/count_chars_in_line.asm"
+%include	"software/moko/count_chars_in_previous_line.asm"
+%include	"software/moko/find_line_indicator.asm"
+
+%include	"library/align_address_up_to_page.asm"
+
+variable_document_address_start			dq	VARIABLE_EMPTY
+variable_document_address_end			dq	VARIABLE_EMPTY
+variable_document_count_of_chars		dq	VARIABLE_EMPTY
+variable_document_count_of_lines		dq	VARIABLE_EMPTY
+variable_document_line_start			dq	VARIABLE_EMPTY
+variable_line_count_of_chars			dq	VARIABLE_EMPTY
+variable_line_print_start			dq	VARIABLE_EMPTY
+variable_cursor_indicator			dq	VARIABLE_EMPTY
+variable_cursor_position			dq	VARIABLE_CURSOR_POSITION_INIT
+variable_cursor_position_on_line		dq	VARIABLE_EMPTY
+variable_screen_size				dq	VARIABLE_EMPTY
+
+variable_semaphore_key_ctrl			db	VARIABLE_EMPTY
+variable_semaphore_status			db	VARIABLE_EMPTY
+variable_semaphore_backspace			db	VARIABLE_EMPTY
+
+variable_file_name_count_of_chars		dq	VARIABLE_EMPTY
+variable_file_name_buffor	times	256	db	VARIABLE_EMPTY
 
 text_new_line		db	VARIABLE_ASCII_CODE_ENTER, VARIABLE_ASCII_CODE_NEWLINE, VARIABLE_ASCII_CODE_TERMINATOR
-text_clear_line		db	' '
+text_header_default	db	"New file", VARIABLE_ASCII_CODE_TERMINATOR
+
+text_exit_shortcut	db	'^x', VARIABLE_ASCII_CODE_TERMINATOR
+text_exit		db	' Exit  ', VARIABLE_ASCII_CODE_TERMINATOR
 
 stop:

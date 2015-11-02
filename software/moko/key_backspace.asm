@@ -15,71 +15,135 @@
 [BITS 64]
 
 key_backspace:
-	; sprawdź czy linia zawiera znaki
-	cmp	byte [line_chars_count],	0x00
-	je	start.loop	; jeśli nie, brak obsługi
+	mov	rsi,	qword [variable_cursor_indicator]
+	cmp	rsi,	qword [variable_document_address_start]
+	je	start.noKey
 
-	; sprawdź czy pozycja kursora jest na końcu dokumentu
-	mov	rsi,	qword [cursor_position]
-	cmp	rsi,	qword [document_chars_count]
-	jne	.into
+	call	save_into_document
 
-	; usuń znak z końca dokumentu
-	add	rsi,	qword [document_address_start]
-	mov	byte [rsi - 0x01],	0x00
+	sub	qword [variable_cursor_indicator],	VARIABLE_DECREMENT
+	sub	qword [variable_document_count_of_chars],	VARIABLE_DECREMENT
 
-	; kontynuuj
+	cmp	qword [variable_cursor_position_on_line],	VARIABLE_EMPTY
+	je	.change_line
+
+	sub	qword [variable_cursor_position_on_line],	VARIABLE_DECREMENT
+	sub	qword [variable_line_count_of_chars],	VARIABLE_DECREMENT
+
+	cmp	dword [variable_cursor_position],	VARIABLE_EMPTY
+	je	.change_line_start
+
+	sub	dword [variable_cursor_position],	VARIABLE_DECREMENT
+	jmp	.cursor_moved
+
+.change_line_start:
+	sub	qword [variable_line_print_start],	VARIABLE_DECREMENT
+
+.cursor_moved:
+	call	update_line_on_screen
+
+	jmp	start.noKey
+
+.change_line:
+	mov	rsi,	qword [variable_cursor_indicator]
+	call	count_chars_in_previous_line
+
+	cmp	dword [variable_cursor_position + 0x04],	VARIABLE_INTERFACE_HEADER_HEIGHT
+	je	.no_decrement
+
+	sub	dword [variable_cursor_position + 0x04],	VARIABLE_DECREMENT
+	mov	byte [variable_semaphore_backspace],	VARIABLE_TRUE
+
 	jmp	.continue
 
-.into:
-	; koryguj adres źródłowy
-	add	rsi,	qword [document_address_start]
+.no_decrement:
+	cmp	qword [variable_document_line_start],	VARIABLE_EMPTY
+	je	.continue
 
-	; sprawdź czy jesteśmy na początku linii
-	cmp	byte [cursor_yx],	0x00
-	je	start.loop	; jeśli tak, brak obsługi
-
-	; przesuń wszystkie znaki za backspace o jeden znak w lewo
-
-	; ustaw wskaźnik docelowy
-	mov	rdi,	rsi
-	; pozycja o jeden znak wcześniej
-	dec	rdi
-
-	; ustaw ilość znaków do przesunięcia
-	mov	rcx,	qword [document_chars_count]
-	sub	rcx,	qword [cursor_position]
-
-.loop:
-	; pobierz znak z aktualnego miejsca
-	lodsb
-	; zapisz do poprzedniego
-	stosb
-	; kontynuuj dla pozostałych znaków
-	loop	.loop
-
-	; ustaw znak końca dokumentu
-	xor	al,	al
-	stosb	; zapisz
+	sub	qword [variable_document_line_start],	VARIABLE_DECREMENT
 
 .continue:
-	; zmniejsz ilość znaków przechowywanych w dokumencie
-	dec	qword [document_chars_count]
+	sub	qword [variable_document_count_of_lines],		VARIABLE_DECREMENT
 
-	; zmniejsz rozmiar aktualnej linii
-	dec	byte [line_chars_count]
+	add	qword [variable_line_count_of_chars],	rcx
+	mov	qword [variable_cursor_position_on_line],	rcx
 
-	; przesuń aktywną pozycję na poprzedni znak w dokumencie
-	dec	qword [cursor_position]
+	mov	eax,	dword [variable_screen_size]
+	sub	eax,	VARIABLE_DECREMENT
 
-	; przesuń kursor w lewo
-	dec	byte [cursor_yx]
+.cursor_fix:
+	cmp	rcx,	rax
+	jbe	.cursor_fixed
 
-	; wyświetl nową zawartość dokumentu
-	call	print
+	sub	rcx,	rax
+	add	qword [variable_line_print_start],	rax
+	jmp	.cursor_fix
 
-	; ustaw kursor na prawidłową pozycję
-	call	set_cursor
+.cursor_fixed:
+	mov	dword [variable_cursor_position],	ecx
+	call	update_line_on_screen
 
-	;powrót z funkcji
-	jmp	start.loop
+	cmp	byte [variable_semaphore_backspace],	VARIABLE_FALSE
+	je	.nothing_to_do
+
+	mov	byte [variable_semaphore_backspace],	VARIABLE_FALSE
+
+	; przesuń dolną część ekranu do góry
+	mov	ax,	0x0109
+	mov	bl,	VARIABLE_TRUE	; w górę
+	mov	ecx,	dword [variable_screen_size + 0x04]
+	sub	ecx,	dword [variable_cursor_position + 0x04]
+	sub	rcx,	VARIABLE_INTERFACE_HEIGHT - VARIABLE_DECREMENT
+	mov	edx,	dword [variable_cursor_position + 0x04]
+	add 	rdx,	VARIABLE_INCREMENT + VARIABLE_INCREMENT
+	int	0x40
+
+	; sprawdź czy zaaktualizować ostatnią linię na ekranie
+	mov	ecx,	dword [variable_screen_size + 0x04]
+	sub	ecx,	VARIABLE_INTERFACE_HEIGHT + VARIABLE_DECREMENT
+	add	rcx,	qword [variable_document_line_start]
+	mov	rax,	qword [variable_document_count_of_lines]
+	cmp	rcx,	rax
+	ja	.nothing_to_do
+
+	call	find_line_indicator
+	call	count_chars_in_line
+
+	; kursor na początek linii
+	mov	ax,	0x0105
+	mov	ebx,	dword [variable_screen_size + 0x04]
+	sub	rbx,	VARIABLE_INTERFACE_MENU_HEIGHT + VARIABLE_DECREMENT
+	shl	rbx,	32
+	int	0x40
+
+	cmp	ecx,	dword [variable_screen_size]
+	jb	.size_of_line_ok
+
+	mov	ecx,	dword [variable_screen_size]
+	sub	ecx,	1
+
+.size_of_line_ok:
+	mov	ax,	0x0101
+	mov	rbx,	VARIABLE_COLOR_DEFAULT
+	mov	rdx,	VARIABLE_COLOR_BACKGROUND_DEFAULT
+	int	0x40
+
+	; spawdź czy wyczyścić pozostałą część linii
+	mov	eax,	dword [variable_screen_size]
+	sub	rax,	1
+	cmp	rcx,	rax	; ostatnia kolumna pozostaje pusta
+	je	.nothing_to_do
+
+	xchg	rax,	rcx
+	sub	rcx,	rax
+	mov	ax,	0x0102
+	mov	r8,	" "
+	int	0x40
+
+.nothing_to_do:
+	mov	ax,	0x0105
+	mov	rbx,	qword [variable_cursor_position]
+	int	0x40
+
+.end:
+	jmp	start.noKey

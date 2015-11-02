@@ -15,97 +15,71 @@
 [BITS 64]
 
 key_enter:
-	; załaduj do akumulatora znak nowej linii
-	mov	al,	VARIABLE_ASCII_CODE_NEWLINE
+	; załaduj znak nowej linii
+	mov	ax,	VARIABLE_ASCII_CODE_NEWLINE
+	call	save_into_document
 
-	; sprawdź czy jest miejsce na nowy znak w dokumencie
-	mov	rdi,	qword [document_address_start]
-	add	rdi,	qword [document_chars_count]
-	cmp	rdi,	qword [document_address_end]
-	jb	.ok
+	add	qword [variable_document_count_of_chars],	VARIABLE_INCREMENT
+	add	qword [variable_document_count_of_lines],	VARIABLE_INCREMENT
 
-	; rozszerz przestrzeń dokumentu o kolejną ramkę
-	call	allocate_new_memory
+	; aktualizuj nowy rozmiar aktualnej linii
+	mov	rax,	qword [variable_cursor_position_on_line]
+	mov	qword [variable_line_count_of_chars],	rax
 
-.ok:
-	; sprawdź czy jesteśmy na końcu dokumentu
-	mov	rcx,	qword [cursor_position]
-	cmp	rcx,	qword [document_chars_count]
-	je	.at_end
+	; wyświetl aktualną linię od początku
+	sub	qword [variable_cursor_indicator],	rax
+	mov	qword [variable_cursor_position_on_line],	VARIABLE_EMPTY
+	mov	qword [variable_line_print_start],	VARIABLE_EMPTY
 
-	; przesuń całą zawartość dokumentu od miejsca wskaźnika o jeden znak do przodu
+	call	update_line_on_screen
 
-	; ustaw wskaźnik źródłowy
-	mov	rsi,	rdi
-	dec	rsi	; poprzedni znak
+	mov	dword [variable_cursor_position],	VARIABLE_EMPTY
 
-	; ustal ilość znaków do przesunięcia
-	mov	rcx,	qword [document_chars_count]
-	sub	rcx,	qword [cursor_position]
+	; utwórz miejsce na ekranie dokumentu dla nowej linii
 
-	; przesuń zawartość dokumenu o ustanowioną ilość znaków
-	call	move_memory_up
+	mov	ecx,	dword [variable_screen_size + 0x04]
+	sub	ecx,	VARIABLE_INTERFACE_MENU_HEIGHT
+	sub	ecx,	VARIABLE_DECREMENT
+	mov	ebx,	dword [variable_cursor_position + 0x04]
+	cmp	ebx,	ecx
+	je	.scroll_up
 
-.new_line:
-	; zapisz znak nowej linii do dokumentu
-	stosb
+	; scroll down
+	mov	ax,	0x0109
+	mov	bl,	VARIABLE_FALSE	 ; w dół
+	mov	ecx,	dword [variable_screen_size + 0x04]
+	sub	ecx,	dword [variable_cursor_position + 0x04]
+	; druga dekrementacja dotyczy pozycji kursora liczonej od zera, a nie od 1
+	sub	ecx,	VARIABLE_INTERFACE_MENU_HEIGHT + VARIABLE_DECREMENT + VARIABLE_DECREMENT
+	jz	.last_line
 
-	; ustaw kursor na początku nowej linii
-	mov	dword [cursor_yx],	0x00000000
+	mov	edx,	dword [variable_cursor_position + 0x04]
+	add	edx,	VARIABLE_INTERFACE_HEADER_HEIGHT
+	int	0x40
 
-	; czy kursor znajdował się w ostatniej linii na ekranie?
-	mov	eax,	dword [screen_xy + 0x04]
-	sub	rax,	qword [interface_height]
-	cmp	dword [cursor_yx + 0x04],	eax
-	jb	.move
+.last_line:
+	add	dword [variable_cursor_position + 0x04],	0x01
 
-	; zmień numer linii, od której wyświetlać dokument
-	inc	qword [show_line]
+	jmp	.show_new_line
 
-	; wyczyść ostatnią linię
-	mov	rax,	0x0101
-	mov	rbx,	0xaaaaaa
-	xor	rcx,	rcx	; wyświetl całą zawartość ciągu
-	mov	rdx,	0
-	mov	rsi,	text_clear_line
-	int	0x40	; wykonaj
+.scroll_up:
+	mov	ax,	0x0109
+	mov	bl,	VARIABLE_TRUE	; w górę
+	mov	ecx,	dword [variable_screen_size + 0x04]
+	sub	rcx,	VARIABLE_INTERFACE_HEIGHT - VARIABLE_DECREMENT
+	mov	rdx,	VARIABLE_INTERFACE_HEADER_HEIGHT + VARIABLE_INCREMENT
+	int	0x40
 
-	; kontynuuj
-	jmp	.update
+	add	qword [variable_document_line_start],	0x01
 
-.move:
-	; przesuń kursora o jeden wiersz w dół
-	inc	dword [cursor_yx + 0x04]
-
-.update:
-	; wyświetl nową zawartość dokumentu
-	call	print
-
-	; aktualizuj ozycje kursora na ekranie
-	call	set_cursor
-
-.end:
-	; każdy klawisz entera to nowy znak w dokumencie
-	inc	qword [document_chars_count]
-	; koryguj wskaźnik kursora wewnątrz dokumentu
-	inc	qword [cursor_position]
-	; każdy klawisz entera to nowa linia
-	inc	qword [document_lines_count]
-
-	; oblicz ilość znaków w nowej linii
-	mov	rsi,	rdi
+.show_new_line:
+	; pomiń znak nowej linii
+	xchg	rdi,	rsi
 	call	count_chars_in_line
 
-	; zapisz
-	mov	qword [line_chars_count],	rcx
+	mov	qword [variable_cursor_indicator],	rsi
+	mov	qword [variable_line_count_of_chars],	rcx
+	mov	qword [variable_cursor_position_on_line],	VARIABLE_EMPTY
+	call	update_line_on_screen
 
-	; koniec obsługi klawisza enter
-	jmp	start.loop
-
-.at_end:
-	; zapisz znak na koniec dokumentu
-	mov	rdi,	qword [document_address_start]
-	add	rdi,	qword [cursor_position]
-
-	; kontynuuj
-	jmp	.new_line
+	jmp	start.noKey

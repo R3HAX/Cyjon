@@ -11,22 +11,14 @@
 ; Use:
 ; nasm - http://www.nasm.us/
 
-; 64 Bitowy kod programu
 [BITS 64]
 
 key_ctrl_push:
-	; włącz flagę
-	mov	byte [semaphore_ctrl],	0x01
+	mov	byte [variable_semaphore_key_ctrl],	VARIABLE_TRUE
 
-	; koniec funkcji
-	jmp	start.loop
+	jmp	start.noKey
 
 key_ctrl_pull:
-	; wyłącz flagę
-	mov	byte [semaphore_ctrl],	0x00
+	mov	byte [variable_semaphore_key_ctrl],	VARIABLE_FALSE
 
-	; koniec funkcji
-	jmp	start.loop
-
-; wskaźnik
-semaphore_ctrl	db	0x00
+	jmp	start.noKey

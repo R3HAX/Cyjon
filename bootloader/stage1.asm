@@ -258,7 +258,15 @@ text_read_fail			db	'Read error, code 0x',	0x00
 times	436 - ( $ - $$ )	db	0x00
 
 ; === TABLICA PARTYCJI =========================================================
-disk_identificator	db	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00	; 10 Bajtów, wartość niewymagana
+disk_identificator		db	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00	; 10 Bajtów, wartość niewymagana
+
+; pp0 - partycja podstawowa nr ZERO
+pp0_boot			db	0x00	; partycja nie jest aktywna
+pp0_chs_start			db	0x00, 0x00, 0x00	; zbędne
+pp0_type			db	0x3a	; typ partycji
+pp0_chs_end			db	0x00, 0x00, 0x00	; zbędne
+pp0_lba				dd	2048	; bezwzględny numer sektora poczatku partycji
+pp0_size			dd	2048	; rozmiar partycji w sektorach
 
 ; brak informacji o pozostałych partycjach
 
@@ -279,5 +287,6 @@ incbin	'stage2.bin'
 end:
 
 ; na systemach z rodziny MS/Windows, oprogramowanie Bochs wymaga obrazu dysku o rozmiarze > 1MiB i wyrównanego do pełnego sektora (512 Bajtów)
-times	512 * 2048	db	0x00
-align	0x200
+times	512 * 2048 - ( $ - $$ )	db	0x00
+
+incbin	'build/kfs.raw'

@@ -86,6 +86,9 @@ start:
 	; kontynuuj z pozostałymi
 	loop	.loop
 
+	;mov	rax,	2048
+	;call	kfs_initialization
+
 	; uruchom proces główny INIT
 	mov	rcx,	qword [file_load_init]	; ilość znaków nazwie pliku
 	mov	rsi,	file_load_init_pointer	; wskaźnik do ciągu znaków reprezentujący nazwe pliku
@@ -116,6 +119,9 @@ start:
 %include	"engine/daemon/garbage_collector.asm"
 
 %include	"engine/drivers/pci.asm"
+%include	"engine/drivers/ide.asm"
+
+%include	"engine/drivers/filesystem/kfs.asm"
 
 %include	"library/align_address_up_to_page.asm"
 %include	"library/find_free_bit.asm"

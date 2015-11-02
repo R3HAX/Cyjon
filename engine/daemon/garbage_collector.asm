@@ -182,7 +182,7 @@ daemon_init_garbage_collector:
 
 garbage_collector:
 	; szukaj procesu gotowego do zamknięcia
-	mov	bx,	101b
+	mov	bx,	STATIC_SERPENTINE_RECORD_FLAG_USED + STATIC_SERPENTINE_RECORD_FLAG_CLOSED
 
 	call	cyjon_multitasking_serpentine_find_record
 
@@ -197,6 +197,17 @@ garbage_collector:
 
 	; wyczyść rekord w tablicy
 	mov	qword [rdi + VARIABLE_TABLE_SERPENTINE_RECORD.FLAGS],	VARIABLE_EMPTY
+
+	; wyczyść nazwę pliku z rekordu
+	xor	al,	al
+	mov	rcx,	VARIABLE_TABLE_SERPENTINE_RECORD.ARGS - VARIABLE_TABLE_SERPENTINE_RECORD.NAME
+	add	rdi,	VARIABLE_TABLE_SERPENTINE_RECORD.NAME
+
+.loop:
+	mov	byte [rdi],	al
+	add	rdi,	VARIABLE_INCREMENT
+	sub	rcx,	VARIABLE_DECREMENT
+	jnz	.loop
 
 	; zwolnij pamięć zajętą przez proces
 	mov	rdi,	rbx	; załaduj adres tablicy PML4 procesu

@@ -14,13 +14,13 @@
 ; 64 Bitowy kod programu
 [BITS 64]
 
-address_of_shown_line:
+find_line_indicator:
 	; zachowaj oryginalne rejestry
 	push	rax
 	push	rcx
 
 	; wskaźnik poczatku dokumentu
-	mov	rsi,	qword [document_address_start]
+	mov	rsi,	qword [variable_document_address_start]
 
 	; sprawdź czy pierwsza linia
 	cmp	rcx,	0
@@ -35,7 +35,8 @@ address_of_shown_line:
 	jne	.loop	; jeśli nie, szukaj dalej
 
 	; znaleziono znak nowej linii, mniejsz ilość pozostałych do odnalezienia i kontynuuj szukanie
-	loop	.loop
+	sub	rcx,	VARIABLE_DECREMENT
+	jnz	.loop
 
 .end:
 	; przywróc oryginalne rejestry

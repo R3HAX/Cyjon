@@ -87,7 +87,9 @@ start:
 
 	; sprawdź czy polecenie wewnętrzne 'clear' ---------------------
 	mov	rsi,	command_clear
+	xchg	cl,	byte [command_clear_count]
 	call	library_compare_string	; sprawdź
+	xchg	cl,	byte [command_clear_count]
 
 	; nie znaleziono?
 	jnc	.noClear
@@ -102,7 +104,9 @@ start:
 .noClear:
 	; sprawdź czy próba wywołania Incepcji :D ----------------------
 	mov	rsi,	command_shell
+	xchg	cl,	byte [command_shell_count]
 	call	library_compare_string	; sprawdź
+	xchg	cl,	byte [command_shell_count]
 
 	; nie znaleziono?
 	jnc	.noShell
@@ -119,7 +123,9 @@ start:
 .noShell:
 	; sprawdź czy próba wywołania zablokowanego programu -----------
 	mov	rsi,	command_init
+	xchg	cl,	byte [command_init_count]
 	call	library_compare_string	; sprawdź
+	xchg	cl,	byte [command_init_count]
 
 	; nie znaleziono?
 	jnc	.noInit
@@ -136,7 +142,9 @@ start:
 .noInit:
 	; sprawdź czy próba wywołania zablokowanego programu -----------
 	mov	rsi,	command_login
+	xchg	cl,	byte [command_login_count]
 	call	library_compare_string	; sprawdź
+	xchg	cl,	byte [command_login_count]
 
 	; nie znaleziono?
 	jnc	.noLogin
@@ -153,7 +161,9 @@ start:
 .noLogin:
 	; sprawdź czy polecenie wewnętrzne 'exit' ----------------------
 	mov	rsi,	command_exit
+	xchg	cl,	byte [command_exit_count]
 	call	library_compare_string	; sprawdź
+	xchg	cl,	byte [command_exit_count]
 
 	; jeśli nie, kontynuuj
 	jnc	.noExit
@@ -213,7 +223,12 @@ text_blocked			db	"No, you can't.", VARIABLE_ASCII_CODE_ENTER, VARIABLE_ASCII_CO
 text_login			db	"Online.", VARIABLE_ASCII_CODE_ENTER, VARIABLE_ASCII_CODE_NEWLINE, VARIABLE_ASCII_CODE_TERMINATOR
 
 command_clear			db	'clear'
+command_clear_count		db	5
 command_shell			db	'shell'
+command_shell_count		db	5
 command_init			db	'init'
+command_init_count		db	4
 command_login			db	'login'
+command_login_count		db	5
 command_exit			db	'exit'
+command_exit_count		db	4

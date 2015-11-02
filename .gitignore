@@ -6,9 +6,13 @@ qemu
 build
 bochs
 qemu.bat
+geany
+notepad++
 *.rc
 *.bak
-*.bat
 *.ini
 *.sh
 modyfikacje.txt
+bochs.bat
+*.bark
+moko - kopia*

@@ -20,7 +20,7 @@ count_chars_in_previous_line:
 
 .loop:
 	; jeśli początek dokumentu, zakończ
-	cmp	rsi,	qword [document_address_start]
+	cmp	rsi,	qword [variable_document_address_start]
 	je	.end
 
 	; jeśli znak nowej linii, koniec
@@ -37,8 +37,5 @@ count_chars_in_previous_line:
 	jmp	.loop
 
 .end:
-	; koryguj wskaźnik o adres początku dokumentu
-	sub	rsi,	qword [document_address_start]
-
 	; powrót z procedury
 	ret

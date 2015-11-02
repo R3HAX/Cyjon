@@ -11,22 +11,9 @@
 ; Use:
 ; nasm - http://www.nasm.us/
 
-; 64 Bitowy kod programu
-[BITS 64]
+kfs_initialization:
+	call	cyjon_page_allocate
+	call	cyjon_page_clear
+	call	cyjon_ide_sector_read
 
-set_cursor:
-	; zachowaj oryginalne rejestry
-	push	rax
-	push	rbx
-
-	; ustaw kursor
-	mov	ax,	0x0105
-	mov	rbx,	qword [cursor_yx]
-	int	0x40	; wykonaj
-
-	; przywróć oryginalne rejestry
-	pop	rbx
-	pop	rax
-
-	; powrót z procedury
-	ret
+	jmp	$

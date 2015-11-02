@@ -221,9 +221,9 @@ cyjon_screen_clear:
 .bpp32:
 	; zapisz piksel o danym kolorze
 	stosd
-
+	sub	rcx,	1
 	; kontynuuj
-	loop	.bpp32
+	jnz	.bpp32
 
 	; zakończ
 	jmp	.ready
@@ -236,7 +236,8 @@ cyjon_screen_clear:
 	rol	eax,	16
 
 	; kontynuuj
-	loop	.bpp24
+	sub	rcx,	1
+	jnz	.bpp24
 
 .ready:
 
@@ -425,7 +426,8 @@ cyjon_screen_cursor_invert_color:
 
 .ready:
 	; kontynuuj z pozostałymi pikselami w szerokości kursora
-	loop	.loopX
+	sub	rcx,	1
+	jnz	.loopX
 
 	; przesuń wskaźnik w przestrzeni pamięci ekranu na następną linię kursora
 	mov	rax,	qword [variable_video_mode_pixels_per_line]
@@ -440,7 +442,8 @@ cyjon_screen_cursor_invert_color:
 	pop	rcx
 
 	; kontynuuj z pozostałymi liniami kursora
-	loop	.loopY
+	sub	rcx,	1
+	jnz	.loopY
 
 	; przywróć oryginalne rejestry
 	pop	rdi
@@ -567,7 +570,8 @@ cyjon_screen_print_char:
 	add	rsi,	qword [variable_font_x_in_bytes]
 
 	; następna linia
-	loop	.matrix_line
+	sub	rcx,	1
+	jnz	.matrix_line
 
 	; przesuń wskaźnik kursora w przestrzeni pamięci ekranu na następną pozycję
 	mov	rax,	qword [variable_video_mode_bpp]
@@ -756,7 +760,8 @@ cyjon_screen_char_background_clear:
 	pop	rcx
 
 	; następna linia
-	loop	.matrix_line
+	sub	rcx,	1
+	jnz	.matrix_line
 
 	; przywróć oryginalne rejestry
 	pop	rdi

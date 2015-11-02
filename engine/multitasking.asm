@@ -14,9 +14,6 @@
 ; 64 Bitowy kod programu
 [BITS 64]
 
-; śmieć
-STATIC_PROCESS_RECORDS_PER_PAGE	equ	51
-
 struc VARIABLE_TABLE_SERPENTINE_RECORD
 	.PID		resq	1
 	.CR3		resq	1
