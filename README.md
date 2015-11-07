@@ -1,5 +1,5 @@
 # Cyjon OS
-Prosty system operacyjny dla procesorów z rodziny x86-64.
+Prosty system operacyjny dla procesorów z rodziny amd64/x86-64.
 
 ![alt tag](http://wataha.net/shot/show.png)
 
