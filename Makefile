@@ -3,6 +3,7 @@
 ASM=nasm -f bin
 SOFTWARE=software
 BOOTLOADER=bootloader
+BUILD=build
 
 all:
 	$(ASM) $(SOFTWARE)/init.asm -o init.bin
@@ -16,8 +17,9 @@ all:
 
 	$(ASM) kernel.asm -o kernel.bin
 
+	$(ASM) $(BUILD)/kfs.asm -o $(BUILD)/kfs.raw
 	$(ASM) $(BOOTLOADER)/stage2.asm -o stage2.bin
-	$(ASM) $(BOOTLOADER)/stage1.asm -o build/disk.raw
+	$(ASM) $(BOOTLOADER)/stage1.asm -o $(BUILD)/disk.raw
 
 clean:
 	rm -f stage2.bin init.bin shell.bin help.bin login.bin uptime.bin moko.bin kernel.bin ps.bin date.bin
