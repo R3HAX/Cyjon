@@ -4,14 +4,13 @@ Prosty system operacyjny dla procesorów z rodziny x86-64.
 ![alt tag](http://wataha.net/shot/show.png)
 
 #Wymagania sprzętowe:
-- procesor z rodziny x86-64,
+- procesor z rodziny amd64/x86-64,
 - 1 MiB pamięci RAM pod adresem fizycznym 0x0000000000100000,
 - obsługa SuperVGA w trybie 640x480 o głębi kolorów 24 lub 32 bity.
 
 #Oprogramowanie:
-- kompilator Nasm wersja 2.11.08 lub nowsza, http://www.nasm.us/
-- oprogramowanie Qemu do wirtualizacji, wersja 2.4.0 lub nowsze, http://wiki.qemu.org/Main_Page
-- system operacyjny dowolny, posiadający wymagane oprogramowanie w swoich repozytoriach.
+- kompilator Nasm v2.11.08+ (http://www.nasm.us/)
+- oprogramowanie Bochs v2.6.8+ (http://sourceforge.net/projects/bochs/files/bochs/) lub Qemu v2.4.1+ (http://wiki.qemu.org/Main_Page) do wirtualizacji,
 
 #Kompilacja (z poziomu konsoli):
 
