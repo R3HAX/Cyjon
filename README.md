@@ -6,7 +6,7 @@ Prosty system operacyjny dla procesorów z rodziny amd64/x86-64.
 #Wymagania sprzętowe:
 - procesor z rodziny amd64/x86-64,
 - 1 MiB pamięci RAM pod adresem fizycznym 0x0000000000100000,
-- obsługa SuperVGA w trybie 640x480 o głębi kolorów 24 lub 32 bity.
+- obsługa VBE w trybie 640x480 24bpp.
 
 #Oprogramowanie:
 - kompilator Nasm v2.11.08+ (http://www.nasm.us/)
