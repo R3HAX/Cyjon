@@ -39,6 +39,10 @@ irq64:
 	cmp	ah,	0x03
 	je	irq64_system
 
+	; czy zarządzać systemem plików
+	cmp	ah,	0x04
+	je	irq64_filesystem
+
 .end:
 	; powrót z przerwania programowanego
 	iretq
@@ -599,6 +603,53 @@ irq64_system:
 	; przeładuj
 	shl	rbx,	8
 	mov	bl,	00000001b	; tryb 24 godzinny
+
+	; koniec obsługi procedury
+	jmp	irq64.end
+
+irq64_filesystem:
+	; odczytać plik?
+	cmp	al,	VARIABLE_EMPTY
+	je	.filesystem_file_read
+
+	cmp	al,	0x01
+	je	.filesystem_file_size
+
+	; brak obsługi
+	jmp	irq64.end
+
+.filesystem_file_read:
+	push	rax
+	push	r8
+
+	mov	rax,	rcx
+	mov	r8,	variable_partition_specification_home
+	call	cyjon_filesystem_kfs_read_file
+
+	pop	r8
+	pop	rax
+
+	; koniec obsługi procedury
+	jmp	irq64.end
+
+.filesystem_file_size:
+	push	rax
+	push	rdx
+	push	rsi
+	push	r8
+
+	mov	rax,	rbx
+	mov	r8,	variable_partition_specification_home
+	mul	qword [r8 + KFS.knot_size]
+	mov	rsi,	qword [r8 + KFS.knots_table_address]
+	add	rsi,	rax
+
+	mov	rcx,	qword [rsi + KNOT.size_in_bytes]
+
+	pop	r8
+	pop	rsi
+	pop	rdx
+	pop	rax
 
 	; koniec obsługi procedury
 	jmp	irq64.end

@@ -179,3 +179,4 @@ cyjon_ide_check_ready:
 
 	; powrót z procedury
 	ret
+ 

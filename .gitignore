@@ -1,17 +1,15 @@
-
-
-*.raw
 *.exe
 qemu
 bochs
-qemu.bat
+*.bat
 geany
 notepad++
 *.rc
 *.bak
 *.ini
 *.sh
-modyfikacje.txt
-bochs.bat
+*.txt
 *.bark
 moko - kopia*
+hexedit
+*.lnk

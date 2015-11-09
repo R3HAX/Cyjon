@@ -42,7 +42,7 @@ start:
 	je	.end	; tak
 
 	; wyświetl polecenie
-	mov	ebx,	VARIABLE_COLOR_WHITE
+	mov	ebx,	VARIABLE_COLOR_DEFAULT
 	mov	rcx,	r8	; rozmiar ciągu znaków
 	int	0x40	; wykonaj
 
@@ -53,7 +53,7 @@ start:
 	mov	rsi,	qword [rsi + r8]
 
 	; wyświetl opis polecenia
-	mov	ebx,	VARIABLE_COLOR_DEFAULT
+	mov	ebx,	VARIABLE_COLOR_GRAY
 	mov	rcx,	-1	; wyświetl cały ciąg
 	int	0x40	; wykonaj
 
@@ -87,8 +87,8 @@ command_table:
 	db	'help   '
 	dq	text_help
 
-;	db	'ls     '
-;	dq	text_ls
+	db	'ls     '
+	dq	text_ls
 
 	db	'moko   '
 	dq	text_moko
@@ -99,10 +99,10 @@ command_table:
 	; koniec tablicy
 	dq	VARIABLE_EMPTY
 
-text_clear	db	"- clean console screen,", VARIABLE_ASCII_CODE_ENTER, VARIABLE_ASCII_CODE_NEWLINE, VARIABLE_ASCII_CODE_TERMINATOR
-text_date	db	"- display the current time,", VARIABLE_ASCII_CODE_ENTER, VARIABLE_ASCII_CODE_NEWLINE, VARIABLE_ASCII_CODE_TERMINATOR
-text_exit	db	"- logout,", VARIABLE_ASCII_CODE_ENTER, VARIABLE_ASCII_CODE_NEWLINE, VARIABLE_ASCII_CODE_TERMINATOR
-text_help	db	"- yes, it's me,", VARIABLE_ASCII_CODE_ENTER, VARIABLE_ASCII_CODE_NEWLINE, VARIABLE_ASCII_CODE_TERMINATOR
-text_ls		db	"- show files owned by user,", VARIABLE_ASCII_CODE_ENTER, VARIABLE_ASCII_CODE_NEWLINE, VARIABLE_ASCII_CODE_TERMINATOR
-text_moko	db	"- system text editor,", VARIABLE_ASCII_CODE_ENTER, VARIABLE_ASCII_CODE_NEWLINE, VARIABLE_ASCII_CODE_TERMINATOR
-text_uptime	db	"- tells how long the system has been running.", VARIABLE_ASCII_CODE_ENTER, VARIABLE_ASCII_CODE_NEWLINE, VARIABLE_ASCII_CODE_TERMINATOR
+text_clear	db	"clean console screen,", VARIABLE_ASCII_CODE_ENTER, VARIABLE_ASCII_CODE_NEWLINE, VARIABLE_ASCII_CODE_TERMINATOR
+text_date	db	"display the current time,", VARIABLE_ASCII_CODE_ENTER, VARIABLE_ASCII_CODE_NEWLINE, VARIABLE_ASCII_CODE_TERMINATOR
+text_exit	db	"logout,", VARIABLE_ASCII_CODE_ENTER, VARIABLE_ASCII_CODE_NEWLINE, VARIABLE_ASCII_CODE_TERMINATOR
+text_help	db	"yes, it's me,", VARIABLE_ASCII_CODE_ENTER, VARIABLE_ASCII_CODE_NEWLINE, VARIABLE_ASCII_CODE_TERMINATOR
+text_ls		db	"show files owned by user,", VARIABLE_ASCII_CODE_ENTER, VARIABLE_ASCII_CODE_NEWLINE, VARIABLE_ASCII_CODE_TERMINATOR
+text_moko	db	"system text editor,", VARIABLE_ASCII_CODE_ENTER, VARIABLE_ASCII_CODE_NEWLINE, VARIABLE_ASCII_CODE_TERMINATOR
+text_uptime	db	"tells how long the system has been running.", VARIABLE_ASCII_CODE_ENTER, VARIABLE_ASCII_CODE_NEWLINE, VARIABLE_ASCII_CODE_TERMINATOR

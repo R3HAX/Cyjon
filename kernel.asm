@@ -86,8 +86,10 @@ start:
 	; kontynuuj z pozostałymi
 	loop	.loop
 
-	;mov	rax,	2048
-	;call	kfs_initialization
+	mov	rax,	2048
+	mov	rcx,	1	; rozmiar superbloku, 1 blok
+	mov	r8,	variable_partition_specification_home
+	call	kfs_initialization
 
 	; uruchom proces główny INIT
 	mov	rcx,	qword [file_load_init]	; ilość znaków nazwie pliku
@@ -258,6 +260,12 @@ files_table:
 	dq	file_date_end
 	db	'date'
 
+	dq	2
+	dq	file_ls_end - file_ls
+	dq	file_ls
+	dq	file_ls_end
+	db	'ls'
+
 	; koniec tablicy plików
 	dq	VARIABLE_EMPTY
 
@@ -284,6 +292,9 @@ file_ps_end:
 
 file_date:		incbin	'date.bin'
 file_date_end:
+
+file_ls:		incbin	'ls.bin'
+file_ls_end:
 
 text_virtial_file_system	db	" Virtual file system initialized.", VARIABLE_ASCII_CODE_ENTER, VARIABLE_ASCII_CODE_NEWLINE, VARIABLE_ASCII_CODE_TERMINATOR
 

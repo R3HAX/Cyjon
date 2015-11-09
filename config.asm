@@ -61,6 +61,8 @@ VARIABLE_FALSE					equ	0
 VARIABLE_INCREMENT				equ	1
 VARIABLE_DECREMENT				equ	1
 
+VARIABLE_DISK_SECTOR_SIZE			equ	9	; przesunięcie logiczne w lewo wartości 2
+
 VARIABLE_CMOS_PORT_IN				equ	0x71
 VARIABLE_CMOS_PORT_OUT				equ	0x70
 

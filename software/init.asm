@@ -11,6 +11,8 @@
 ; Use:
 ; nasm - http://www.nasm.us/
 
+%define	VARIABLE_VERSION	"v0.2"
+
 ; kolory, stałe
 %include	'config.asm'
 
@@ -24,6 +26,17 @@
 [ORG VARIABLE_MEMORY_HIGH_REAL_ADDRESS]
 
 start:
+	; procedura - wyświetl ciąg znaków na ekranie w miejscu kursora
+	mov	rax,	0x0101
+	mov	rcx,	-1	; wyświetl wszystkie znaki z ciągu
+	mov	rdx,	VARIABLE_COLOR_BACKGROUND_DEFAULT
+
+	;kolor znaków
+	mov	rbx,	VARIABLE_COLOR_DEFAULT
+	; wskaźnik do ciągu znaków zakończony terminatorem lub licznikiem
+	mov	rsi,	text_init
+	int	0x40	; wykonaj
+
 	; pierwszą inicjalizacje nie rozpoczynaj od czyszczenia ekranu
 	jmp	.start
 
@@ -103,10 +116,12 @@ check:
 	; powrót z procedury
 	ret
 
+text_init	db	VARIABLE_ASCII_CODE_ENTER, VARIABLE_ASCII_CODE_NEWLINE
+		db	"INIT: ", VARIABLE_VERSION, " ready.", VARIABLE_ASCII_CODE_ENTER, VARIABLE_ASCII_CODE_NEWLINE, VARIABLE_ASCII_CODE_TERMINATOR
 text_welcome	db	VARIABLE_ASCII_CODE_ENTER, VARIABLE_ASCII_CODE_NEWLINE
-		db	"     C y j o n   O S  ", VARIABLE_ASCII_CODE_ENTER, VARIABLE_ASCII_CODE_NEWLINE, VARIABLE_ASCII_CODE_TERMINATOR
-text_separator	db	"   -------------------", VARIABLE_ASCII_CODE_ENTER, VARIABLE_ASCII_CODE_NEWLINE, VARIABLE_ASCII_CODE_TERMINATOR
-text_version	db	"                v", VARIABLE_KERNEL_VERSION, VARIABLE_ASCII_CODE_ENTER, VARIABLE_ASCII_CODE_NEWLINE, VARIABLE_ASCII_CODE_NEWLINE, VARIABLE_ASCII_CODE_TERMINATOR
+		db	"     W a t a h a . n e t", VARIABLE_ASCII_CODE_ENTER, VARIABLE_ASCII_CODE_NEWLINE, VARIABLE_ASCII_CODE_TERMINATOR
+text_separator	db	"   -----------------------", VARIABLE_ASCII_CODE_ENTER, VARIABLE_ASCII_CODE_NEWLINE, VARIABLE_ASCII_CODE_TERMINATOR
+text_version	db	"              Cyjon v", VARIABLE_KERNEL_VERSION, VARIABLE_ASCII_CODE_ENTER, VARIABLE_ASCII_CODE_NEWLINE, VARIABLE_ASCII_CODE_NEWLINE, VARIABLE_ASCII_CODE_TERMINATOR
 
 file_login		db	'login'
 file_login_name_length	dq	5

@@ -23,7 +23,6 @@ struc virtual_file_system_superblock
 endstruc
 
 variable_partition_specification_system	times	4	dq	VARIABLE_EMPTY
-variable_partition_specification_home	times	4	dq	VARIABLE_EMPTY
 
 virtual_file_systems:
 	; zachowaj oryginalne rejestry
@@ -291,7 +290,7 @@ virtual_file_system_initialization:
 	ret
 
 ;===============================================================================
-; procedura ładuje zawartość pliu do pamięci
+; procedura ładuje zawartość pliku do pamięci
 ; IN:
 ;	rsi - numer pierwszego bloku danych pliku
 ;	rdi - adres gdzie załadować plik
