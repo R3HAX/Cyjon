@@ -1,7 +1,7 @@
 # Cyjon OS
 Prosty system operacyjny dla procesorów z rodziny amd64/x86-64.
 
-![alt tag](http://wataha.net/shot/show.png)
+![alt tag](http://wataha.net/shot/shot7.png)
 
 #Wymagania sprzętowe:
 - procesor z rodziny amd64/x86-64,
