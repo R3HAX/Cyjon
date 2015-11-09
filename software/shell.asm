@@ -68,7 +68,7 @@ start:
 
 .text:
 	; zachowaj ilość znaków w buforze
-	push	rcx
+	mov	qword [command_cache_size],	rcx
 
 	; przejdź do nowej linii
 	mov	ax,	0x0101	; procedura wyświetlająca ciąg znaków zakończony TERMINATOREM lub sprecyzowaną ilością
@@ -77,7 +77,7 @@ start:
 	int	0x40	; wykonaj
 
 	; przywróć ilość znaków w buforze
-	pop	rcx
+	mov	rcx,	qword [command_cache_size]
 
 	; znajdź pierwsze słowo (polecenie) do wykonania/uruchomienia
 	call	library_find_first_word
@@ -176,6 +176,9 @@ start:
 	; uruchom program o podanej nazwie
 	mov	ax,	0x0001
 	mov	rsi,	rdi	; załaduj wskaźnik nazwy pliku
+	; przekaż listę argumentów do uruchamianego procesu
+	mov	rdi,	command_cache
+	mov	rdx,	qword [command_cache_size]
 	int	0x40	; wykonaj
 
 	; sprawdź czy uruchomiono nowy proces
@@ -212,6 +215,7 @@ start:
 
 command_cache	times	256	db	0x00
 				db	VARIABLE_ASCII_CODE_TERMINATOR
+command_cache_size		dq	VARIABLE_EMPTY
 
 text_help			db	"Type 'help' for more info.", VARIABLE_ASCII_CODE_ENTER, VARIABLE_ASCII_CODE_NEWLINE, VARIABLE_ASCII_CODE_TERMINATOR
 text_prompt_with_newline	db	VARIABLE_ASCII_CODE_ENTER, VARIABLE_ASCII_CODE_NEWLINE
