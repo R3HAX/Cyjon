@@ -24,7 +24,7 @@
 ;	CF	- jeśli obydwa ciągi poprawne
 ;
 ; wszystkie rejestry zachowane
-library_compare_string:	
+library_compare_string:
 	; zachowaj oryginalne rejestry
 	push	rax
 	push	rcx

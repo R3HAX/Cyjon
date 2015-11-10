@@ -39,10 +39,10 @@ times 0xA000 - ( $ - $$ )	db	0x00
 
 ; rekord 0
 dq	0x0000000000000000	; identyfikator supła
-dw	0x000F	; rozmiar rekordu
-db	0x03	; ilość znaków w nazwie pliku
+dw	0x0013	; rozmiar rekordu
+db	0x07	; ilość znaków w nazwie pliku
 db	0x02	; typ pliku "katalog"
-db	'etc'
+db	'.system'
 
 ; rekord 1
 dq	0x0000000000000001

@@ -225,6 +225,8 @@ cyjon_process_init:
 	; przywróć
 	pop	rax
 
+	; ======================================================================
+
 	; zapisz PID procesu do rekordu
 	stosq
 
@@ -232,23 +234,55 @@ cyjon_process_init:
 	xchg	rax,	qword [rsp]
 	stosq
 
+	push	rdi
+	sub	qword [rsp],	0x10	; - 2xSTOSQ
+
 	; zapisz adres szczytu stosu kontekstu procesu do rekordu
 	mov	rax,	VARIABLE_MEMORY_HIGH_VIRTUAL_ADDRESS - (21 * 0x08)
 	stosq
 
-	; ustaw flagę rekordu na aktywny
+	; ustaw flagę rekordu na wykorzystany/zajęty
 	mov	rax,	STATIC_SERPENTINE_RECORD_FLAG_USED | STATIC_SERPENTINE_RECORD_FLAG_ACTIVE
 	stosq
 
 	; ustaw wskaźnik do nazwy pliku
-	mov	rsi,	qword [rsp + 0x20]
+	mov	rsi,	qword [rsp + 0x28]
 
 	; rozmiar nazwy pliku
-	mov	rcx,	qword [rsp + 0x30]
+	mov	rcx,	qword [rsp + 0x38]
 
 	; załaduj nazwe procesu do rekordu
 	rep	movsb
 
+	; przywróć adres rekordu
+	pop	rbx
+
+	cmp	qword [rsp + 0x28],	VARIABLE_EMPTY
+	je	.no_args
+
+	; przygotuj miejsce pod argumenty
+	call	cyjon_page_allocate
+	call	cyjon_page_clear
+
+	; zapisz adres wskaźnika przesłanych argumentów
+	mov	qword [rbx + VARIABLE_TABLE_SERPENTINE_RECORD.ARGS],	rdi
+
+	mov	rsi,	qword [rsp + 0x18]	; rdi
+	mov	rcx,	qword [rsp + 0x28]	; rdx
+
+	; zapisz rozmiar listy argumentów
+	mov	qword [rdi],	rcx
+	add	rdi,	0x08
+
+.args:
+	mov	al,	byte [rsi]
+	mov	byte [rdi],	al
+	add	rsi,	VARIABLE_INCREMENT
+	add	rdi,	VARIABLE_INCREMENT
+	sub	rcx,	VARIABLE_DECREMENT
+	jnz	.args
+
+.no_args:
 	; zwiększ ilość rekordów/procesów przechowywanych w tablicy
 	inc	qword [variable_multitasking_serpentine_record_counter]
 

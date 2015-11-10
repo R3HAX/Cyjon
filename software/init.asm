@@ -75,6 +75,7 @@ start:
 	; uruchom proces logowania do konsoli
 	mov	rax,	0x0001
 	mov	rcx,	qword [file_login_name_length]	; ilość znaków w nazwie pliku
+	xor	rdx,	rdx	; brak argumentów
 	mov	rsi,	file_login	; wskaźnik do nazwy pliku
 	int	0x40	; wykonaj
 
@@ -85,6 +86,7 @@ start:
 	; uruchom powłokę systemu
 	mov	rax,	0x0001
 	mov	rcx,	qword [file_shell_name_length]	; ilość znaków w nazwie pliku
+	xor	rdx,	rdx	; brak argumentów
 	mov	rsi,	file_shell
 	int	0x40	; wykonaj
 

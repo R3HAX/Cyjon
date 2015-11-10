@@ -266,6 +266,12 @@ files_table:
 	dq	file_ls_end
 	db	'ls'
 
+	dq	4
+	dq	file_args_end - file_args
+	dq	file_args
+	dq	file_args_end
+	db	'args'
+
 	; koniec tablicy plików
 	dq	VARIABLE_EMPTY
 
@@ -295,6 +301,9 @@ file_date_end:
 
 file_ls:		incbin	'ls.bin'
 file_ls_end:
+
+file_args:		incbin	'args.bin'
+file_args_end:
 
 text_virtial_file_system	db	" Virtual file system initialized.", VARIABLE_ASCII_CODE_ENTER, VARIABLE_ASCII_CODE_NEWLINE, VARIABLE_ASCII_CODE_TERMINATOR
 
