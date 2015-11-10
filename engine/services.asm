@@ -69,6 +69,10 @@ irq64_process:
 	cmp	al,	0x04
 	je	.process_active_list
 
+	; pobierz argumenty przekazane do procesu
+	cmp	al,	0x05
+	je	.process_args
+
 	; brak obsługi
 	jmp	irq64.end
 
@@ -267,6 +271,57 @@ irq64_process:
 	stosq
 
 	pop	r11
+	pop	r8
+	pop	rdi
+	pop	rsi
+	pop	rdx
+	pop	rbx
+	pop	rax
+
+	; koniec obsługi procedury
+	jmp	irq64.end
+
+.process_args:
+	push	rax
+	push	rbx
+	push	rdx
+	push	rsi
+	push	rdi
+	push	r8
+
+	mov	rdi,	qword [variable_multitasking_serpentine_record_active_address]
+	mov	rcx,	qword [rdi + VARIABLE_TABLE_SERPENTINE_RECORD.ARGS]
+	cmp	rcx,	VARIABLE_EMPTY
+	je	.process_args_end
+
+	; przygotuj miejsce pod argumenty
+	mov	rax,	qword [rsp + 0x08]
+	mov	rbx,	VARIABLE_MEMORY_HIGH_ADDRESS
+	sub	rax,	rbx
+	mov	rbx,	0x07	; flagi: Użytkownik, 4 KiB, Odczyt/Zapis, Dostępna
+	mov	rcx,	1	; rozmiar 1 strona
+	mov	r11,	cr3
+	call	cyjon_page_map_logical_area
+
+	mov	rsi,	qword [rdi + VARIABLE_TABLE_SERPENTINE_RECORD.ARGS]
+	mov	rdi,	qword [rsp + 0x08]	
+
+	push	qword [rsi]
+	add	rsi,	0x08	; pomiń rozmiar
+
+	mov	r8,	( VARIABLE_MEMORY_PAGE_SIZE - 0x08 ) / 8
+
+.process_args_loop:
+	mov	rax,	qword [rsi]
+	mov	qword [rdi],	rax
+	add	rsi,	0x08
+	add	rdi,	0x08
+	sub	r8,	VARIABLE_DECREMENT
+	jnz	.process_args_loop
+
+	pop	rcx
+
+.process_args_end:
 	pop	r8
 	pop	rdi
 	pop	rsi

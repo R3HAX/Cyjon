@@ -226,8 +226,6 @@ cyjon_process_init:
 	pop	rax
 
 	; ======================================================================
-	; zapamiętaj adres rekordu
-	push	rdi
 
 	; zapisz PID procesu do rekordu
 	stosq
@@ -235,6 +233,9 @@ cyjon_process_init:
 	; zapisz CR3 procesu
 	xchg	rax,	qword [rsp]
 	stosq
+
+	push	rdi
+	sub	qword [rsp],	0x10	; - 2xSTOSQ
 
 	; zapisz adres szczytu stosu kontekstu procesu do rekordu
 	mov	rax,	VARIABLE_MEMORY_HIGH_VIRTUAL_ADDRESS - (21 * 0x08)
@@ -245,10 +246,10 @@ cyjon_process_init:
 	stosq
 
 	; ustaw wskaźnik do nazwy pliku
-	mov	rsi,	qword [rsp + 0x20]
+	mov	rsi,	qword [rsp + 0x28]
 
 	; rozmiar nazwy pliku
-	mov	rcx,	qword [rsp + 0x30]
+	mov	rcx,	qword [rsp + 0x38]
 
 	; załaduj nazwe procesu do rekordu
 	rep	movsb
@@ -268,6 +269,10 @@ cyjon_process_init:
 
 	mov	rsi,	qword [rsp + 0x18]	; rdi
 	mov	rcx,	qword [rsp + 0x28]	; rdx
+
+	; zapisz rozmiar listy argumentów
+	mov	qword [rdi],	rcx
+	add	rdi,	0x08
 
 .args:
 	mov	al,	byte [rsi]

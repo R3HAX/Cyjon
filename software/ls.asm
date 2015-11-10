@@ -28,6 +28,34 @@ start:
 	and	di,	0xF000
 	add	rdi,	0x1000
 
+	mov	ax,	0x0005
+	int	0x40
+
+	cmp	rcx,	VARIABLE_EMPTY
+	je	.no_args
+
+	push	rdi
+
+	push	rcx
+	; pomiń pierwsze słowo "nazwa uruchomionego procesu"
+	call	library_find_first_word
+
+	sub	qword [rsp],	rcx
+	add	rdi,	rcx
+	mov	rcx,	qword [rsp]
+	call	library_find_first_word
+
+	mov	rsi,	text_option_all
+	call	library_compare_string
+	jnc	.no_option
+
+	mov	byte [variable_semaphore_all],	VARIABLE_INCREMENT
+
+.no_option:
+	add	rsp,	0x08
+	pop	rdi
+
+.no_args:
 	; pobierz rozmiar w Bajtach
 	mov	ax,	0x0401
 	mov	rbx,	0	; katalog główny
@@ -75,8 +103,12 @@ start:
 
 	; sprawdź czy nazwa pliku rozpoczyna się od "kropki"
 	cmp	byte [rsi + 0x0C],	"."
-	je	.leave	; jeśli tak, pomiń wyświetlenie danego pliku
+	jne	.show_it	; jeśli tak, pomiń wyświetlenie danego pliku
 
+	cmp	byte [variable_semaphore_all],	VARIABLE_EMPTY
+	je	.leave
+
+.show_it:
 	; pobierz rozmiar nazwy pliku w znakach
 	movzx	rcx,	byte [rsi + 0x0A]
 
@@ -131,6 +163,12 @@ start:
 	xor	ax,	ax
 	int	0x40	; wykonaj
 
+%include	'library/find_first_word.asm'
+%include	'library/compare_string.asm'
+
+variable_semaphore_all	db	0x00
+
+text_option_all	db	'-a'
 text_separate	db	'  ', VARIABLE_ASCII_CODE_TERMINATOR
 text_new_line	db	VARIABLE_ASCII_CODE_ENTER, VARIABLE_ASCII_CODE_NEWLINE, VARIABLE_ASCII_CODE_TERMINATOR
 

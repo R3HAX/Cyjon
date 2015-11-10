@@ -165,7 +165,13 @@ cyjon_virtual_file_system_save_file:
 	; skopiuj pozostałą część pliku
 	mov	rcx,	rdx
 	; kopiuj
-	rep	movsb
+.copy:
+	mov	al,	byte [rsi]
+	mov	byte [rdi],	al
+	add	rsi,	VARIABLE_INCREMENT
+	add	rdi,	VARIABLE_INCREMENT
+	sub	rcx,	VARIABLE_DECREMENT
+	jnz	.copy
 
 	; uzupełnij o pustą przestrzeń
 	xor	rax,	rax
