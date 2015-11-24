@@ -29,7 +29,46 @@ variable_video_mode_char_line_in_bytes		dq	VARIABLE_EMPTY
 
 variable_screen_cursor_xy			dq	VARIABLE_EMPTY
 variable_screen_cursor_semaphore		dq	VARIABLE_EMPTY	; flaga, 0 == kursor włączony
-										; jeśli inaczej oznacza poziom blokady kursora programowego
+									; jeśli inaczej oznacza poziom blokady kursora programowego
+variable_screen_cursor_color_first		db	-1
+variable_screen_cursor_color_second		db	-1
+
+table_color_palette_8_bit:
+						db	0x00	; czarny
+						db	0x01	; niebieski
+						db	0x02	; zielony
+						db	0x03	; seledynowy
+						db	0x04	; czerwony
+						db	0x05	; fioletowy
+						db	0x06	; brązowy
+						db	0x07	; jasno-szary
+						db	0x08	; szary
+						db	0x09	; jasno-niebieski
+						db	0x0A	; jasno-zielony
+						db	0x0B	; jasno-seledynowy
+						db	0x0C	; jasno-czerwony
+						db	0x0D	; jasno-fioletowy
+						db	0x0E	; żółty
+						db	0x0F	; biały
+
+table_color_palette_24_bit:
+table_color_palette_32_bit:
+						dd	0x000000	; czarny
+						dd	0x0000A8	; niebieski
+						dd	0x00A800	; zielony
+						dd	0x00A8A8	; seledynowy
+						dd	0xA80000	; czerwony
+						dd	0xA800A8	; fioletowy
+						dd	0xA85700	; brązowy
+						dd	0xA8A8A8	; jasno-szary
+						dd	0x575757	; szary
+						dd	0x5757ff	; jasno-niebieski
+						dd	0x57ff57	; jasno-zielony
+						dd	0x57ffff	; jasno-seledynowy
+						dd	0xff5757	; jasno-czerwony
+						dd	0xff57ff	; jasno-fioletowy
+						dd	0xffff57	; żółty
+						dd	0xffffff	; biały
 
 ;=======================================================================
 ; inicjalizuje podstawowe zmienne dotyczące właściwości trybu graficznego
@@ -214,9 +253,29 @@ cyjon_screen_clear:
 	; adres początku przestrzeni pamięci ekranu
 	mov	rdi,	qword [variable_video_mode_memory_address]
 
+	; koryguj kolor
+	cmp	byte [variable_video_mode_bpp],	0x01
+	je	.color_ok
+
+	push	rax
+
+	mov	rax,	rbx
+	shl	rbx,	3
+	add	rbx,	rax
+
+	mov	rax,	rdx
+	shl	rdx,	3
+	add	rbx,	rax
+
+	pop	rax
+
+.color_ok:
 	; sprawdź palete barw
 	cmp	byte [variable_video_mode_bpp],	0x03
 	je	.bpp24	; 24 bitowa
+
+	cmp	byte [variable_video_mode_bpp],	0x01
+	je	.bpp8
 
 .bpp32:
 	; zapisz piksel o danym kolorze
@@ -238,6 +297,13 @@ cyjon_screen_clear:
 	; kontynuuj
 	sub	rcx,	1
 	jnz	.bpp24
+
+	jmp	.ready
+
+.bpp8:
+	stosb
+	sub	rcx,	1
+	jnz	.bpp8
 
 .ready:
 
@@ -387,7 +453,67 @@ cyjon_screen_cursor_invert_color:
 	push	rax
 	push	rcx
 	push	rdx
+	push	rsi
 	push	rdi
+
+	push	rdi
+
+	cmp	byte [variable_video_mode_bpp],	0x01
+	jne	.start
+
+	mov	rcx,	qword [variable_font_y_in_pixels]
+.loopK:
+	push	rcx
+	mov	rcx,	qword [variable_font_x_in_pixels]
+.loopL:
+	mov	al,	byte [rdi]
+	cmp	byte [variable_screen_cursor_color_first],	VARIABLE_FULL
+	jne	.leave
+	mov	byte [variable_screen_cursor_color_first],	al
+	jmp	.omit
+.leave:
+	cmp	byte [variable_screen_cursor_color_second],	VARIABLE_FULL
+	jne	.start
+
+	cmp	byte [variable_screen_cursor_color_first],	al
+	je	.omit
+
+	mov	byte [variable_screen_cursor_color_second],	al
+	add	rsp,	0x08
+	jmp	.start
+
+.omit:
+	add	rdi,	VARIABLE_INCREMENT
+
+	sub	rcx,	VARIABLE_DECREMENT
+	jnz	.loopL
+
+	; przesuń wskaźnik w przestrzeni pamięci ekranu na następną linię kursora
+	mov	rax,	qword [variable_video_mode_pixels_per_line]
+	; koryguj o szerokość kursora
+	sub	rax,	qword [variable_font_x_in_pixels]
+	; przelicz na ilość Bajtów
+	mul	qword [variable_video_mode_bpp]
+	; dodaj przesunięcie do wskaźnika
+	add	rdi,	rax
+
+	; przywróć oryginalne rejestry
+	pop	rcx
+
+	; kontynuuj z pozostałymi liniami kursora
+	sub	rcx,	VARIABLE_DECREMENT
+	jnz	.loopK
+
+	cmp	byte [variable_screen_cursor_color_second],	VARIABLE_FULL
+	jne	.start
+
+	; wartość umowna, kolor biały, ostatni z standardowych
+	mov	al,	15
+	sub	al,	byte [variable_screen_cursor_color_first]
+	mov	byte [variable_screen_cursor_color_second],	al
+
+.start:
+	pop	rdi
 
 	; pobierz wysokość kursora w pikselach
 	mov	rcx,	qword [variable_font_y_in_pixels]
@@ -400,6 +526,9 @@ cyjon_screen_cursor_invert_color:
 	mov	rcx,	qword [variable_font_x_in_pixels]
 
 .loopX:
+	cmp	byte [variable_video_mode_bpp],	0x01
+	je	.bpp8
+
 	; pobierz wartość z fragmentu adresu przestrzeni pamięci przedstawiającej kursor programowy
 	mov	eax,	dword [edi]
 	; odwóć wartości (inwersja kolorów)
@@ -424,6 +553,20 @@ cyjon_screen_cursor_invert_color:
 	; zapisz nowy kolor piksela
 	stosb
 
+	jmp	.ready
+
+.bpp8:
+	mov	al,	byte [variable_screen_cursor_color_first]
+	cmp	byte [rdi],	al
+	je	.bpp8_2
+
+	stosb
+	jmp	.ready
+
+.bpp8_2:
+	mov	al,	byte [variable_screen_cursor_color_second]
+	stosb
+
 .ready:
 	; kontynuuj z pozostałymi pikselami w szerokości kursora
 	sub	rcx,	1
@@ -445,8 +588,12 @@ cyjon_screen_cursor_invert_color:
 	sub	rcx,	1
 	jnz	.loopY
 
+	mov	byte [variable_screen_cursor_color_first],	-1
+	mov	byte [variable_screen_cursor_color_second],	-1
+
 	; przywróć oryginalne rejestry
 	pop	rdi
+	pop	rsi
 	pop	rdx
 	pop	rcx
 	pop	rax
@@ -468,11 +615,31 @@ cyjon_screen_cursor_invert_color:
 cyjon_screen_print_char:
 	; zachowaj oryginalne rejestry
 	push	rax
+	push	rbx
 	push	rcx
 	push	rdx
 	push	rsi
 	push	rdi
 
+	; koryguj kolor
+	cmp	byte [variable_video_mode_bpp],	0x01
+	je	.color_ok
+
+	push	rax
+
+	shl	rbx,	2
+	mov	rax,	table_color_palette_24_bit
+	mov	ebx,	dword [rax + rbx]
+
+	shl	rdx,	2
+	mov	rax,	table_color_palette_24_bit
+	mov	edx,	dword [rax + rdx]
+
+	pop	rax
+
+	jmp	.color_ok
+
+.color_ok:
 	; wyłącz kursor programowy lub zwiększ poziom blokady
 	call	cyjon_screen_cursor_lock
 
@@ -541,7 +708,7 @@ cyjon_screen_print_char:
 
 .continue:
 	; następny piksel
-	dec	rcx
+	sub	rcx,	VARIABLE_DECREMENT
 
 	; sprawdź czy koniec bitów dla znaku
 	cmp	rcx,	-1
@@ -658,6 +825,7 @@ cyjon_screen_print_char:
 	pop	rsi
 	pop	rdx
 	pop	rcx
+	pop	rbx
 	pop	rax
 
 	; powrót z procedury
@@ -677,6 +845,9 @@ cyjon_screen_pixel_set:
 	cmp	byte [variable_video_mode_bpp],	0x03
 	je	.bpp24	; 24 bitowa
 
+	cmp	byte [variable_video_mode_bpp],	0x01
+	je	.bpp8
+
 .bpp32:
 	; zapisz piksel o danym kolorze
 	stosd
@@ -690,6 +861,11 @@ cyjon_screen_pixel_set:
 	ror	eax,	16
 	stosb
 	rol	eax,	16
+
+	ret
+
+.bpp8:
+	stosb
 
 .ready:
 	; powrót z procedury
@@ -817,7 +993,8 @@ cyjon_screen_print_string:
 	call	cyjon_screen_cursor_check_position
 
 	; wyświetl pozostałe znaki z ciągu
-	loop	.string
+	sub	rcx,	VARIABLE_DECREMENT
+	jnz	.string
 
 .end:
 	; zapisz aktualny wskaźnik kursora
@@ -929,6 +1106,9 @@ cyjon_screen_scroll:
 	cmp	byte [variable_video_mode_bpp],	3
 	je	.bpp24
 
+	cmp	byte [variable_video_mode_bpp],	1
+	je	.bpp8
+
 	; kopiuj po 4 Bajty naraz
 	shr	rax,	2
 
@@ -950,6 +1130,13 @@ cyjon_screen_scroll:
 	; kontynuuj z następnym pikselem
 	sub	rcx,	2
 	loop	.bpp24
+
+	jmp	.end
+
+.bpp8:
+	stosb
+	sub	rcx,	1
+	jnz	.bpp8
 
 .end:
 	; włącz kursor programowy lub zmniejsz poziom blokady

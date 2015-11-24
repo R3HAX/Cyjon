@@ -34,12 +34,12 @@ prestart:
 	mov	rsi,	text_help
 	int	0x40	; wykonaj
 	
-
 start:
 	; wyświetl znak zachęty
 	mov	ax,	0x0101	; procedura wyświetlająca ciąg znaków zakończony TERMINATOREM lub sprecyzowaną ilością
 	mov	rbx,	VARIABLE_COLOR_GREEN
 	mov	rcx,	-1	; wyświetl wszystkie znaki z ciągu
+	mov	rdx,	VARIABLE_COLOR_BACKGROUND_DEFAULT
 	mov	rsi,	text_prompt
 	int	0x40	; wykonaj
 
@@ -114,6 +114,7 @@ start:
 	; wyświetl informację o braku danego programu na partycji systemowej
 	mov	ax,	0x0101	; procedura wyświetlająca ciąg znaków zakończony TERMINATOREM lub sprecyzowaną ilością
 	mov	rcx,	-1	; wyświetl wszystkie znaki z ciągu
+	mov	rdx,	VARIABLE_COLOR_BACKGROUND_DEFAULT
 	mov	rsi,	text_inception
 	int	0x40	; wykonaj
 
@@ -133,6 +134,7 @@ start:
 	; wyświetl informację o braku danego programu na partycji systemowej
 	mov	ax,	0x0101	; procedura wyświetlająca ciąg znaków zakończony TERMINATOREM lub sprecyzowaną ilością
 	mov	rcx,	-1	; wyświetl wszystkie znaki z ciągu
+	mov	rdx,	VARIABLE_COLOR_BACKGROUND_DEFAULT
 	mov	rsi,	text_blocked
 	int	0x40	; wykonaj
 
@@ -152,6 +154,7 @@ start:
 	; wyświetl informację o braku danego programu na partycji systemowej
 	mov	ax,	0x0101	; procedura wyświetlająca ciąg znaków zakończony TERMINATOREM lub sprecyzowaną ilością
 	mov	rcx,	-1	; wyświetl wszystkie znaki z ciągu
+	mov	rdx,	VARIABLE_COLOR_BACKGROUND_DEFAULT
 	mov	rsi,	text_login
 	int	0x40	; wykonaj
 
@@ -188,6 +191,7 @@ start:
 	; wyświetl informację o braku danego programu na partycji systemowej
 	mov	ax,	0x0101	; procedura wyświetlająca ciąg znaków zakończony TERMINATOREM lub sprecyzowaną ilością
 	mov	rcx,	-1	; wyświetl wszystkie znaki z ciągu
+	mov	rdx,	VARIABLE_COLOR_BACKGROUND_DEFAULT
 	mov	rsi,	text_ups
 	int	0x40	; wykonaj
 

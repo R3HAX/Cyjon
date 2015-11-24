@@ -54,7 +54,7 @@ start:
 	mov	rdx,	VARIABLE_COLOR_BACKGROUND_DEFAULT
 
 	;kolor znaków
-	mov	rbx,	VARIABLE_COLOR_BLUE_LIGHT
+	mov	rbx,	VARIABLE_COLOR_LIGHT_BLUE
 	; wskaźnik do ciągu znaków zakończony terminatorem lub licznikiem
 	mov	rsi,	text_welcome
 	int	0x40	; wykonaj
@@ -66,7 +66,7 @@ start:
 	int	0x40	; wykonaj
 
 	;kolor znaków
-	mov	rbx,	VARIABLE_COLOR_GRAY
+	mov	rbx,	VARIABLE_COLOR_LIGHT_GRAY
 	; wskaźnik do ciągu znaków zakończony terminatorem lub licznikiem
 	mov	rsi,	text_version
 	int	0x40	; wykonaj

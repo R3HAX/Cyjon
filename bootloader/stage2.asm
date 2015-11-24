@@ -82,7 +82,7 @@ start:
 	je	.missing	; pozostaw tryb tekstowy
 
 	; szukaj zalecanego trybu graficznego
-	cmp	ax,	0x0112	; 640x480@24bpp
+	cmp	ax,	0x0100	; 640x400@8bpp
 	je	.found
 
 	; przesuń wskaźnik na następną pozycję
@@ -94,13 +94,13 @@ start:
 .found:
 	; pobierz informacje o trybie graficznym
 	mov	ax,	0x4F01
-	mov	ecx,	0x0112	; 640x480@24bpp
+	mov	ecx,	0x0100	; 640x400@8bpp
 	mov	edi,	supervga_mode
 	int	0x10	; wykonaj
 
 	; przełącz na tryb graficzny
 	mov	ax,	0x4F02
-	mov	ebx,	0x4112	; wyłącz banki pamięci, linear frame buffer
+	mov	ebx,	0x4100	; wyłącz banki pamięci, linear frame buffer
 	int	0x10	; wykonaj
 
 .missing:

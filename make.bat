@@ -8,12 +8,13 @@ nasm -f bin software\ps.asm -o ps.bin
 nasm -f bin software\date.asm -o date.bin
 nasm -f bin software\ls.asm -o ls.bin
 nasm -f bin software\args.asm -o args.bin
+nasm -f bin software\256.asm -o 256.bin
 
 nasm -f bin kernel.asm -o kernel.bin
 
 nasm -f bin bootloader\stage2.asm -o stage2.bin
 nasm -f bin bootloader\stage1.asm -o build\disk.raw
 
-del /F /Q init.bin login.bin shell.bin help.bin uptime.bin moko.bin ps.bin date.bin ls.bin kernel.bin stage2.bin args.bin
+del /F /Q init.bin login.bin shell.bin help.bin uptime.bin moko.bin ps.bin date.bin ls.bin kernel.bin stage2.bin args.bin 256.bin
 
 pause

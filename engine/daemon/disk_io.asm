@@ -11,13 +11,32 @@
 ; Use:
 ; nasm - http://www.nasm.us/
 
-text_daemon_garbage_collector_name	db	"garbage_collector"
-text_daemon_garbage_collector_name_end:
+struc	STATIC_DISK_IO_RECORD
+	.type		resb	1
+	.disk		resb	1
+	.lba		resq	1
+	.count		resq	1
+	.address	resq	1
+	.size		resq	1
+endstruc
+
+STATIC_DISK_IO_RECORDS_ON_TABLE	equ	VARIABLE_MEMORY_PAGE_SIZE / STATIC_DISK_IO_RECORD.size
+
+STATIC_DISK_IO_RECORD_TYPE_EMPTY	equ	VARIABLE_EMPTY
+STATIC_DISK_IO_RECORD_TYPE_RESERVED	equ	VARIABLE_TRUE
+STATIC_DISK_IO_RECORD_TYPE_READY	equ	VARIABLE_TRUE + VARIABLE_TRUE
+STATIC_DISK_IO_RECORD_TYPE_FINISHED	equ	VARIABLE_TRUE + VARIABLE_TRUE + VARIABLE_TRUE
+STATIC_DISK_IO_RECORD_TYPE_CLOSED	equ	VARIABLE_FULL
+
+variable_disk_io_table_address	dq	VARIABLE_EMPTY
+
+text_daemon_disk_io_name	db	"disk_io"
+text_daemon_disk_io_name_end:
 
 ; 64 Bitowy kod programu
 [BITS 64]
 
-daemon_init_garbage_collector:
+daemon_init_disk_io:
 	; przygotuj miejsce dla tablicy PML4 demona
 	call	cyjon_page_allocate
 
@@ -54,7 +73,7 @@ daemon_init_garbage_collector:
 	; odstaw na stos kontekstu demona spreparowane dane powrotu z przerwania IRQ0
 
 	; RIP
-	mov	rax,	garbage_collector
+	mov	rax,	disk_io_init
 	stosq	; zapisz
 
 	; CS
@@ -164,10 +183,10 @@ daemon_init_garbage_collector:
 	stosq
 
 	; ustaw wskaźnik do nazwy pliku
-	mov	rsi,	text_daemon_garbage_collector_name
+	mov	rsi,	text_daemon_disk_io_name
 
 	; rozmiar nazwy pliku
-	mov	rcx,	text_daemon_garbage_collector_name_end - text_daemon_garbage_collector_name
+	mov	rcx,	text_daemon_disk_io_name_end - text_daemon_disk_io_name
 
 	; załaduj nazwe procesu do rekordu
 	rep	movsb
@@ -181,48 +200,56 @@ daemon_init_garbage_collector:
 	; powrót z procedury
 	ret
 
-garbage_collector:
-	; szukaj procesu gotowego do zamknięcia
-	mov	bx,	STATIC_SERPENTINE_RECORD_FLAG_USED + STATIC_SERPENTINE_RECORD_FLAG_CLOSED
+disk_io_init:
+	call	cyjon_page_allocate
+	call	cyjon_page_clear
+	mov	qword [variable_disk_io_table_address],	rdi
 
-	call	cyjon_multitasking_serpentine_find_record
+disk_io:
+	hlt
 
-	; pobierz adres tablicy PML4 procesu do zamknięcia
-	mov	rbx,	qword [rdi + VARIABLE_TABLE_SERPENTINE_RECORD.CR3]
-
-	; zapamiętaj adres tablicy PML4 procesu
-	push	rbx
-
-	; zmniejsz ilość procesów przechowywanych w tablicy
-	dec	qword [variable_multitasking_serpentine_record_counter]
-
-	; wyczyść rekord w tablicy
-	mov	qword [rdi + VARIABLE_TABLE_SERPENTINE_RECORD.FLAGS],	VARIABLE_EMPTY
-
-	; wyczyść nazwę pliku z rekordu
-	xor	al,	al
-	mov	rcx,	VARIABLE_TABLE_SERPENTINE_RECORD.ARGS - VARIABLE_TABLE_SERPENTINE_RECORD.NAME
-	add	rdi,	VARIABLE_TABLE_SERPENTINE_RECORD.NAME
+	mov	rcx,	STATIC_DISK_IO_RECORDS_ON_TABLE
+	mov	rdi,	qword [variable_disk_io_table_address]
 
 .loop:
-	mov	byte [rdi],	al
-	add	rdi,	VARIABLE_INCREMENT
+	cmp	byte [rdi + STATIC_DISK_IO_RECORD.type],	STATIC_DISK_IO_RECORD_TYPE_READY
+	je	.process
+
+.next_record:
+	add	rdi,	STATIC_DISK_IO_RECORD.size
+
 	sub	rcx,	VARIABLE_DECREMENT
 	jnz	.loop
 
-	; zwolnij pamięć zajętą przez proces
-	mov	rdi,	rbx	; załaduj adres tablicy PML4 procesu
-	add	rdi,	255 * 0x08	; rozpocznij zwalnianie przestrzeni od rekordu stosu kontekstu procesu
-	mov	rbx,	4	; ustaw poziom tablicy przetwarzanej
-	mov	rcx,	257	; ile pozostało rekordów w tablicy PML4 do zwolnienia
-	call	cyjon_page_release_area.loop
+	jmp	disk_io
 
-	; przywróć adres tablicy PML4 procesu
-	pop	rdi
+.process:
+	jmp	.next_record
 
-	; zwolnij przestrzeń spod tablicy PML4 procesu
-	call	cyjon_page_release
+disk_io_find_free_record:
+	push	rcx
 
-	hlt
+	mov	rcx,	STATIC_DISK_IO_RECORDS_ON_TABLE
+	mov	rdi,	qword [variable_disk_io_table_address]
 
-	jmp	garbage_collector
+.loop:
+	cmp	byte [rdi + STATIC_DISK_IO_RECORD.type],	STATIC_DISK_IO_RECORD_TYPE_EMPTY
+	je	.found
+
+	add	rdi,	STATIC_DISK_IO_RECORD
+	sub	rcx,	VARIABLE_DECREMENT
+	jnz	.loop
+
+	; brak wolnych rekordów
+	xor	rdi,	rdi
+
+	jmp	.end
+
+.found:
+	; zarezerwuj dostęp do rekordu
+	mov	byte [rdi + STATIC_DISK_IO_RECORD.type],	STATIC_DISK_IO_RECORD_TYPE_RESERVED
+
+.end:
+	pop	rcx
+
+	ret

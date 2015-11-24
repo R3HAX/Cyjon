@@ -137,7 +137,7 @@ itd_cpu_exception:
 	mov	rsi,	text_cpu_exception
 	call	cyjon_screen_print_string
 
-	mov	rbx,	VARIABLE_COLOR_ORANGE
+	mov	rbx,	VARIABLE_COLOR_LIGHT_RED
 
 	mov	rsi,	text_cpu_exception_rax
 	call	cyjon_screen_print_string
@@ -151,7 +151,7 @@ itd_cpu_exception:
 	mov	rbx,	qword [variable_screen_cursor_xy]
 	call	screen_cursor_set_xy
 
-	mov	rbx,	VARIABLE_COLOR_ORANGE
+	mov	rbx,	VARIABLE_COLOR_LIGHT_RED
 
 	mov	rsi,	text_cpu_exception_rsi
 	call	cyjon_screen_print_string
@@ -169,7 +169,7 @@ itd_cpu_exception:
 	mov	rbx,	qword [variable_screen_cursor_xy]
 	call	screen_cursor_set_xy
 
-	mov	rbx,	VARIABLE_COLOR_ORANGE
+	mov	rbx,	VARIABLE_COLOR_LIGHT_RED
 
 	mov	rsi,	text_cpu_exception_rdi
 	call	cyjon_screen_print_string
@@ -187,7 +187,7 @@ itd_cpu_exception:
 	mov	rbx,	qword [variable_screen_cursor_xy]
 	call	screen_cursor_set_xy
 
-	mov	rbx,	VARIABLE_COLOR_ORANGE
+	mov	rbx,	VARIABLE_COLOR_LIGHT_RED
 
 	mov	rsi,	text_cpu_exception_rbp
 	call	cyjon_screen_print_string
@@ -205,7 +205,7 @@ itd_cpu_exception:
 	mov	rbx,	qword [variable_screen_cursor_xy]
 	call	screen_cursor_set_xy
 
-	mov	rbx,	VARIABLE_COLOR_ORANGE
+	mov	rbx,	VARIABLE_COLOR_LIGHT_RED
 
 	mov	rsi,	text_cpu_exception_rsp
 	call	cyjon_screen_print_string
@@ -446,7 +446,7 @@ itd_cpu_exception:
 	mov	rbx,	qword [variable_screen_cursor_xy]
 	call	screen_cursor_set_xy
 
-	mov	rbx,	VARIABLE_COLOR_ORANGE
+	mov	rbx,	VARIABLE_COLOR_LIGHT_RED
 
 	mov	rsi,	text_cpu_exception_r12
 	call	cyjon_screen_print_string
@@ -464,7 +464,7 @@ itd_cpu_exception:
 	mov	rbx,	qword [variable_screen_cursor_xy]
 	call	screen_cursor_set_xy
 
-	mov	rbx,	VARIABLE_COLOR_ORANGE
+	mov	rbx,	VARIABLE_COLOR_LIGHT_RED
 
 	mov	rsi,	text_cpu_exception_r13
 	call	cyjon_screen_print_string
@@ -482,7 +482,7 @@ itd_cpu_exception:
 	mov	rbx,	qword [variable_screen_cursor_xy]
 	call	screen_cursor_set_xy
 
-	mov	rbx,	VARIABLE_COLOR_ORANGE
+	mov	rbx,	VARIABLE_COLOR_LIGHT_RED
 
 	mov	rsi,	text_cpu_exception_r14
 	call	cyjon_screen_print_string
@@ -500,7 +500,7 @@ itd_cpu_exception:
 	mov	rbx,	qword [variable_screen_cursor_xy]
 	call	screen_cursor_set_xy
 
-	mov	rbx,	VARIABLE_COLOR_ORANGE
+	mov	rbx,	VARIABLE_COLOR_LIGHT_RED
 
 	mov	rsi,	text_cpu_exception_r15
 	call	cyjon_screen_print_string

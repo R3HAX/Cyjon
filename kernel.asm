@@ -63,6 +63,7 @@ start:
 	call	virtual_file_systems
 
 	; uruchom niezbędne demony
+	call	daemon_init_disk_io
 	call	daemon_init_garbage_collector
 
 	; załaduj do wirtualnego systemu plików, dołączone oprogramowanie
@@ -119,6 +120,7 @@ start:
 %include	"engine/services.asm"
 
 %include	"engine/daemon/garbage_collector.asm"
+%include	"engine/daemon/disk_io.asm"
 
 %include	"engine/drivers/pci.asm"
 %include	"engine/drivers/ide.asm"
@@ -272,6 +274,12 @@ files_table:
 	dq	file_args_end
 	db	'args'
 
+	dq	3
+	dq	file_256_end - file_256
+	dq	file_256
+	dq	file_256_end
+	db	'256'
+
 	; koniec tablicy plików
 	dq	VARIABLE_EMPTY
 
@@ -304,6 +312,9 @@ file_ls_end:
 
 file_args:		incbin	'args.bin'
 file_args_end:
+
+file_256:		incbin	'256.bin'
+file_256_end:
 
 text_virtial_file_system	db	" Virtual file system initialized.", VARIABLE_ASCII_CODE_ENTER, VARIABLE_ASCII_CODE_NEWLINE, VARIABLE_ASCII_CODE_TERMINATOR
 
