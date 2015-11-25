@@ -70,6 +70,11 @@ table_color_palette_32_bit:
 						dd	0xffff57	; żółty
 						dd	0xffffff	; biały
 
+text_screen_console		db	" Console: ", VARIABLE_ASCII_CODE_TERMINATOR
+text_screen_console_x		db	"x", VARIABLE_ASCII_CODE_TERMINATOR
+text_screen_console_separator	db	", ", VARIABLE_ASCII_CODE_TERMINATOR
+text_screen_console_bpp		db	" bpp", VARIABLE_ASCII_CODE_ENTER, VARIABLE_ASCII_CODE_NEWLINE, VARIABLE_ASCII_CODE_TERMINATOR
+
 ;=======================================================================
 ; inicjalizuje podstawowe zmienne dotyczące właściwości trybu graficznego
 ; IN:
@@ -173,6 +178,42 @@ screen_initialization:
 
 	; wyczyść ekran
 	call	cyjon_screen_clear
+
+	; wyświetl podstawową informację o trybie graficznym
+	mov	rbx,	VARIABLE_COLOR_GREEN
+	mov	rcx,	-1
+	mov	rdx,	VARIABLE_COLOR_BACKGROUND_DEFAULT
+	mov	rsi,	text_caution
+	call	cyjon_screen_print_string
+
+	mov	rbx,	VARIABLE_COLOR_DEFAULT
+	mov	rsi,	text_screen_console
+	call	cyjon_screen_print_string
+
+	mov	rax,	qword [variable_video_mode_chars_x]
+	mov	rbx,	VARIABLE_COLOR_WHITE
+	mov	rcx,	10
+	call	cyjon_screen_print_number
+
+	mov	rbx,	VARIABLE_COLOR_DEFAULT
+	mov	rsi,	text_screen_console_x
+	call	cyjon_screen_print_string
+
+	mov	rax,	qword [variable_video_mode_chars_y]
+	mov	rbx,	VARIABLE_COLOR_WHITE
+	call	cyjon_screen_print_number
+
+	mov	rsi,	text_screen_console_separator
+	call	cyjon_screen_print_string
+
+	mov	rax,	qword [variable_video_mode_bpp]
+	shl	rax,	3
+	mov	rbx,	VARIABLE_COLOR_WHITE
+	call	cyjon_screen_print_number
+
+	mov	rbx,	VARIABLE_COLOR_DEFAULT
+	mov	rsi,	text_screen_console_bpp
+	call	cyjon_screen_print_string
 
 	; przywróć oryginalne rejestry
 	pop	rax
@@ -1092,9 +1133,16 @@ cyjon_screen_scroll:
 	mov	rcx,	qword [variable_video_mode_memory_size]
 	sub	rcx,	rax	; pomiń rozmiar jednej linii znaków
 	shr	rcx,	2	; kopiuj po 4 Bajty na raz
+	shr	rcx,	1
 
-	; skopiuj 4 Bajtową zawartość pamięci pod adresem w rejestrze RSI pod adres w rejestrze RDI, zwiększ obydwa rejestry o 4 Bajty, zmniejsz rejestr RCX o 1, jeśli RCX > 0 wykonaj raz jeszcze
-	rep	movsd
+.loop:
+	; kopiuj 8 Bajtów
+	mov	rax,	qword [rsi]
+	mov	qword [rdi],	rax
+	add	rdi,	0x08
+	add	rsi,	0x08
+	sub	rcx,	VARIABLE_DECREMENT
+	jnz	.loop
 
 	; wyczyść ostatnią linię
 	mov	rax,	rdx	; kolor sprecyzowany
@@ -1134,8 +1182,8 @@ cyjon_screen_scroll:
 	jmp	.end
 
 .bpp8:
-	stosb
-	sub	rcx,	1
+	stosq
+	sub	rcx,	8
 	jnz	.bpp8
 
 .end:
@@ -1313,7 +1361,7 @@ cyjon_screen_print_number:
 ; zatrzymanie procesora
 cyjon_screen_kernel_panic:
 	; wyświetl informacje o niepowodzeniu
-	mov	ebx,	0x00ff2727	; kolor czerwony
+	mov	ebx,	VARIABLE_COLOR_LIGHT_RED	; kolor czerwony
 	mov	rcx,	-1	; wyświetl cały ciąg tekstu
 	mov	edx,	VARIABLE_COLOR_BACKGROUND_DEFAULT
 

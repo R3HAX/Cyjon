@@ -73,12 +73,8 @@ repair_cs:
 	; zwiększ rozmiar programu rozruchowego o jeden sektor
 	inc	eax	; gdyby z dzielenia pozostała reszta
 
-	; sprawdź czy rozmiar jest dopuszczalny dla przerwania 0x13
-	cmp	eax,	0x0000007F	; 0x7F(max) * 512 = 63,5 KiB
-	ja	stage2_size_fail
-
 	; zaaktualizuj pakiet danych o rozmiar programu rozruchowego w sektorach
-	mov	word [packet + 0x02],	ax
+	mov	word [packet + 0x02],	54	; maksymalna ilość możliwych do odczytania sektorów dla przestrzeni pamięci podanej w pakiecie
 
 	; wyświetl informację o prawidłowym rozmiarze
 	mov	ax,	0x072E	; jasnoszara kropka

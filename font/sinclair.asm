@@ -18,6 +18,8 @@ variable_font_y_in_pixels	dq	8
 variable_font_x_in_bytes	dq	1
 variable_font_y_in_bytes	dq	1
 
+; czcionka utworzona za pomocą edytora VGATFD2.EXE, autor: Paweł Szczesniak (flabra, carramba)
+
 font:
 	db	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
 	db	0x7E, 0x81, 0xA5, 0x81, 0xBD, 0x99, 0x81, 0x7E
