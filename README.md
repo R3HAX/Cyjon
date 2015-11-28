@@ -6,7 +6,7 @@ Prosty system operacyjny dla procesorów z rodziny amd64/x86-64.
 #Wymagania sprzętowe:
 - procesor z rodziny amd64/x86-64,
 - 1 MiB pamięci RAM pod adresem fizycznym 0x0000000000100000,
-- obsługa VBE w trybie 640x480 24bpp.
+- obsługa VBE w trybie 640x400 8 bpp.
 
 #Oprogramowanie:
 - kompilator Nasm v2.11.08+ (http://www.nasm.us/)
@@ -35,6 +35,6 @@ Dopisz się do grupy programistów Wataha.net!
 
 - Andrzej Adamczyk, akasei
 
-Kod źródlowy systemu operacyjnego jest na licencji Creative Commons BY-NC-ND
+Kod źródlowy systemu operacyjnego jest na licencji Creative Commons BY-NC-ND 4.0
 
 ![alt tag](http://mirrors.creativecommons.org/presskit/buttons/80x15/png/by-nc-nd.png)

@@ -14,6 +14,7 @@
 struc	STATIC_DISK_IO_RECORD
 	.type		resb	1
 	.disk		resb	1
+	.io		resb	1
 	.lba		resq	1
 	.count		resq	1
 	.address	resq	1
@@ -23,10 +24,12 @@ endstruc
 STATIC_DISK_IO_RECORDS_ON_TABLE	equ	VARIABLE_MEMORY_PAGE_SIZE / STATIC_DISK_IO_RECORD.size
 
 STATIC_DISK_IO_RECORD_TYPE_EMPTY	equ	VARIABLE_EMPTY
-STATIC_DISK_IO_RECORD_TYPE_RESERVED	equ	VARIABLE_TRUE
-STATIC_DISK_IO_RECORD_TYPE_READY	equ	VARIABLE_TRUE + VARIABLE_TRUE
-STATIC_DISK_IO_RECORD_TYPE_FINISHED	equ	VARIABLE_TRUE + VARIABLE_TRUE + VARIABLE_TRUE
+STATIC_DISK_IO_RECORD_TYPE_RESERVED	equ	1
+STATIC_DISK_IO_RECORD_TYPE_READY	equ	2
+STATIC_DISK_IO_RECORD_TYPE_FINISHED	equ	3
 STATIC_DISK_IO_RECORD_TYPE_CLOSED	equ	VARIABLE_FULL
+STATIC_DISK_IO_RECORD_IO_READ		equ	VARIABLE_EMPTY
+STATIC_DISK_IO_RECORD_IO_WRITE		equ	1
 
 variable_disk_io_table_address	dq	VARIABLE_EMPTY
 
@@ -36,7 +39,122 @@ text_daemon_disk_io_name_end:
 ; 64 Bitowy kod programu
 [BITS 64]
 
+disk_io:
+	mov	rcx,	STATIC_DISK_IO_RECORDS_ON_TABLE
+	mov	rdi,	qword [variable_disk_io_table_address]
+
+.loop:
+	cmp	byte [rdi + STATIC_DISK_IO_RECORD.type],	STATIC_DISK_IO_RECORD_TYPE_READY
+	je	.process
+
+.next_record:
+	add	rdi,	STATIC_DISK_IO_RECORD.size
+
+	sub	rcx,	VARIABLE_DECREMENT
+	jnz	.loop
+
+	jmp	disk_io
+
+.process:
+	cmp	byte [rdi + STATIC_DISK_IO_RECORD.io],	STATIC_DISK_IO_RECORD_IO_WRITE
+	je	.write_to_disk
+
+	mov	rax,	qword [rdi + STATIC_DISK_IO_RECORD.lba]
+	push	rcx
+	mov	rcx,	qword [rdi + STATIC_DISK_IO_RECORD.count]
+	push	rdi
+	mov	rdi,	qword [rdi + STATIC_DISK_IO_RECORD.address]
+
+.reader:
+	call	cyjon_ide_sector_read
+
+	add	rax,	VARIABLE_INCREMENT
+	add	rdi,	VARIABLE_DISK_SECTOR_SIZE_IN_BYTES
+	sub	rcx,	VARIABLE_DECREMENT
+	jnz	.reader
+
+	pop	rdi
+	pop	rcx
+
+	mov	byte [rdi + STATIC_DISK_IO_RECORD.type],	STATIC_DISK_IO_RECORD_TYPE_FINISHED
+
+	jmp	.next_record
+
+.write_to_disk:
+	mov	rax,	qword [rdi + STATIC_DISK_IO_RECORD.lba]
+	push	rcx
+	mov	rcx,	qword [rdi + STATIC_DISK_IO_RECORD.count]
+	mov	rsi,	qword [rdi + STATIC_DISK_IO_RECORD.address]
+
+.writer:
+	call	cyjon_ide_sector_write
+
+	add	rax,	VARIABLE_INCREMENT
+	add	rsi,	VARIABLE_DISK_SECTOR_SIZE_IN_BYTES
+	sub	rcx,	VARIABLE_DECREMENT
+	jnz	.writer
+
+	pop	rcx
+
+	mov	byte [rdi + STATIC_DISK_IO_RECORD.type],	STATIC_DISK_IO_RECORD_TYPE_FINISHED
+
+	jmp	.next_record
+
+cyjon_disk_io:
+	push	rax
+	push	rdi
+
+	call	cyjon_disk_io_find_free_record
+
+	mov	byte [rdi + STATIC_DISK_IO_RECORD.io],	bl
+	mov	qword [rdi + STATIC_DISK_IO_RECORD.lba],	rax
+	mov	qword [rdi + STATIC_DISK_IO_RECORD.count],	rcx
+	mov	rax,	qword [rsp]
+	mov	qword [rdi + STATIC_DISK_IO_RECORD.address],	rax
+	mov	byte [rdi + STATIC_DISK_IO_RECORD.type],	STATIC_DISK_IO_RECORD_TYPE_READY
+
+.wait:
+	cmp	byte [rdi + STATIC_DISK_IO_RECORD.type],	STATIC_DISK_IO_RECORD_TYPE_READY
+	je	.wait
+
+	pop	rdi
+	pop	rax
+
+	ret
+
+cyjon_disk_io_find_free_record:
+	push	rcx
+
+	mov	rcx,	STATIC_DISK_IO_RECORDS_ON_TABLE
+	mov	rdi,	qword [variable_disk_io_table_address]
+
+.loop:
+	cmp	byte [rdi + STATIC_DISK_IO_RECORD.type],	STATIC_DISK_IO_RECORD_TYPE_EMPTY
+	je	.found
+
+	add	rdi,	STATIC_DISK_IO_RECORD
+	sub	rcx,	VARIABLE_DECREMENT
+	jnz	.loop
+
+	; brak wolnych rekordów
+	xor	rdi,	rdi
+
+	jmp	.end
+
+.found:
+	; zarezerwuj dostęp do rekordu
+	mov	byte [rdi + STATIC_DISK_IO_RECORD.type],	STATIC_DISK_IO_RECORD_TYPE_RESERVED
+
+.end:
+	pop	rcx
+
+	ret
+
 daemon_init_disk_io:
+	call	cyjon_page_allocate
+	call	cyjon_page_clear
+	mov	qword [variable_disk_io_table_address],	rdi
+
 	; przygotuj miejsce dla tablicy PML4 demona
 	call	cyjon_page_allocate
 
@@ -73,7 +191,7 @@ daemon_init_disk_io:
 	; odstaw na stos kontekstu demona spreparowane dane powrotu z przerwania IRQ0
 
 	; RIP
-	mov	rax,	disk_io_init
+	mov	rax,	disk_io
 	stosq	; zapisz
 
 	; CS
@@ -198,58 +316,4 @@ daemon_init_disk_io:
 	add	rsp,	0x08
 
 	; powrót z procedury
-	ret
-
-disk_io_init:
-	call	cyjon_page_allocate
-	call	cyjon_page_clear
-	mov	qword [variable_disk_io_table_address],	rdi
-
-disk_io:
-	hlt
-
-	mov	rcx,	STATIC_DISK_IO_RECORDS_ON_TABLE
-	mov	rdi,	qword [variable_disk_io_table_address]
-
-.loop:
-	cmp	byte [rdi + STATIC_DISK_IO_RECORD.type],	STATIC_DISK_IO_RECORD_TYPE_READY
-	je	.process
-
-.next_record:
-	add	rdi,	STATIC_DISK_IO_RECORD.size
-
-	sub	rcx,	VARIABLE_DECREMENT
-	jnz	.loop
-
-	jmp	disk_io
-
-.process:
-	jmp	.next_record
-
-disk_io_find_free_record:
-	push	rcx
-
-	mov	rcx,	STATIC_DISK_IO_RECORDS_ON_TABLE
-	mov	rdi,	qword [variable_disk_io_table_address]
-
-.loop:
-	cmp	byte [rdi + STATIC_DISK_IO_RECORD.type],	STATIC_DISK_IO_RECORD_TYPE_EMPTY
-	je	.found
-
-	add	rdi,	STATIC_DISK_IO_RECORD
-	sub	rcx,	VARIABLE_DECREMENT
-	jnz	.loop
-
-	; brak wolnych rekordów
-	xor	rdi,	rdi
-
-	jmp	.end
-
-.found:
-	; zarezerwuj dostęp do rekordu
-	mov	byte [rdi + STATIC_DISK_IO_RECORD.type],	STATIC_DISK_IO_RECORD_TYPE_RESERVED
-
-.end:
-	pop	rcx
-
 	ret

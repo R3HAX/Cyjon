@@ -42,12 +42,16 @@ variable_partition_specification_home	times	8	dq	VARIABLE_EMPTY
 kfs_initialization:
 	push	rax
 	push	rcx
+	push	rsi
 	push	rdi
 	push	r8
 
+	; załaduj bootsector
+	mov	bl,	STATIC_DISK_IO_RECORD_IO_READ
+	mov	rcx,	1
 	call	cyjon_page_allocate
 	call	cyjon_page_clear
-	call	cyjon_ide_sector_read
+	call	cyjon_disk_io
 
 	mov	qword [r8 + KFS.partition_position],	rax
 
@@ -81,6 +85,7 @@ kfs_initialization:
 
 	pop	r8
 	pop	rdi
+	pop	rsi
 	pop	rcx
 	pop	rax
 
