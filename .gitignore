@@ -1,4 +1,3 @@
-*.exe
 qemu
 bochs
 *.bat
@@ -15,3 +14,5 @@ hexedit
 *.lnk
 *.bxrc
 *.bin
+
+nasm.exe

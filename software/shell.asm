@@ -37,7 +37,7 @@ prestart:
 start:
 	; wyświetl znak zachęty
 	mov	ax,	0x0101	; procedura wyświetlająca ciąg znaków zakończony TERMINATOREM lub sprecyzowaną ilością
-	mov	rbx,	VARIABLE_COLOR_GREEN
+	mov	rbx,	VARIABLE_COLOR_LIGHT_RED
 	mov	rcx,	-1	; wyświetl wszystkie znaki z ciągu
 	mov	rdx,	VARIABLE_COLOR_BACKGROUND_DEFAULT
 	mov	rsi,	text_prompt
@@ -57,7 +57,7 @@ start:
 .restart:
 	; wyświetl znak zachęty od nowej linii
 	mov	ax,	0x0101	; procedura wyświetlająca ciąg znaków zakończony TERMINATOREM lub sprecyzowaną ilością
-	mov	rbx,	VARIABLE_COLOR_GREEN
+	mov	rbx,	VARIABLE_COLOR_LIGHT_RED
 	mov	rcx,	-1	; wyświetl wszystkie znaki z ciągu
 	mov	rdx,	VARIABLE_COLOR_BACKGROUND_DEFAULT
 	mov	rsi,	text_prompt_with_newline
@@ -223,7 +223,7 @@ command_cache_size		dq	VARIABLE_EMPTY
 
 text_help			db	"Type 'help' for more info.", VARIABLE_ASCII_CODE_ENTER, VARIABLE_ASCII_CODE_NEWLINE, VARIABLE_ASCII_CODE_TERMINATOR
 text_prompt_with_newline	db	VARIABLE_ASCII_CODE_ENTER, VARIABLE_ASCII_CODE_NEWLINE
-text_prompt			db	"localhost / $ ", VARIABLE_ASCII_CODE_TERMINATOR
+text_prompt			db	"localhost / # ", VARIABLE_ASCII_CODE_TERMINATOR
 text_newline			db	VARIABLE_ASCII_CODE_ENTER, VARIABLE_ASCII_CODE_NEWLINE, VARIABLE_ASCII_CODE_TERMINATOR
 text_ups			db	"Command not found.", VARIABLE_ASCII_CODE_ENTER, VARIABLE_ASCII_CODE_NEWLINE, VARIABLE_ASCII_CODE_TERMINATOR
 text_inception			db	'Inception, good movie.', VARIABLE_ASCII_CODE_ENTER, VARIABLE_ASCII_CODE_NEWLINE, VARIABLE_ASCII_CODE_TERMINATOR

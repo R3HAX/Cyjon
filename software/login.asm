@@ -62,6 +62,9 @@ start:
 %include	'library/input.asm'
 %include	'library/compare_string.asm'
 
+variable_passwd_tmp		db	'toor'
+variable_passwd_tmp_count	db	4
+
 text_login				db	'localhost login: ', VARIABLE_ASCII_CODE_TERMINATOR
 text_login_cache	times	16	db	0x00
 text_password				db	VARIABLE_ASCII_CODE_ENTER, VARIABLE_ASCII_CODE_NEWLINE, 'Password: ', VARIABLE_ASCII_CODE_TERMINATOR
