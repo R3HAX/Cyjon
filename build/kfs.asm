@@ -1,3 +1,17 @@
+; Copyright (C) 2013-2016 Wataha.net
+; All Rights Reserved
+;
+; LICENSE Creative Commons BY-NC-ND 4.0
+; See LICENSE.TXT
+;
+; Main developer:
+;	Andrzej (akasei) Adamczyk [e-mail: akasei from wataha.net]
+;
+;-------------------------------------------------------------------------------
+
+; Use:
+; nasm - http://www.nasm.us/
+
 ; Superblock [SB]
 dq	0x100	; rozmiar partycji w blokach
 dq	0x1000	; rozmiar bloku w Bajtach

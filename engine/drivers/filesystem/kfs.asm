@@ -1,4 +1,4 @@
-; Copyright (C) 2013-2015 Wataha.net
+; Copyright (C) 2013-2016 Wataha.net
 ; All Rights Reserved
 ;
 ; LICENSE Creative Commons BY-NC-ND 4.0
@@ -37,21 +37,27 @@ struc	KNOT
 	.first_block			resq	1
 endstruc
 
+struc	ENTRY
+	.knot_id			resq	1
+	.record_size			resw	1
+	.chars				resb	1
+	.type				resb	1
+	.name				resb	1
+endstruc
+
+variable_semaphore_lock_knot_find_free			db	VARIABLE_EMPTY
+
 variable_partition_specification_home	times	8	dq	VARIABLE_EMPTY
 
-kfs_initialization:
+cyjon_filesystem_kfs_initialization:
 	push	rax
 	push	rcx
-	push	rsi
 	push	rdi
 	push	r8
 
-	; załaduj bootsector
-	mov	bl,	STATIC_DISK_IO_RECORD_IO_READ
-	mov	rcx,	1
 	call	cyjon_page_allocate
 	call	cyjon_page_clear
-	call	cyjon_disk_io
+	call	cyjon_ide_sector_read
 
 	mov	qword [r8 + KFS.partition_position],	rax
 
@@ -85,50 +91,148 @@ kfs_initialization:
 
 	pop	r8
 	pop	rdi
-	pop	rsi
 	pop	rcx
 	pop	rax
 
 	ret
 
+; rax - numer bloku
+; rcx - ilość kolejnych bloków
+; rdi - adres docelowy
+; r8 - specyfikacja systemu plików
 cyjon_filesystem_kfs_block_read:
+	; zachowaj oryginalne rejestry
 	push	rax
 	push	rcx
 	push	rdx
 
+	; numer bloku zamień na sektor
 	mul	qword [r8 + KFS.block_size_in_sectors]
 	add	rax,	qword [r8 + KFS.partition_position]
 
-.loop1:
-	push	rcx
+.loop:
+	; zachowaj oryginalne rejestry
+	push	rax
+	push	rdx
+	push	rdi
 
-	mov	rcx,	qword [r8 + KFS.block_size_in_sectors]
+	; poszukaj adresu wolnego rekordu w demonie obsługi dysków
+	call	cyjon_disk_io_find_free_record
 
-.loop2:
-	call	cyjon_ide_sector_read
-	add	rax,	VARIABLE_INCREMENT
-	push	rcx
-	mov	rcx,	1
-	shl	rcx,	VARIABLE_DISK_SECTOR_SIZE
-	add	rdi,	rcx
-	pop	rcx
+	; uzupełnij rekord
+	mov	byte [rdi + STATIC_DISK_IO_RECORD.io],	STATIC_DISK_IO_RECORD_IO_READ
+	mov	qword [rdi + STATIC_DISK_IO_RECORD.lba],	rax
+	mov	rax,	qword [r8 + KFS.block_size_in_sectors]
+	mov	qword [rdi + STATIC_DISK_IO_RECORD.count],	rax
+	mov	rax,	cr3
+	mov	qword [rdi + STATIC_DISK_IO_RECORD.cr3],	rax
+	mov	rax,	qword [rsp]
+	mov	qword [rdi + STATIC_DISK_IO_RECORD.address],	rax
+
+	; oznacz rekord na gotowy do przetworzenia
+	mov	byte [rdi + STATIC_DISK_IO_RECORD.type],	STATIC_DISK_IO_RECORD_TYPE_READY
+
+.wait:
+	; czekaj na przetworzenie zadania przez demona
+	cmp	byte [rdi + STATIC_DISK_IO_RECORD.type],	STATIC_DISK_IO_RECORD_TYPE_READY
+	je	.wait
+
+	; zwolnij rekord
+	mov	byte [rdi + STATIC_DISK_IO_RECORD.type],	STATIC_DISK_IO_RECORD_TYPE_CLOSED
+
+	; przywróć oryginalne rejestry
+	pop	rdi
+	pop	rdx
+	pop	rax
+
+	; odczytaj następny blok
+	add	rax,	qword [r8 + KFS.block_size_in_sectors]
+	; przesuń wskaźnik na następne miejsce dla bloku
+	add	rdi,	qword [r8 + KFS.block_size]
+
+	; sprawdź czy pozostały inne bloki do wczytania
 	sub	rcx,	VARIABLE_DECREMENT
-	jnz	.loop2
+	jnz	.loop
 
-	pop	rcx
-	sub	rcx,	VARIABLE_DECREMENT
-	jnz	.loop1
-
+	; przywróć oryginalne rejestry
 	pop	rdx
 	pop	rcx
 	pop	rax
 
+	; powrót z procedury
+	ret
+
+; rax - numer bloku
+; rcx - rozmiar danych w blokach
+; rsi - adres źródłowy
+; r8 - specyfikacja systemu plików
+cyjon_filesystem_kfs_block_write:
+	; zachowaj oryginalne rejestry
+	push	rax
+	push	rcx
+	push	rdx
+	push	rsi
+
+	; numer bloku zamień na sektor
+	mul	qword [r8 + KFS.block_size_in_sectors]
+	add	rax,	qword [r8 + KFS.partition_position]
+
+.loop:
+	; zachowaj oryginalne rejestry
+	push	rax
+	push	rdx
+	push	rdi
+
+	; poszukaj adresu wolnego rekordu w demonie obsługi dysków
+	call	cyjon_disk_io_find_free_record
+
+	; uzupełnij rekord
+	mov	byte [rdi + STATIC_DISK_IO_RECORD.io],	STATIC_DISK_IO_RECORD_IO_WRITE
+	mov	qword [rdi + STATIC_DISK_IO_RECORD.lba],	rax
+	mov	rax,	qword [r8 + KFS.block_size_in_sectors]
+	mov	qword [rdi + STATIC_DISK_IO_RECORD.count],	rax
+	mov	rax,	cr3
+	mov	qword [rdi + STATIC_DISK_IO_RECORD.cr3],	rax
+	mov	qword [rdi + STATIC_DISK_IO_RECORD.address],	rsi
+
+	; oznacz rekord na gotowy do przetworzenia
+	mov	byte [rdi + STATIC_DISK_IO_RECORD.type],	STATIC_DISK_IO_RECORD_TYPE_READY
+
+.wait:
+	; czekaj na przetworzenie zadania przez demona
+	cmp	byte [rdi + STATIC_DISK_IO_RECORD.type],	STATIC_DISK_IO_RECORD_TYPE_READY
+	je	.wait
+
+	; zwolnij rekord
+	mov	byte [rdi + STATIC_DISK_IO_RECORD.type],	STATIC_DISK_IO_RECORD_TYPE_CLOSED
+
+	; przywróć oryginalne rejestry
+	pop	rdi
+	pop	rdx
+	pop	rax
+
+	; odczytaj następny blok
+	add	rax,	qword [r8 + KFS.block_size_in_sectors]
+	; przesuń wskaźnik na następne miejsce dla bloku
+	add	rsi,	qword [r8 + KFS.block_size]
+
+	; sprawdź czy pozostały inne bloki do wczytania
+	sub	rcx,	VARIABLE_DECREMENT
+	jnz	.loop
+
+	; przywróć oryginalne rejestry
+	pop	rsi
+	pop	rdx
+	pop	rcx
+	pop	rax
+
+	; powrót z procedury
 	ret
 
 ; rax - numer supła
 ; rdi - gdzie załadować plik
 ; r8 - specyfikacja systemu plików
-cyjon_filesystem_kfs_read_file:
+cyjon_filesystem_kfs_file_read:
 	push	rax
 	push	rcx
 	push	rdx
@@ -142,10 +246,36 @@ cyjon_filesystem_kfs_read_file:
 	mov	rax,	qword [rsi + KNOT.first_block]
 	mov	rdx,	qword [rsi + KNOT.size]
 
-	mov	rcx,	1
-
 .loop:
-	call	cyjon_filesystem_kfs_block_read
+	mov	rcx,	qword [r8 + KFS.block_size_in_sectors]
+
+.loopS:
+	push	rax
+	push	rdx
+	push	rdi
+	call	cyjon_disk_io_find_free_record
+	mov	byte [rdi + STATIC_DISK_IO_RECORD.io],	STATIC_DISK_IO_RECORD_IO_READ
+	mul	qword [r8 + KFS.block_size_in_sectors]
+	add	rax,	qword [r8 + KFS.partition_position]
+	mov	qword [rdi + STATIC_DISK_IO_RECORD.lba],	rax
+	mov	qword [rdi + STATIC_DISK_IO_RECORD.count],	1
+	mov	rax,	cr3
+	mov	qword [rdi + STATIC_DISK_IO_RECORD.cr3],	rax
+	mov	rax,	qword [rsp]
+	mov	qword [rdi + STATIC_DISK_IO_RECORD.address],	rax
+	mov	byte [rdi + STATIC_DISK_IO_RECORD.type],	STATIC_DISK_IO_RECORD_TYPE_READY
+
+.wait:
+	cmp	byte [rdi + STATIC_DISK_IO_RECORD.type],	STATIC_DISK_IO_RECORD_TYPE_READY
+	je	.wait
+
+	xor	al,	al
+	mov	rcx,	STATIC_DISK_IO_RECORD.size
+	rep	stosb
+
+	pop	rdi
+	pop	rdx
+	pop	rax
 
 	sub	rdi,	0x08
 	mov	rdi,	qword [rdi]
@@ -165,4 +295,114 @@ cyjon_filesystem_kfs_read_file:
 	pop	rax
 
 	; powrót z procedury
+	ret
+
+cyjon_filesystem_kfs_file_create:
+	push	rbx
+	push	rcx
+	push	rdx
+	push	rsi
+	push	rdi
+	push	rax
+
+	call	cyjon_filesystem_kfs_knot_find_free
+	cmp	rdx,	VARIABLE_EMPTY
+	je	.end
+
+	mov	rcx,	qword [rsp + 0x20]
+	call	cyjon_filesystem_kfs_directory_entry_add
+
+	cmp	bl,	1
+	
+
+.end:
+	pop	rax
+	pop	rdi
+	pop	rsi
+	pop	rdx
+	pop	rcx
+	pop	rbx
+
+	ret
+
+cyjon_filesystem_kfs_knot_find_free:
+	push	rcx
+
+.lock:
+	cmp	byte [variable_semaphore_lock_knot_find_free],	VARIABLE_TRUE
+	je	.lock
+
+	mov	byte [variable_semaphore_lock_knot_find_free],	VARIABLE_TRUE
+
+	mov	rcx,	qword [r8 + KFS.knots_table_size]
+	shl	rcx,	12
+	mov	rdi,	qword [r8 + KFS.knots_table_address]
+
+.loop:
+	; jeśli brak informacji o typie - wolny rekord
+	cmp	word [rdi],	VARIABLE_EMPTY
+	je	.found
+
+	add	rdi,	qword [r8 + KFS.knot_size]
+	sub	rcx,	qword [r8 + KFS.knot_size]
+	jnz	.loop
+
+	jmp	.end
+
+.found:
+	mov	rdx,	rdi
+	sub	rdx,	qword [r8 + KFS.knots_table_address]
+	shr	rdx,	7
+
+.end:
+	mov	byte [variable_semaphore_lock_knot_find_free],	VARIABLE_FALSE
+
+	pop	rcx
+
+	ret
+
+cyjon_filesystem_kfs_directory_entry_add:
+	push	rax
+	push	rdi
+	push	rcx
+
+
+	shl	rax,	7
+	mov	rdi,	qword [r8 + KFS.knots_table_address]
+	mov	rcx,	qword [rdi + rax + KNOT.size]
+	call	cyjon_page_find_free_memory
+	shr	rax,	7
+	call	cyjon_filesystem_kfs_file_read
+
+	shl	rcx,	12
+
+.free_entry:
+	cmp	word [rdi + 0x08],	VARIABLE_EMPTY
+	je	.found
+
+	movzx	rax,	word [rdi + 0x08]
+	add	rdi,	 rax
+	sub	rcx,	rax
+
+	cmp	rcx,	0x08 + ENTRY
+	jnb	.free_entry
+
+	jmp	$
+
+.found:
+	mov	qword [rdi + ENTRY.knot_id],	rdx
+	mov	rax,	qword [rsp]	; ilość znaków w nazwie pliku
+	mov	byte [rdi + ENTRY.chars],	al
+	add	rax,	ENTRY.name
+	mov	word [rdi + ENTRY.record_size],	ax
+	mov	byte [rdi + ENTRY.type],	bl
+	add	rdi,	ENTRY.name
+	mov	rcx,	qword [rsp]
+	rep	movsb
+
+.end:
+	pop	rcx
+	pop	rdi
+	pop	rax
+
 	ret

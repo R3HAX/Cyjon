@@ -1,4 +1,4 @@
-; Copyright (C) 2013-2015 Wataha.net
+; Copyright (C) 2013-2016 Wataha.net
 ; All Rights Reserved
 ;
 ; LICENSE Creative Commons BY-NC-ND 4.0
@@ -31,6 +31,8 @@ struc	IDE_PORT
 	.COMMAND	resb	1
 endstruc
 
+ATA_REG_CONTROL	equ	0x0C
+
 ; 64 Bitowy kod programu
 [BITS 64]
 
@@ -62,6 +64,12 @@ cyjon_ide_sector_read:
 	mov	rcx,	256	; 256 słów, 1 sektor, 512 Bajtów
 	rep	insw	; zapisz ax w word [es:rdi], zwiększ rdi o 2, jeśli rcx > 0 powtórz raz jeszcze
 
+	mov	dx,	STATIC_IDE_PRIMARY + IDE_PORT.COMMAND
+	in	al,	dx
+	in	al,	dx
+	in	al,	dx
+	in	al,	dx
+
 	; przywróć oryginalne rejestry
 	pop	rdi
 	pop	rdx
@@ -79,6 +87,8 @@ cyjon_ide_sector_write:
 	push	rcx
 	push	rdx
 	push	rsi
+
+	xchg	bx,	bx
 
 	call	cyjon_ide_lba
 
@@ -99,6 +109,12 @@ cyjon_ide_sector_write:
 	mov	dx,	STATIC_IDE_PRIMARY + IDE_PORT.DATA	; port wejścia/wyjścia kontrolera IDE0
 	mov	rcx,	256	; 256 słów, 1 sektor, 512 Bajtów
 	rep	outsw
+
+	mov	dx,	STATIC_IDE_PRIMARY + IDE_PORT.COMMAND
+	in	al,	dx
+	in	al,	dx
+	in	al,	dx
+	in	al,	dx
 
 	; przywróć oryginalne rejestry
 	pop	rsi

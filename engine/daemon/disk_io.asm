@@ -1,4 +1,4 @@
-; Copyright (C) 2013-2015 Wataha.net
+; Copyright (C) 2013-2016 Wataha.net
 ; All Rights Reserved
 ;
 ; LICENSE Creative Commons BY-NC-ND 4.0
@@ -15,6 +15,7 @@ struc	STATIC_DISK_IO_RECORD
 	.type		resb	1
 	.disk		resb	1
 	.io		resb	1
+	.cr3		resq	1
 	.lba		resq	1
 	.count		resq	1
 	.address	resq	1
@@ -32,6 +33,7 @@ STATIC_DISK_IO_RECORD_IO_READ		equ	VARIABLE_EMPTY
 STATIC_DISK_IO_RECORD_IO_WRITE		equ	1
 
 variable_disk_io_table_address	dq	VARIABLE_EMPTY
+variable_disk_io_stack		dq	VARIABLE_EMPTY
 
 text_daemon_disk_io_name	db	"disk_io"
 text_daemon_disk_io_name_end:
@@ -40,14 +42,25 @@ text_daemon_disk_io_name_end:
 [BITS 64]
 
 disk_io:
+	; demon wymaga własnego stosu, pobierz adres ustalony przy inicjalizacji
+	mov	rsp,	qword [variable_disk_io_stack]
+
+	; załaduj ilośc rekordów możliwych do przeszukania w tablicy
 	mov	rcx,	STATIC_DISK_IO_RECORDS_ON_TABLE
+	; załaduj adres tablicy
 	mov	rdi,	qword [variable_disk_io_table_address]
 
 .loop:
+	; czy rekord jest przygotowany do obsłużenia?
 	cmp	byte [rdi + STATIC_DISK_IO_RECORD.type],	STATIC_DISK_IO_RECORD_TYPE_READY
-	je	.process
+	je	.ready
+
+	; czy rekord został już przetworzony?
+	;cmp	byte [rdi + STATIC_DISK_IO_RECORD.type],	STATIC_DISK_IO_RECORD_TYPE_CLOSED
+	;je	.closed
 
 .next_record:
+	; przesuń wskaźnik na następny rekord
 	add	rdi,	STATIC_DISK_IO_RECORD.size
 
 	sub	rcx,	VARIABLE_DECREMENT
@@ -55,7 +68,13 @@ disk_io:
 
 	jmp	disk_io
 
-.process:
+.ready:
+	mov	rax,	cr3
+	push	rax
+
+	mov	rax,	qword [rdi + STATIC_DISK_IO_RECORD.cr3]
+	mov	cr3,	rax
+
 	cmp	byte [rdi + STATIC_DISK_IO_RECORD.io],	STATIC_DISK_IO_RECORD_IO_WRITE
 	je	.write_to_disk
 
@@ -78,6 +97,9 @@ disk_io:
 
 	mov	byte [rdi + STATIC_DISK_IO_RECORD.type],	STATIC_DISK_IO_RECORD_TYPE_FINISHED
 
+	pop	rax
+	mov	cr3,	rax
+
 	jmp	.next_record
 
 .write_to_disk:
@@ -87,6 +109,12 @@ disk_io:
 	mov	rsi,	qword [rdi + STATIC_DISK_IO_RECORD.address]
 
 .writer:
+	mov	rax,	cr3
+	push	rax
+
+	mov	rax,	qword [rdi + STATIC_DISK_IO_RECORD.cr3]
+	mov	cr3,	rax
+
 	call	cyjon_ide_sector_write
 
 	add	rax,	VARIABLE_INCREMENT
@@ -97,6 +125,9 @@ disk_io:
 	pop	rcx
 
 	mov	byte [rdi + STATIC_DISK_IO_RECORD.type],	STATIC_DISK_IO_RECORD_TYPE_FINISHED
+
+	pop	rax
+	mov	cr3,	rax
 
 	jmp	.next_record
 
@@ -132,7 +163,7 @@ cyjon_disk_io_find_free_record:
 	cmp	byte [rdi + STATIC_DISK_IO_RECORD.type],	STATIC_DISK_IO_RECORD_TYPE_EMPTY
 	je	.found
 
-	add	rdi,	STATIC_DISK_IO_RECORD
+	add	rdi,	STATIC_DISK_IO_RECORD.size
 	sub	rcx,	VARIABLE_DECREMENT
 	jnz	.loop
 
@@ -154,6 +185,10 @@ daemon_init_disk_io:
 	call	cyjon_page_allocate
 	call	cyjon_page_clear
 	mov	qword [variable_disk_io_table_address],	rdi
+
+	call	cyjon_page_allocate
+	add	rdi,	0x1000
+	mov	qword [variable_disk_io_stack],	rdi
 
 	; przygotuj miejsce dla tablicy PML4 demona
 	call	cyjon_page_allocate
@@ -217,7 +252,7 @@ daemon_init_disk_io:
 	mov	rdi,	qword [variable_multitasking_serpentine_start_address]
 
 	; flaga
-	xor	bx,	bx
+	;xor	bx,	bx
 
 .next:
 	; przesuń na następny rekord

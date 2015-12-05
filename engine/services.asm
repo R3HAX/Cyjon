@@ -1,4 +1,4 @@
-; Copyright (C) 2013-2015 Wataha.net
+; Copyright (C) 2013-2016 Wataha.net
 ; All Rights Reserved
 ;
 ; LICENSE Creative Commons BY-NC-ND 4.0
@@ -677,9 +677,11 @@ irq64_filesystem:
 	push	rax
 	push	r8
 
+	xchg	bx,	bx
+
 	mov	rax,	rcx
 	mov	r8,	variable_partition_specification_home
-	call	cyjon_filesystem_kfs_read_file
+	call	cyjon_filesystem_kfs_file_read
 
 	pop	r8
 	pop	rax

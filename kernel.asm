@@ -1,4 +1,4 @@
-; Copyright (C) 2013-2015 Wataha.net
+; Copyright (C) 2013-2016 Wataha.net
 ; All Rights Reserved
 ;
 ; LICENSE Creative Commons BY-NC-ND 4.0
@@ -90,7 +90,19 @@ start:
 	mov	rax,	2048
 	mov	rcx,	1	; rozmiar superbloku, 1 blok
 	mov	r8,	variable_partition_specification_home
-	call	kfs_initialization
+	call	cyjon_filesystem_kfs_initialization
+
+	;mov	rax,	0
+	;mov	rcx,	1
+	;mov	rsi,	0x100000
+	;call	cyjon_filesystem_kfs_block_write
+
+	; utwórz pusty plik
+	;mov	rax,	0	; w katalogu o Suple nr.0
+	;mov	rbx,	1	; plik, 2 - katalog
+	;mov	rcx,	qword [file_load_init]	; ilość znaków w nazwie pliku
+	;mov	rsi,	file_load_init_pointer
+	;call	cyjon_filesystem_kfs_file_create
 
 	; uruchom proces główny INIT
 	mov	rcx,	qword [file_load_init]	; ilość znaków nazwie pliku
@@ -134,7 +146,7 @@ start:
 %include	VARIABLE_FONT_MATRIX_DEFAULT
 
 file_load_init		dq	4
-file_load_init_pointer	dq	"init"
+file_load_init_pointer	db	"init"
 
 ; dołączone oprogramowanie wyrównaj do pełnego adresu strony, będzie można zwolnić przestrzeń dla innych
 align	0x1000

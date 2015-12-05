@@ -1,4 +1,4 @@
-; Copyright (C) 2013-2016 Wataha.net
+; Copyright (C) 2013-2015 Wataha.net
 ; All Rights Reserved
 ;
 ; LICENSE Creative Commons BY-NC-ND 4.0
@@ -11,14 +11,8 @@
 ; Use:
 ; nasm - http://www.nasm.us/
 
+
+
+; 64 Bitowy kod programu
 [BITS 64]
 
-key_ctrl_push:
-	mov	byte [variable_semaphore_key_ctrl],	VARIABLE_TRUE
-
-	jmp	start.noKey
-
-key_ctrl_pull:
-	mov	byte [variable_semaphore_key_ctrl],	VARIABLE_FALSE
-
-	jmp	start.noKey

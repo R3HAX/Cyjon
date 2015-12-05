@@ -1,4 +1,4 @@
-; Copyright (C) 2013-2015 Wataha.net
+; Copyright (C) 2013-2016 Wataha.net
 ; All Rights Reserved
 ;
 ; LICENSE Creative Commons BY-NC-ND 4.0
@@ -11,7 +11,7 @@
 ; Use:
 ; nasm - http://www.nasm.us/
 
-%define	VARIABLE_KERNEL_VERSION			"0.478"
+%define	VARIABLE_KERNEL_VERSION			"0.481"
 
 VARIABLE_MEMORY_PAGE_SIZE			equ	0x1000
 VARIABLE_MEMORY_HIGH_ADDRESS			equ	0xFFFF000000000000
