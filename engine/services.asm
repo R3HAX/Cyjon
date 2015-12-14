@@ -677,8 +677,6 @@ irq64_filesystem:
 	push	rax
 	push	r8
 
-	xchg	bx,	bx
-
 	mov	rax,	rcx
 	mov	r8,	variable_partition_specification_home
 	call	cyjon_filesystem_kfs_file_read

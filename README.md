@@ -10,7 +10,7 @@ Prosty system operacyjny dla procesorów z rodziny amd64/x86-64.
 
 #Oprogramowanie:
 - kompilator Nasm v2.11.08+ (http://www.nasm.us/)
-- oprogramowanie Bochs v2.6.8+ (http://sourceforge.net/projects/bochs/files/bochs/) lub Qemu v2.4.1+ (http://wiki.qemu.org/Main_Page) do wirtualizacji,
+- oprogramowanie Bochs v2.6.8+ (http://sourceforge.net/projects/bochs/files/bochs/),
 
 #Kompilacja (z poziomu konsoli):
 
@@ -20,14 +20,12 @@ Prosty system operacyjny dla procesorów z rodziny amd64/x86-64.
     MS/Windows:
     polecenie "make.bat"
 
-#Uwagi:
-Emulatory pod systemem z rodziny MS/Windows nie obsługują prawidłowo klawiszy strzałek/kursorów. Nie mam pojęcia kogo to wina - emulatora czy systemu.
-
 #Uruchomienie:
 
-    qemu-system-x86_64 -hda build/disk.raw
+    W konfiguracji oprogramowania Bochs ustawiamy dysk wirtualny build/disk.raw jako IDE0 Master.
 
-
+#Uwagi:
+Emulatory pod systemem z rodziny MS/Windows nie obsługują prawidłowo klawiszy strzałek/kursorów. Nie mam pojęcia kogo to wina - emulatora czy systemu.
 
 
 Udało ci się nanieść poprawkę, ulepszenie lub coś zupełnie nowego w źródle systemu?

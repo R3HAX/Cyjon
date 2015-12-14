@@ -57,7 +57,7 @@ cyjon_filesystem_kfs_initialization:
 
 	call	cyjon_page_allocate
 	call	cyjon_page_clear
-	call	cyjon_ide_sector_read
+	call	ide_read_sectors
 
 	mov	qword [r8 + KFS.partition_position],	rax
 

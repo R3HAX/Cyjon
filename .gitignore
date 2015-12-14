@@ -16,3 +16,5 @@ hexedit
 *.bin
 
 nasm.exe
+*.html
+*.php

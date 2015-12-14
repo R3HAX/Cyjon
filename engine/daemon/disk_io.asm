@@ -85,7 +85,7 @@ disk_io:
 	mov	rdi,	qword [rdi + STATIC_DISK_IO_RECORD.address]
 
 .reader:
-	call	cyjon_ide_sector_read
+	call	ide_read_sectors
 
 	add	rax,	VARIABLE_INCREMENT
 	add	rdi,	VARIABLE_DISK_SECTOR_SIZE_IN_BYTES
@@ -115,7 +115,7 @@ disk_io:
 	mov	rax,	qword [rdi + STATIC_DISK_IO_RECORD.cr3]
 	mov	cr3,	rax
 
-	call	cyjon_ide_sector_write
+	call	ide_write_sectors
 
 	add	rax,	VARIABLE_INCREMENT
 	add	rsi,	VARIABLE_DISK_SECTOR_SIZE_IN_BYTES

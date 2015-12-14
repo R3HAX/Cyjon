@@ -58,6 +58,9 @@ start:
 	mov	al,	11111100b	; irq0, irq1
 	out	0x21,	al
 
+	; zainicjalizuj dostęp do nośnika IDE0 Master
+	call	ide_initialize
+
 	; przygotuj wirtualne systemy plików (płaski system plików)
 	; wirtualny system plików zostanie przygotowany na nowo (wzorem z ext2), aby mieć obsługe katalogów
 	call	virtual_file_systems
@@ -68,6 +71,7 @@ start:
 
 	; załaduj do wirtualnego systemu plików, dołączone oprogramowanie
 	call	save_included_files
+
 	; oblicz rozmiar przestrzeni do zwolnienia w Bajtach
 	mov	rcx,	end
 	sub	rcx,	save_included_files
@@ -86,6 +90,8 @@ start:
 
 	; kontynuuj z pozostałymi
 	loop	.loop
+
+	; xchg	bx,	bx
 
 	mov	rax,	2048
 	mov	rcx,	1	; rozmiar superbloku, 1 blok
@@ -136,6 +142,7 @@ start:
 
 %include	"engine/drivers/pci.asm"
 %include	"engine/drivers/ide.asm"
+%include	"engine/drivers/ide-new.asm"
 
 %include	"engine/drivers/filesystem/kfs.asm"
 
@@ -170,7 +177,7 @@ save_included_files:
 	mov	rsi,	files_table
 
 .loop:
-	; koniec tablicy?
+	;~ ; koniec tablicy?
 	cmp	qword [rsi],	VARIABLE_EMPTY
 	je	.end	; tak
 
