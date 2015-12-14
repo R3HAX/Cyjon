@@ -31,7 +31,6 @@ VARIABLE_IDE_PRIMARY_MASTER		equ	0xA0
 VARIABLE_IDE_PRIMARY_SLAVE		equ	0xB0
 
 VARIABLE_IDE_CMD_READ_PIO_EXT		equ	0x24
-<<<<<<< HEAD
 VARIABLE_IDE_CMD_WRITE_PIO_EXT		equ	0x34
 VARIABLE_IDE_CMD_CACHE_FLUSH_EXT	equ	0xEA
 VARIABLE_IDE_CMD_IDENTIFY		equ	0xEC
@@ -40,14 +39,6 @@ VARIABLE_IDE_SR_ERR			equ	0	; 00000001b	0x01
 VARIABLE_IDE_SR_DRQ			equ	3	; 00001000b	0x08
 VARIABLE_IDE_SR_DF			equ	5	; 00100000b	0x20
 VARIABLE_IDE_SR_BSY			equ	7	; 10000000b	0x80
-=======
-VARIABLE_IDE_CMD_IDENTIFY		equ	0xEC
-
-VARIABLE_IDE_SR_ERR			equ	1
-VARIABLE_IDE_SR_DRQ			equ	3
-VARIABLE_IDE_SR_DF			equ	5
-VARIABLE_IDE_SR_BSY			equ	7
->>>>>>> 0c5bb7a7a36b3008af80ba6f3be95aaf7e0e9a15
 
 VARIABLE_IDE_IDENTIFY_SERIAL		equ	20
 VARIABLE_IDE_IDENTIFY_MODEL		equ	54
@@ -167,19 +158,12 @@ ide_initialize:
 	; powrót z procedury
 	ret
 
-<<<<<<< HEAD
 ; 400ns delay
-=======
->>>>>>> 0c5bb7a7a36b3008af80ba6f3be95aaf7e0e9a15
 ide_wait:
 	; zachowaj oryginalne rejestry
 	push	rax
 	push	rdx
 
-<<<<<<< HEAD
-=======
-	; zmarnuj 400ms czasu
->>>>>>> 0c5bb7a7a36b3008af80ba6f3be95aaf7e0e9a15
 	mov	rdx,	VARIABLE_IDE_PRIMARY_REG_ALTERNATE
 	in	al,	dx
 
@@ -191,7 +175,6 @@ ide_wait:
 	ret
 
 ; rax - lba
-<<<<<<< HEAD
 ; rcx - ilośc sektorów
 ; rsi - gdzie są dane
 ide_write_sectors:
@@ -270,15 +253,6 @@ ide_read_sectors:
 
 	mov	dx,	VARIABLE_IDE_PRIMARY_REG_STATUS
 
-=======
-; rcx - ilość sektorów
-; rdi - gdzie zapisać
-ide_read_sectors:
-	push	rbx
-	push	rdx
-	push	rax
-
->>>>>>> 0c5bb7a7a36b3008af80ba6f3be95aaf7e0e9a15
 .wait:
 	; pobierz status urządzenia
 	in	al,	dx
@@ -308,11 +282,8 @@ ide_read_sectors:
 	jmp	$
 
 .ok:
-<<<<<<< HEAD
 	mov	dx,	VARIABLE_IDE_PRIMARY_REG_DATA
 
-=======
->>>>>>> 0c5bb7a7a36b3008af80ba6f3be95aaf7e0e9a15
 	push	rcx
 
 	mov	rcx,	256
@@ -323,7 +294,6 @@ ide_read_sectors:
 	sub	rcx,	VARIABLE_DECREMENT
 	jnz	.read
 
-<<<<<<< HEAD
 	; przywróć oryginalne rejestry
 	pop	rdi
 	pop	rdx
@@ -333,9 +303,6 @@ ide_read_sectors:
 
 	; powrót z procedury
 	ret
-=======
-	jmp	$
->>>>>>> 0c5bb7a7a36b3008af80ba6f3be95aaf7e0e9a15
 
 ide_pool:
 	push	rcx
@@ -344,14 +311,9 @@ ide_pool:
 	; 400ns
 	mov	cl,	4
 
-<<<<<<< HEAD
 	mov	dx,	VARIABLE_IDE_PRIMARY_REG_ALTERNATE
 
 .wait:
-=======
-.wait:
-	mov	dx,	VARIABLE_IDE_PRIMARY_REG_ALTERNATE
->>>>>>> 0c5bb7a7a36b3008af80ba6f3be95aaf7e0e9a15
 	in	al,	dx
 
 	sub	rcx,	VARIABLE_DECREMENT
@@ -407,20 +369,16 @@ ide_lba:
 	; zachowaj
 	mov	rbx,	rax
 
-<<<<<<< HEAD
 	; pierwszy pusty Bajt
 	mov	dx,	VARIABLE_IDE_PRIMARY_REG_FEATURES
 	mov	al,	0x00
 	out	dx,	al
 
-=======
->>>>>>> 0c5bb7a7a36b3008af80ba6f3be95aaf7e0e9a15
 	; starsza część ilości odczytywanych sektorów
 	mov	dx,	VARIABLE_IDE_PRIMARY_REG_COUNTER
 	mov	al,	0x00
 	out	dx,	al
 
-<<<<<<< HEAD
 	; drugi pusty Bajt
 	mov	dx,	VARIABLE_IDE_PRIMARY_REG_FEATURES
 	mov	al,	0x00
@@ -433,8 +391,6 @@ ide_lba:
 
 	; wyślij 48 bitowy numer sektora
 
-=======
->>>>>>> 0c5bb7a7a36b3008af80ba6f3be95aaf7e0e9a15
 	; al = 31..24
 	mov	dx,	VARIABLE_IDE_PRIMARY_REG_LBA_LOW
 	mov	rax,	rbx
@@ -453,14 +409,6 @@ ide_lba:
 	shr	rax,	40
 	out	dx,	al
 
-<<<<<<< HEAD
-=======
-	; młodsza część ilości odczytywanych sektorów
-	mov	dx,	VARIABLE_IDE_PRIMARY + IDE_PORT.COUNTER
-	mov	al,	cl
-	out	dx,	al
-
->>>>>>> 0c5bb7a7a36b3008af80ba6f3be95aaf7e0e9a15
 	; al = 7..0
 	mov	dx,	VARIABLE_IDE_PRIMARY_REG_LBA_LOW
 	mov	rax,	rbx
