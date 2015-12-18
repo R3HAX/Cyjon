@@ -69,6 +69,42 @@ start:
 	call	daemon_init_disk_io
 	call	daemon_init_garbage_collector
 
+	; inizjalizuj system plików
+	mov	rax,	2048
+	mov	rcx,	1	; rozmiar superbloku, 1 blok
+	mov	r8,	variable_partition_specification_home
+	call	cyjon_filesystem_kfs_initialization
+
+	; utwórz pusty plik
+	mov	rax,	0	; w katalogu o Suple nr.0
+	mov	rbx,	0x8000	; plik
+	mov	rcx,	qword [file_readme]	; ilość znaków w nazwie pliku
+	mov	rsi,	file_readme_pointer
+	call	cyjon_filesystem_kfs_file_create
+
+	; załaduj do pliku dane
+	; rax - numer supła
+	; rbx - rozmiar danych w blokach
+	; rdx - rozmiar pliku w Bajtach
+	; rsi - gdzie są dane
+	; r8 - specyfikacja systemu plików
+	push	rax
+	mov	rax,	text_readme_end - text_readme
+	mov	rcx,	qword [r8 + KFS.block_size]
+	div	rcx
+	cmp	rdx,	VARIABLE_EMPTY
+	je	.file_size_ok
+
+	add	eax,	VARIABLE_INCREMENT
+
+.file_size_ok:
+	mov	eax,	eax
+	mov	rbx,	rax
+	pop	rax
+	mov	rdx,	text_readme_end - text_readme
+	mov	rsi,	text_readme
+	call	cyjon_filesystem_kfs_file_update
+
 	; załaduj do wirtualnego systemu plików, dołączone oprogramowanie
 	call	save_included_files
 
@@ -90,25 +126,6 @@ start:
 
 	; kontynuuj z pozostałymi
 	loop	.loop
-
-	; xchg	bx,	bx
-
-	mov	rax,	2048
-	mov	rcx,	1	; rozmiar superbloku, 1 blok
-	mov	r8,	variable_partition_specification_home
-	call	cyjon_filesystem_kfs_initialization
-
-	;mov	rax,	0
-	;mov	rcx,	1
-	;mov	rsi,	0x100000
-	;call	cyjon_filesystem_kfs_block_write
-
-	; utwórz pusty plik
-	;mov	rax,	0	; w katalogu o Suple nr.0
-	;mov	rbx,	1	; plik, 2 - katalog
-	;mov	rcx,	qword [file_load_init]	; ilość znaków w nazwie pliku
-	;mov	rsi,	file_load_init_pointer
-	;call	cyjon_filesystem_kfs_file_create
 
 	; uruchom proces główny INIT
 	mov	rcx,	qword [file_load_init]	; ilość znaków nazwie pliku
@@ -154,6 +171,9 @@ start:
 
 file_load_init		dq	4
 file_load_init_pointer	db	"init"
+
+file_readme		dq	10
+file_readme_pointer	db	"readme.txt"
 
 ; dołączone oprogramowanie wyrównaj do pełnego adresu strony, będzie można zwolnić przestrzeń dla innych
 align	0x1000
@@ -321,6 +341,10 @@ text_virtial_file_system	db	" Virtual file system initialized.", VARIABLE_ASCII_
 
 ;===============================================================================
 ;===============================================================================
+
+text_readme:
+%include	"files/readme.asm"
+text_readme_end:
 
 ; etykiete końca kodu jądra wyrównaj do pełnego adresu strony
 align	0x1000

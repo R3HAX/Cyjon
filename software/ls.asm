@@ -11,6 +11,14 @@
 ; Use:
 ; nasm - http://www.nasm.us/
 
+struc	ENTRY
+	.knot_id			resq	1
+	.record_size			resw	1
+	.chars				resb	1
+	.type				resw	1
+	.name				resb	1
+endstruc
+
 ; kolory, stałe
 %include	'config.asm'
 
@@ -93,16 +101,12 @@ start:
 	mov	rsi,	rdi
 
 .loop:
-	; sprawdź czy skończyła się tablica
-	cmp	rsi,	rdx
-	je	.end	; jeśli równe, koniec
-
 	; sprawdź czy koniec rekordów
-	cmp	qword [rsi + 0x08],	VARIABLE_EMPTY
+	cmp	qword [rsi + ENTRY.record_size],	VARIABLE_EMPTY
 	je	.end
 
 	; sprawdź czy nazwa pliku rozpoczyna się od "kropki"
-	cmp	byte [rsi + 0x0C],	"."
+	cmp	byte [rsi + ENTRY.name],	"."
 	jne	.show_it	; jeśli tak, pomiń wyświetlenie danego pliku
 
 	cmp	byte [variable_semaphore_all],	VARIABLE_EMPTY
@@ -110,10 +114,10 @@ start:
 
 .show_it:
 	; pobierz rozmiar nazwy pliku w znakach
-	movzx	rcx,	byte [rsi + 0x0A]
+	movzx	rcx,	byte [rsi + ENTRY.chars]
 
 	; rozpoznaj atrybut katalogu i dostosuj kolor wyświetlanego tekstu
-	cmp	byte [rsi + 0x0B],	0x02
+	cmp	word [rsi + ENTRY.type],	0x4000
 	je	.catalog
 
 	; załaduj kolor dla zwykłego pliku
@@ -133,7 +137,7 @@ start:
 	mov	edx,	VARIABLE_COLOR_BACKGROUND_DEFAULT
 
 	; przesuń wskaźnik na ciąg znaków przedstawiający nazwe pliku
-	add	rsi,	0x0C
+	add	rsi,	ENTRY.name
 	int	0x40	; wykonaj
 
 	; wyświetl odstęp pomięczy nazwami
@@ -146,7 +150,7 @@ start:
 
 .leave:
 	; oblicz adres następnego rekordu w tablicy
-	movzx	rcx,	word [rsi + 0x08]
+	movzx	rcx,	word [rsi + ENTRY.record_size]
 	; przesuń wskaźnik na następny rekord
 	add	rsi,	rcx
 
