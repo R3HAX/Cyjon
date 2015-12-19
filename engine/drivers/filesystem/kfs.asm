@@ -41,13 +41,194 @@ struc	ENTRY
 	.knot_id			resq	1
 	.record_size			resw	1
 	.chars				resb	1
-	.type				resb	1
+	.type				resw	1
 	.name				resb	1
 endstruc
 
 variable_semaphore_lock_knot_find_free			db	VARIABLE_EMPTY
 
 variable_partition_specification_home	times	8	dq	VARIABLE_EMPTY
+
+cyjon_filesystem_kfs_update:
+	push	rax
+	push	rcx
+	push	rsi
+
+	; bit block map
+	mov	rax,	1
+	mov	rcx,	qword [r8 + KFS.bit_block_map_size]
+	mov	rsi,	qword [r8 + KFS.bit_block_map_address]
+
+.bit_block_map:
+	call	cyjon_filesystem_kfs_block_write
+
+	add	rax,	VARIABLE_INCREMENT
+	add	rsi,	qword [r8 + KFS.block_size]
+	sub	rcx,	VARIABLE_DECREMENT
+	jnz	.bit_block_map
+
+	; rax - tablica supłów znajduje się zaraz za bit block map
+	mov	rcx,	qword [r8 + KFS.knots_table_size]
+	mov	rsi,	qword [r8 + KFS.knots_table_address]
+
+.knot_table:
+	call	cyjon_filesystem_kfs_block_write
+
+	add	rax,	VARIABLE_INCREMENT
+	add	rsi,	qword [r8 + KFS.block_size]
+	sub	rcx,	VARIABLE_DECREMENT
+	jnz	.knot_table
+
+.end:
+	pop	rsi
+	pop	rcx
+	pop	rax
+
+	ret
+	
+
+; rax - numer supła
+; rbx - rozmiar danych w blokach
+; rdx - rozmiar pliku w Bajtach
+; rsi - gdzie są dane
+; r8 - specyfikacja systemu plików
+cyjon_filesystem_kfs_file_update:
+	push	rax
+	push	rbx
+	push	rcx
+	push	rsi
+	push	rdi
+	push	rdx
+
+	mul	qword [r8 + KFS.knot_size]
+	mov	rdi,	qword [r8 + KFS.knots_table_address]
+	add	rdi,	rax
+
+	; nowy rozmiar pliku +rbx Bloków
+	mov	qword [rdi + KNOT.size],	rbx
+
+	; nowy rozmiar pliku +rdx Bajtów
+	pop	rdx
+	mov	qword [rdi + KNOT.size_in_bytes],	rdx
+
+	mov	rax,	qword [rdi + KNOT.first_block]
+	cmp	rax,	VARIABLE_EMPTY
+	ja	.first_block_exists
+
+	call	cyjon_filesystem_kfs_find_free_block
+	call	cyjon_filesystem_kfs_clear_block
+
+	mov	qword [rdi + KNOT.first_block],	rax
+
+.first_block_exists:
+	mov	rcx,	1
+	call	cyjon_page_find_free_memory
+	push	rdi
+	call	cyjon_filesystem_kfs_block_read
+	mov	rdi,	qword [rsp]
+	push	rax
+
+.indirect:
+	mov	rax,	qword [rdi]
+	cmp	rax,	VARIABLE_EMPTY
+	ja	.direct
+
+	call	cyjon_filesystem_kfs_find_free_block
+	mov	qword [rdi],	rax
+
+.direct:
+	cmp	rdx,	qword [r8 + KFS.block_size]
+	jae	.block_ok
+
+	xchg	bx,	bx
+
+	; to jest ostatni blok, na dodatek nie pełny
+	push	rdi
+	call	cyjon_page_allocate
+	call	cyjon_page_clear
+	push	rdi
+	mov	rcx,	rdx
+	rep	movsb
+	mov	rsi,	qword [rsp]
+	mov	rcx,	1
+	call	cyjon_filesystem_kfs_block_write
+	pop	rdi
+	call	cyjon_page_release
+	pop	rdi
+
+	jmp	.block_prepared
+
+.block_ok:
+	call	cyjon_filesystem_kfs_block_write
+
+.block_prepared:
+	sub	rbx,	VARIABLE_DECREMENT
+	jz	.end
+
+	add	rdi,	0x08
+	add	rsi,	qword [r8 + KFS.block_size]
+	jmp	.indirect
+
+.end:
+	pop	rax
+	mov	rcx,	1
+	pop	rsi
+	call	cyjon_filesystem_kfs_block_write
+
+.the_end:
+	; sprawdź czy plik był większy, zwolnij pozostałe miejsce w przeestrzeni partycji
+	; cdn.
+
+	; zaktualizuj system plików
+	call	cyjon_filesystem_kfs_update
+
+	pop	rdi
+	pop	rsi
+	pop	rcx
+	pop	rbx
+	pop	rax
+
+	; powrót z procedury
+	ret
+
+; rax - numer bloku do wyczyszczenia na nośniku
+cyjon_filesystem_kfs_clear_block:
+	push	rcx
+	push	rsi
+	push	rdi
+
+	mov	rcx,	1
+	call	cyjon_page_allocate
+	call	cyjon_page_clear
+
+	push	rdi
+
+	mov	rsi,	rdi
+	call	cyjon_filesystem_kfs_block_write
+
+	pop	rdi
+
+	call	cyjon_page_release
+
+	pop	rdi
+	pop	rsi
+	pop	rcx
+
+	ret
+
+; r8 - specyfikacja systemu plików
+cyjon_filesystem_kfs_find_free_block:
+	push	rsi
+	push	rdi
+
+	mov	rsi,	qword [r8 + KFS.bit_block_map_address]
+	mov	rdi,	qword [r8 + KFS.bit_block_map_size]
+	call	library_find_free_bit
+
+	pop	rdi
+	pop	rsi
+
+	ret
 
 cyjon_filesystem_kfs_initialization:
 	push	rax
@@ -57,6 +238,7 @@ cyjon_filesystem_kfs_initialization:
 
 	call	cyjon_page_allocate
 	call	cyjon_page_clear
+	push	rdi
 	call	ide_read_sectors
 
 	mov	qword [r8 + KFS.partition_position],	rax
@@ -88,6 +270,9 @@ cyjon_filesystem_kfs_initialization:
 	mov	qword [r8 + KFS.knots_table_address],	rdi
 	call	cyjon_filesystem_kfs_block_read
 	pop	rdi
+
+	pop	rdi
+	call	cyjon_page_release
 
 	pop	r8
 	pop	rdi
@@ -211,7 +396,7 @@ cyjon_filesystem_kfs_block_write:
 	pop	rdx
 	pop	rax
 
-	; odczytaj następny blok
+	; zapisz następny blok
 	add	rax,	qword [r8 + KFS.block_size_in_sectors]
 	; przesuń wskaźnik na następne miejsce dla bloku
 	add	rsi,	qword [r8 + KFS.block_size]
@@ -234,6 +419,7 @@ cyjon_filesystem_kfs_block_write:
 ; r8 - specyfikacja systemu plików
 cyjon_filesystem_kfs_file_read:
 	push	rax
+	push	rbx
 	push	rcx
 	push	rdx
 	push	rsi
@@ -244,54 +430,46 @@ cyjon_filesystem_kfs_file_read:
 	add	rsi,	rax
 
 	mov	rax,	qword [rsi + KNOT.first_block]
-	mov	rdx,	qword [rsi + KNOT.size]
+	mov	rbx,	qword [rsi + KNOT.size]
 
-.loop:
-	mov	rcx,	qword [r8 + KFS.block_size_in_sectors]
+	cmp	rax,	VARIABLE_EMPTY
+	je	.end	; plik pusty
 
-.loopS:
-	push	rax
-	push	rdx
+.read:
+	mov	rcx,	1
+	call	cyjon_page_find_free_memory
 	push	rdi
-	call	cyjon_disk_io_find_free_record
-	mov	byte [rdi + STATIC_DISK_IO_RECORD.io],	STATIC_DISK_IO_RECORD_IO_READ
-	mul	qword [r8 + KFS.block_size_in_sectors]
-	add	rax,	qword [r8 + KFS.partition_position]
-	mov	qword [rdi + STATIC_DISK_IO_RECORD.lba],	rax
-	mov	qword [rdi + STATIC_DISK_IO_RECORD.count],	1
-	mov	rax,	cr3
-	mov	qword [rdi + STATIC_DISK_IO_RECORD.cr3],	rax
-	mov	rax,	qword [rsp]
-	mov	qword [rdi + STATIC_DISK_IO_RECORD.address],	rax
-	mov	byte [rdi + STATIC_DISK_IO_RECORD.type],	STATIC_DISK_IO_RECORD_TYPE_READY
+	call	cyjon_filesystem_kfs_block_read
+	pop	rsi
+	mov	rdi,	qword [rsp]
 
-.wait:
-	cmp	byte [rdi + STATIC_DISK_IO_RECORD.type],	STATIC_DISK_IO_RECORD_TYPE_READY
-	je	.wait
+.indirect:
+	mov	rax,	qword [rsi]
+	cmp	rax,	VARIABLE_EMPTY
+	ja	.direct
 
-	xor	al,	al
-	mov	rcx,	STATIC_DISK_IO_RECORD.size
-	rep	stosb
+	call	cyjon_filesystem_kfs_find_free_block
+	mov	qword [rdi],	rax
 
-	pop	rdi
-	pop	rdx
-	pop	rax
+.direct:
+	call	cyjon_filesystem_kfs_block_read
 
-	sub	rdi,	0x08
-	mov	rdi,	qword [rdi]
-	cmp	rdi,	VARIABLE_EMPTY
-	je	.end
+	sub	rbx,	VARIABLE_DECREMENT
+	jz	.end
 
-	sub	rdx,	VARIABLE_DECREMENT
-	jnz	.loop
+	add	rsi,	0x08
+	add	rdi,	qword [r8 + KFS.block_size]
+	jmp	.indirect
 
 .end:
+	pop	rdi
+
 	mov	rdx,	qword [rsi + KNOT.size_in_bytes]
 
-	pop	rdi
 	pop	rsi
 	pop	rdx
 	pop	rcx
+	pop	rbx
 	pop	rax
 
 	; powrót z procedury
@@ -303,20 +481,21 @@ cyjon_filesystem_kfs_file_create:
 	push	rdx
 	push	rsi
 	push	rdi
-	push	rax
 
 	call	cyjon_filesystem_kfs_knot_find_free
 	cmp	rdx,	VARIABLE_EMPTY
 	je	.end
 
-	mov	rcx,	qword [rsp + 0x20]
+	mov	rcx,	qword [rsp + 0x18]
 	call	cyjon_filesystem_kfs_directory_entry_add
 
-	cmp	bl,	1
-	
+	; zwróć numer supła utworzonego pliku
+	mov	rax,	rdx
+
+	mov	rbx,	qword [rsp + 0x20]
+	call	cyjom_filesystem_kfs_knot_create_empty
 
 .end:
-	pop	rax
 	pop	rdi
 	pop	rsi
 	pop	rdx
@@ -325,8 +504,22 @@ cyjon_filesystem_kfs_file_create:
 
 	ret
 
+cyjom_filesystem_kfs_knot_create_empty:
+	push	rax
+	push	rdi
+
+	mov	rdi,	qword [r8 + KFS.knots_table_address]
+	mul	qword [r8 + KFS.knot_size]
+	mov	word [rdi + rax + KNOT.type],	bx
+
+	pop	rdi
+	pop	rax
+
+	ret
+
 cyjon_filesystem_kfs_knot_find_free:
 	push	rcx
+	push	rdi
 
 .lock:
 	cmp	byte [variable_semaphore_lock_knot_find_free],	VARIABLE_TRUE
@@ -357,24 +550,34 @@ cyjon_filesystem_kfs_knot_find_free:
 .end:
 	mov	byte [variable_semaphore_lock_knot_find_free],	VARIABLE_FALSE
 
+	pop	rdi
 	pop	rcx
 
 	ret
 
 cyjon_filesystem_kfs_directory_entry_add:
+	push	rdx
 	push	rax
+	push	rcx
 	push	rdi
 	push	rcx
 
-
-	shl	rax,	7
+	mov	rcx,	qword [r8 + KFS.knot_size]
+	mul	rcx
 	mov	rdi,	qword [r8 + KFS.knots_table_address]
 	mov	rcx,	qword [rdi + rax + KNOT.size]
+	push	rcx
 	call	cyjon_page_find_free_memory
-	shr	rax,	7
+	mov	rcx,	qword [r8 + KFS.knot_size]
+	div	rcx
 	call	cyjon_filesystem_kfs_file_read
 
+	push	rax
+
+	mov	rcx,	qword [rsp + 0x08]
 	shl	rcx,	12
+
+	push	rdi
 
 .free_entry:
 	cmp	word [rdi + 0x08],	VARIABLE_EMPTY
@@ -390,19 +593,31 @@ cyjon_filesystem_kfs_directory_entry_add:
 	jmp	$
 
 .found:
-	mov	qword [rdi + ENTRY.knot_id],	rdx
-	mov	rax,	qword [rsp]	; ilość znaków w nazwie pliku
+	mov	rax,	qword [rsp + 0x38]
+	mov	qword [rdi + ENTRY.knot_id],	rax
+	mov	rax,	qword [rsp + 0x28]	; ilość znaków w nazwie pliku
 	mov	byte [rdi + ENTRY.chars],	al
 	add	rax,	ENTRY.name
 	mov	word [rdi + ENTRY.record_size],	ax
-	mov	byte [rdi + ENTRY.type],	bl
+	mov	word [rdi + ENTRY.type],	bx
 	add	rdi,	ENTRY.name
-	mov	rcx,	qword [rsp]
+	mov	rcx,	qword [rsp + 0x18]
 	rep	movsb
+
+	; aktualizuj tablice supłów na nośniku
+	pop	rsi
+	mov	rax,	VARIABLE_MEMORY_PAGE_SIZE
+	mul	qword [rsp + 0x08]
+	mov	rdx,	rax
+	pop	rax
+	pop	rbx
+	call	cyjon_filesystem_kfs_file_update
 
 .end:
 	pop	rcx
 	pop	rdi
+	pop	rcx
 	pop	rax
+	pop	rdx
 
 	ret

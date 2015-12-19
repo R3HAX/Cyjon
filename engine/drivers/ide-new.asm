@@ -370,9 +370,9 @@ ide_lba:
 	mov	rbx,	rax
 
 	; pierwszy pusty Bajt
-	mov	dx,	VARIABLE_IDE_PRIMARY_REG_FEATURES
-	mov	al,	0x00
-	out	dx,	al
+	;mov	dx,	VARIABLE_IDE_PRIMARY_REG_FEATURES
+	;mov	al,	0x00
+	;out	dx,	al
 
 	; starsza część ilości odczytywanych sektorów
 	mov	dx,	VARIABLE_IDE_PRIMARY_REG_COUNTER
@@ -380,14 +380,9 @@ ide_lba:
 	out	dx,	al
 
 	; drugi pusty Bajt
-	mov	dx,	VARIABLE_IDE_PRIMARY_REG_FEATURES
-	mov	al,	0x00
-	out	dx,	al
-
-	; młodsza część ilości odczytywanych sektorów
-	mov	dx,	VARIABLE_IDE_PRIMARY_REG_COUNTER
-	mov	al,	cl
-	out	dx,	al
+	;mov	dx,	VARIABLE_IDE_PRIMARY_REG_FEATURES
+	;mov	al,	0x00
+	;out	dx,	al
 
 	; wyślij 48 bitowy numer sektora
 
@@ -407,6 +402,11 @@ ide_lba:
 	mov	dx,	VARIABLE_IDE_PRIMARY_REG_LBA_HIGH
 	mov	rax,	rbx
 	shr	rax,	40
+	out	dx,	al
+
+	; młodsza część ilości odczytywanych sektorów
+	mov	dx,	VARIABLE_IDE_PRIMARY_REG_COUNTER
+	mov	al,	cl
 	out	dx,	al
 
 	; al = 7..0

@@ -106,15 +106,10 @@ disk_io:
 	mov	rax,	qword [rdi + STATIC_DISK_IO_RECORD.lba]
 	push	rcx
 	mov	rcx,	qword [rdi + STATIC_DISK_IO_RECORD.count]
+	push	rsi
 	mov	rsi,	qword [rdi + STATIC_DISK_IO_RECORD.address]
 
 .writer:
-	mov	rax,	cr3
-	push	rax
-
-	mov	rax,	qword [rdi + STATIC_DISK_IO_RECORD.cr3]
-	mov	cr3,	rax
-
 	call	ide_write_sectors
 
 	add	rax,	VARIABLE_INCREMENT
@@ -122,6 +117,7 @@ disk_io:
 	sub	rcx,	VARIABLE_DECREMENT
 	jnz	.writer
 
+	pop	rsi
 	pop	rcx
 
 	mov	byte [rdi + STATIC_DISK_IO_RECORD.type],	STATIC_DISK_IO_RECORD_TYPE_FINISHED
