@@ -11,7 +11,11 @@
 ; Use:
 ; nasm - http://www.nasm.us/
 
+<<<<<<< HEAD
 %define	VARIABLE_KERNEL_VERSION			"0.487"
+=======
+%define	VARIABLE_KERNEL_VERSION			"0.485"
+>>>>>>> origin/master
 
 VARIABLE_MEMORY_PAGE_SIZE			equ	0x1000
 VARIABLE_MEMORY_HIGH_ADDRESS			equ	0xFFFF000000000000
