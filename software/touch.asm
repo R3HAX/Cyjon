@@ -11,14 +11,6 @@
 ; Use:
 ; nasm - http://www.nasm.us/
 
-struc	ENTRY
-	.knot_id			resq	1
-	.record_size			resw	1
-	.chars				resb	1
-	.type				resw	1
-	.name				resb	1
-endstruc
-
 ; kolory, stałe
 %include	'config.asm'
 
