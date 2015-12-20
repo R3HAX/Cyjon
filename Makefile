@@ -16,6 +16,7 @@ all:
 	$(ASM) $(SOFTWARE)/date.asm -o date.bin
 	$(ASM) $(SOFTWARE)/ls.asm -o ls.bin
 	$(ASM) $(SOFTWARE)/args.asm -o args.bin
+	$(ASM) $(SOFTWARE)/touch.asm -o touch.bin
 
 	$(ASM) kernel.asm -o kernel.bin
 
@@ -24,4 +25,4 @@ all:
 	$(ASM) $(BOOTLOADER)/stage1.asm -o $(BUILD)/disk.raw
 
 clean:
-	rm -f init.bin login.bin shell.bin help.bin uptime.bin moko.bin ps.bin date.bin ls.bin stage2.bin args.bin
+	rm -f init.bin login.bin shell.bin help.bin uptime.bin moko.bin ps.bin date.bin ls.bin stage2.bin args.bin touch.bin

@@ -300,8 +300,10 @@ irq64_process:
 	sub	rax,	rbx
 	mov	rbx,	0x07	; flagi: Użytkownik, 4 KiB, Odczyt/Zapis, Dostępna
 	mov	rcx,	1	; rozmiar 1 strona
+	push	r11
 	mov	r11,	cr3
 	call	cyjon_page_map_logical_area
+	pop	r11
 
 	mov	rsi,	qword [rdi + VARIABLE_TABLE_SERPENTINE_RECORD.ARGS]
 	mov	rdi,	qword [rsp + 0x08]	
@@ -670,6 +672,9 @@ irq64_filesystem:
 	cmp	al,	0x01
 	je	.filesystem_file_size
 
+	cmp	al,	0x02
+	je	.filesystem_file_touch
+
 	; brak obsługi
 	jmp	irq64.end
 
@@ -705,6 +710,28 @@ irq64_filesystem:
 	pop	rsi
 	pop	rdx
 	pop	rax
+
+	; koniec obsługi procedury
+	jmp	irq64.end
+
+.filesystem_file_touch:
+	push	r8
+
+	mov	rax,	rdx
+	mov	r8,	variable_partition_specification_home
+	call	cyjon_filesystem_kfs_find_file
+	jc	.filesystem_file_touch_exists
+
+	call	cyjon_filesystem_kfs_file_create
+	xor	rax,	rax	; tworzenie pliku przebiegło pomyślnie
+
+	jmp	.filesystem_file_touch_end
+
+.filesystem_file_touch_exists:
+	mov	rax,	~VARIABLE_FALSE
+
+.filesystem_file_touch_end:
+	pop	r8
 
 	; koniec obsługi procedury
 	jmp	irq64.end

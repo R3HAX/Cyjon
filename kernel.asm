@@ -93,7 +93,7 @@ start:
 .loop:
 	; zwolnij zajętą przestrzeń
 	call	cyjon_page_release
-	add	rdi,	0x1000
+	add	rdi,	VARIABLE_MEMORY_PAGE_SIZE
 	sub	rcx,	VARIABLE_DECREMENT
 	jnz	.loop
 

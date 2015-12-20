@@ -60,8 +60,6 @@ cyjon_filesystem_kfs_find_file:
 	push	rdi
 	push	rax
 
-	xchg	bx,	bx
-
 	mov	rdi,	qword [r8 + KFS.knots_table_address]
 	mul	qword [r8 + KFS.knot_size]
 	mov	rax,	qword [rdi + KNOT.size_in_bytes]
@@ -143,10 +141,11 @@ cyjon_filesystem_kfs_update:
 .knot_table:
 	call	cyjon_filesystem_kfs_block_write
 
-	add	rax,	VARIABLE_INCREMENT
-	add	rsi,	qword [r8 + KFS.block_size]
-	sub	rcx,	VARIABLE_DECREMENT
-	jnz	.knot_table
+	; lol BIG BOOM!
+;	add	rax,	VARIABLE_INCREMENT
+;	add	rsi,	qword [r8 + KFS.block_size]
+;	sub	rcx,	VARIABLE_DECREMENT
+;	jnz	.knot_table
 
 .end:
 	pop	rsi

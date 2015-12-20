@@ -21,7 +21,7 @@
 ;	rdi - wskaźnik do bufora przechowującego pobrane znaki
 ; OUT:
 ;	rcx - rozmiar pierwszego znalezionego "słowa"
-;	rdi - wskaźnik bezwzględnym w ciągu do znalezionego słowa
+;	rdi - wskaźnik bezwzględny w ciągu do znalezionego słowa
 ;
 ; pozostałe rejestry zachowane
 library_find_first_word:
