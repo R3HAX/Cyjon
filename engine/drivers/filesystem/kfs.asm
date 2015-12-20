@@ -49,19 +49,73 @@ variable_semaphore_lock_knot_find_free			db	VARIABLE_EMPTY
 
 variable_partition_specification_home	times	8	dq	VARIABLE_EMPTY
 
+; rax - numer supła katalogu w który szukać pliku
+; rcx - ilość znaków na nazwę pliku
+; rsi - wskaźnik do nazwy pliku
+; r8 - specyfikacja systemu plików
+; zwraca: flagę CF jeśli znaleziono plik
 cyjon_filesystem_kfs_find_file:
-	push	rax
+	; zachowaj oryginalne rejestry
 	push	rdx
 	push	rdi
+	push	rax
+
+	xchg	bx,	bx
 
 	mov	rdi,	qword [r8 + KFS.knots_table_address]
 	mul	qword [r8 + KFS.knot_size]
 	mov	rax,	qword [rdi + KNOT.size_in_bytes]
 
+	div	qword [r8 + KFS.block_size]
+	cmp	rdx,	VARIABLE_EMPTY
+	je	.size_ok
+
+	add	rax,	VARIABLE_INCREMENT
+
+.size_ok:
+	call	cyjon_page_find_free_memory
+
+	mov	rax,	qword [rsp]
+	call	cyjon_filesystem_kfs_file_read
+
+.loop:
+	cmp	byte [rdi + ENTRY.chars],	VARIABLE_EMPTY
+	je	.not_found
+
+	cmp	byte [rdi + ENTRY.chars],	cl
+	je	.check_name
+
+.continue:
+	movzx	eax,	word [rdi + ENTRY.record_size]
+	add	rdi,	rax
+	jmp	.loop	
+
+.check_name:
+	push	rdi
+
+	add	rdi,	ENTRY.name
+
+	call	library_compare_string
+	jc	.found
+
+	pop	rdi
+	jmp	.continue
+
+.not_found:
+	clc
+
+	jmp	.end
+
+.found:
+	pop	rdi
+
+.end:
+	; przywróć oryginalne rejestry
+	pop	rax
 	pop	rdi
 	pop	rdx
-	pop	rax
 
+	; powrót z procedury
 	ret
 
 cyjon_filesystem_kfs_update:
