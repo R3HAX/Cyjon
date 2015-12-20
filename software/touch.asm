@@ -26,10 +26,10 @@
 start:
 	mov	rdi,	end
 	and	di,	0xF000
-	add	rdi,	0x1000
+	add	rdi,	VARIABLE_MEMORY_PAGE_SIZE
 
-	mov	ax,	0x0005
-	int	0x40
+	mov	ax,	VARIABLE_KERNEL_SERVICE_PROCESS_ARGS
+	int	VARIABLE_KERNEL_SERVICE
 
 	cmp	rcx,	VARIABLE_EMPTY
 	je	.no_args
@@ -42,16 +42,16 @@ start:
 	jnc	.no_args
 
 	; nie mam jeszcze przekazywania z powłoki informacji o aktualnie przeglądanym katalogu
-	mov	ax,	0x0402	; touch file
-	mov	rbx,	0x8000	; plik
+	mov	ax,	VARIABLE_KERNEL_SERVICE_FILESYSTEM_TOUCH
+	mov	rbx,	VARIABLE_FILESYSTEM_TYPE_FILE	; plik
 	mov	rdx,	0	; w katalogu /
 	mov	rsi,	rdi
-	int	0x40	; wykonaj
+	int	VARIABLE_KERNEL_SERVICE	; wykonaj
 
 .no_args:
 	; program kończy działanie
 	xor	ax,	ax
-	int	0x40	; wykonaj
+	int	VARIABLE_KERNEL_SERVICE	; wykonaj
 
 %include	"library/find_first_word.asm"
 
