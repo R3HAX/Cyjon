@@ -49,6 +49,21 @@ variable_semaphore_lock_knot_find_free			db	VARIABLE_EMPTY
 
 variable_partition_specification_home	times	8	dq	VARIABLE_EMPTY
 
+cyjon_filesystem_kfs_find_file:
+	push	rax
+	push	rdx
+	push	rdi
+
+	mov	rdi,	qword [r8 + KFS.knots_table_address]
+	mul	qword [r8 + KFS.knot_size]
+	mov	rax,	qword [rdi + KNOT.size_in_bytes]
+
+	pop	rdi
+	pop	rdx
+	pop	rax
+
+	ret
+
 cyjon_filesystem_kfs_update:
 	push	rax
 	push	rcx
@@ -139,8 +154,6 @@ cyjon_filesystem_kfs_file_update:
 .direct:
 	cmp	rdx,	qword [r8 + KFS.block_size]
 	jae	.block_ok
-
-	xchg	bx,	bx
 
 	; to jest ostatni blok, na dodatek nie pełny
 	push	rdi

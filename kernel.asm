@@ -80,6 +80,10 @@ start:
 	mov	rbx,	0x8000	; plik
 	mov	rcx,	qword [file_readme]	; ilość znaków w nazwie pliku
 	mov	rsi,	file_readme_pointer
+
+	call	cyjon_filesystem_kfs_find_file
+	jc	.exists
+
 	call	cyjon_filesystem_kfs_file_create
 
 	; załaduj do pliku dane
@@ -105,6 +109,7 @@ start:
 	mov	rsi,	text_readme
 	call	cyjon_filesystem_kfs_file_update
 
+.exists:
 	; załaduj do wirtualnego systemu plików, dołączone oprogramowanie
 	call	save_included_files
 
@@ -159,7 +164,6 @@ start:
 
 %include	"engine/drivers/pci.asm"
 %include	"engine/drivers/ide.asm"
-%include	"engine/drivers/ide-new.asm"
 
 %include	"engine/drivers/filesystem/kfs.asm"
 
@@ -307,6 +311,12 @@ files_table:
 	dq	file_ls_end
 	db	'ls'
 
+	dq	4
+	dq	file_args_end - file_args
+	dq	file_args
+	dq	file_args_end
+	db	'args'
+
 	; koniec tablicy plików
 	dq	VARIABLE_EMPTY
 
@@ -336,6 +346,9 @@ file_date_end:
 
 file_ls:		incbin	'ls.bin'
 file_ls_end:
+
+file_args:		incbin	'args.bin'
+file_args_end:
 
 text_virtial_file_system	db	" Virtual file system initialized.", VARIABLE_ASCII_CODE_ENTER, VARIABLE_ASCII_CODE_NEWLINE, VARIABLE_ASCII_CODE_TERMINATOR
 

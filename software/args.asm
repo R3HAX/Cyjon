@@ -28,12 +28,15 @@ start:
 	mov	rdi,	end
 	call	library_align_address_up_to_page
 
+	; pobierz argumenty
 	mov	ax,	0x0005
 	int	0x40
 
+	; sprawdź czy istniały jakiekowiek
 	cmp	rcx,	VARIABLE_EMPTY
 	je	.end
 
+	; wyświetl wszystkie na ekranie włącznie z nazwą wywołanego polecenia
 	mov	ax,	0x0101
 	mov	ebx,	VARIABLE_COLOR_DEFAULT
 	mov	edx,	VARIABLE_COLOR_BACKGROUND_DEFAULT
@@ -44,6 +47,7 @@ start:
 	int	0x40
 
 .end:
+	; koniec procesu
 	xor	ax,	ax
 	int	0x40
 

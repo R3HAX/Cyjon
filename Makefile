@@ -1,4 +1,4 @@
-# test script
+# it's alive
 
 ASM=nasm -f bin
 SOFTWARE=software
@@ -15,6 +15,7 @@ all:
 	$(ASM) $(SOFTWARE)/ps.asm -o ps.bin
 	$(ASM) $(SOFTWARE)/date.asm -o date.bin
 	$(ASM) $(SOFTWARE)/ls.asm -o ls.bin
+	$(ASM) $(SOFTWARE)/args.asm -o args.bin
 
 	$(ASM) kernel.asm -o kernel.bin
 
@@ -23,4 +24,4 @@ all:
 	$(ASM) $(BOOTLOADER)/stage1.asm -o $(BUILD)/disk.raw
 
 clean:
-	rm -f stage2.bin init.bin shell.bin help.bin login.bin uptime.bin moko.bin kernel.bin ps.bin date.bin ls.bin
+	rm -f init.bin login.bin shell.bin help.bin uptime.bin moko.bin ps.bin date.bin ls.bin stage2.bin args.bin

@@ -128,7 +128,7 @@ start:
 
 .catalog:
 	; załaduj kolor dla katalogu
-	mov	ebx,	VARIABLE_COLOR_BLUE
+	mov	ebx,	VARIABLE_COLOR_LIGHT_BLUE
 
 .print:
 	push	rdx

@@ -18,3 +18,5 @@ hexedit
 nasm.exe
 *.html
 *.php
+tea.asm
+build/disk.vhd

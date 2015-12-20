@@ -11,110 +11,223 @@
 ; Use:
 ; nasm - http://www.nasm.us/
 
-STATIC_IDE_PRIMARY	equ	0x01F0
-STATIC_IDE_SECONDARY	equ	0x03F0
-
-STATIC_IDE_MASTER	equ	0x40
-STATIC_IDE_SLAVE	equ	0x50
-
-STATIC_IDE_READ		equ	0x24
-STATIC_IDE_WRITE	equ	0x34
-
-struc	IDE_PORT
-	.DATA		resb	1
-	.FEATURES	resb	1
-	.COUNTER	resb	1
-	.LBA_LOW	resb	1
-	.LBA_MIDDLE	resb	1
-	.LBA_HIGH	resb	1
-	.DRIVE		resb	1
-	.COMMAND	resb	1
-endstruc
-
-ATA_REG_CONTROL	equ	0x0C
-
 ; 64 Bitowy kod programu
 [BITS 64]
 
-cyjon_ide_sector_read:
-	; zachowaj modyfikowane rejestry
+VARIABLE_IDE_PRIMARY			equ	0x01F0
+VARIABLE_IDE_PRIMARY_REG_DATA		equ	0x01F0
+VARIABLE_IDE_PRIMARY_REG_FEATURES	equ	0x01F1
+VARIABLE_IDE_PRIMARY_REG_COUNTER	equ	0x01F2
+VARIABLE_IDE_PRIMARY_REG_LBA_LOW	equ	0x01F3
+VARIABLE_IDE_PRIMARY_REG_LBA_MIDDLE	equ	0x01F4
+VARIABLE_IDE_PRIMARY_REG_LBA_HIGH	equ	0x01F5
+VARIABLE_IDE_PRIMARY_REG_DRIVE		equ	0x01F6
+VARIABLE_IDE_PRIMARY_REG_STATUS		equ	0x01F7
+VARIABLE_IDE_PRIMARY_REG_COMMAND	equ	0x01F7
+VARIABLE_IDE_PRIMARY_REG_ALTERNATE	equ	0x03F6
+VARIABLE_IDE_PRIMARY_REG_CONTROL	equ	0x03F6
+
+VARIABLE_IDE_PRIMARY_MASTER		equ	0xA0
+VARIABLE_IDE_PRIMARY_SLAVE		equ	0xB0
+
+VARIABLE_IDE_CMD_READ_PIO_EXT		equ	0x24
+VARIABLE_IDE_CMD_WRITE_PIO_EXT		equ	0x34
+VARIABLE_IDE_CMD_CACHE_FLUSH_EXT	equ	0xEA
+VARIABLE_IDE_CMD_IDENTIFY		equ	0xEC
+
+VARIABLE_IDE_SR_ERR			equ	0	; 00000001b	0x01
+VARIABLE_IDE_SR_DRQ			equ	3	; 00001000b	0x08
+VARIABLE_IDE_SR_DF			equ	5	; 00100000b	0x20
+VARIABLE_IDE_SR_BSY			equ	7	; 10000000b	0x80
+
+VARIABLE_IDE_IDENTIFY_SERIAL		equ	20
+VARIABLE_IDE_IDENTIFY_MODEL		equ	54
+VARIABLE_IDE_IDENTIFY_SIZE		equ	100
+
+variable_ide_buffor	times	2048	db	VARIABLE_EMPTY
+
+text_ide_disk_found			db	" Disk ATA found ", VARIABLE_ASCII_CODE_TERMINATOR
+text_ide_disk_size			db	VARIABLE_ASCII_CODE_ENTER, VARIABLE_ASCII_CODE_NEWLINE, "    Size: ", VARIABLE_ASCII_CODE_TERMINATOR
+text_ide_disk_serial			db	", serial: ", VARIABLE_ASCII_CODE_TERMINATOR
+
+variable_disk_name	times	41	db	0x00
+variable_disk_size_in_sectors		dq	VARIABLE_EMPTY
+
+ide_initialize:
+	; wyłącz przerwania dla kontrolera IDE PRIMARY
+	mov	al,	2	; wartość
+	mov	dx,	VARIABLE_IDE_PRIMARY_REG_CONTROL
+	out	dx,	al
+
+	; wybierz dysk podpięty pod IDE PRIMARY
+	mov	al,	VARIABLE_IDE_PRIMARY_MASTER
+	mov	dx,	VARIABLE_IDE_PRIMARY_REG_DRIVE
+	out	dx,	al
+
+	call	ide_wait
+
+	; wyślij polecenie identyfikacji podpiętego urządzenia
+	mov	al,	VARIABLE_IDE_CMD_IDENTIFY
+	mov	dx,	VARIABLE_IDE_PRIMARY_REG_COMMAND
+	out	dx,	al
+
+	call	ide_wait
+
+	; sprawdź odpowiedź z podpiętego urządzenia
+	mov	rdx,	VARIABLE_IDE_PRIMARY_REG_STATUS
+	in	al,	dx
+	cmp	al,	VARIABLE_EMPTY
+	je	.error
+
+.loop:
+	; pobierz status urządzenia
+	in	al,	dx
+
+	bt	ax,	VARIABLE_IDE_SR_BSY
+	jc	.loop	; urządzenie jest zajęte przetwarzaniem polecenia
+	bt	ax,	VARIABLE_IDE_SR_DRQ
+	jnc	.loop	; urządzenia nie jest gotowe do przesłania danych
+
+	; pobierz odpowiedź z urządzenia
+	mov	rcx,	128
+	mov	rdx,	VARIABLE_IDE_PRIMARY_REG_DATA
+	mov	rdi,	variable_ide_buffor
+	rep	insw
+
+	; wyświetl informacje podłączonym nośniku
+	mov	rbx,	VARIABLE_COLOR_GREEN
+	mov	rcx,	-1
+	mov	rdx,	VARIABLE_COLOR_BACKGROUND_DEFAULT
+	mov	rsi,	text_caution
+	call	cyjon_screen_print_string
+
+	mov	rbx,	VARIABLE_COLOR_DEFAULT
+	mov	rsi,	text_ide_disk_found
+	call	cyjon_screen_print_string
+
+	mov	rcx,	40
+	mov	rsi,	variable_ide_buffor
+	add	rsi,	VARIABLE_IDE_IDENTIFY_MODEL
+	mov	rdi,	variable_disk_name
+
+.rename:
+	lodsw
+	rol	ax,	8
+	stosw
+
+	sub	rcx,	VARIABLE_DECREMENT
+	jnz	.rename
+
+	mov	rbx,	VARIABLE_COLOR_WHITE
+	mov	rcx,	40
+	mov	rsi,	variable_disk_name
+	call	cyjon_screen_print_string
+
+	mov	rbx,	VARIABLE_COLOR_DEFAULT
+	mov	rsi,	text_ide_disk_size
+	call	cyjon_screen_print_string
+
+	mov	rdi,	variable_ide_buffor
+	mov	eax,	dword [rdi + VARIABLE_IDE_IDENTIFY_SIZE]
+	mov	qword [variable_disk_size_in_sectors],	rax
+
+	; zamień rozmiar BCD (bajty) na binarny (MiB)
+	shr	rax,	12
+	shr	rax,	12
+
+	mov	rbx,	VARIABLE_COLOR_WHITE
+	mov	rcx,	10	; podstawa
+	call	cyjon_screen_print_number
+
+	mov	rbx,	VARIABLE_COLOR_DEFAULT
+	mov	rsi,	text_mib
+	call	cyjon_screen_print_string
+
+	mov	rsi,	text_paragraph
+	call	cyjon_screen_print_string
+
+	; powrót z procedury
+	ret
+
+.error:
+	; 0 - nośnika nie znaleziono
+	; 1 - to nie jest urządzenie ATA, prawdopodobnie PATA
+	jmp	$
+
+.end:
+	; powrót z procedury
+	ret
+
+; 400ns delay
+ide_wait:
+	; zachowaj oryginalne rejestry
 	push	rax
-	push	rbx
-	push	rcx
 	push	rdx
-	push	rdi
 
-	call	cyjon_ide_lba
-
-	; dysk pierwszy czy drugi?
-	mov	dx,	STATIC_IDE_PRIMARY + IDE_PORT.DRIVE
-	mov	al,	STATIC_IDE_MASTER
-	out	dx,	al
-
-	; wyślij polecenie odczytu sektora
-	mov	dx,	STATIC_IDE_PRIMARY + IDE_PORT.COMMAND
-	mov	al,	STATIC_IDE_READ
-	out	dx,	al
-
-	; dx = 0x1F7
-	call	cyjon_ide_check_ready	; sprawdź gotowość nośnika
-
-	; odczytaj dane z portu bufora dysku
-	mov	dx,	STATIC_IDE_PRIMARY + IDE_PORT.DATA	; port wejścia/wyjścia kontrolera IDE0
-	mov	rcx,	256	; 256 słów, 1 sektor, 512 Bajtów
-	rep	insw	; zapisz ax w word [es:rdi], zwiększ rdi o 2, jeśli rcx > 0 powtórz raz jeszcze
-
-	mov	dx,	STATIC_IDE_PRIMARY + IDE_PORT.COMMAND
-	in	al,	dx
-	in	al,	dx
-	in	al,	dx
+	mov	rdx,	VARIABLE_IDE_PRIMARY_REG_ALTERNATE
 	in	al,	dx
 
 	; przywróć oryginalne rejestry
-	pop	rdi
 	pop	rdx
-	pop	rcx
-	pop	rbx
 	pop	rax
 
 	; powrót z procedury
 	ret
 
-cyjon_ide_sector_write:
-	; zachowaj modyfikowane rejestry
+; rax - lba
+; rcx - ilośc sektorów
+; rsi - gdzie są dane
+ide_write_sectors:
+	; zachowaj oryginalne rejestry
 	push	rax
 	push	rbx
 	push	rcx
 	push	rdx
 	push	rsi
+	push	rax
 
-	xchg	bx,	bx
+	mov	dx,	VARIABLE_IDE_PRIMARY_REG_STATUS
 
-	call	cyjon_ide_lba
+.wait:
+	; pobierz status urządzenia
+	in	al,	dx
 
-	; dysk pierwszy czy drugi?
-	mov	dx,	STATIC_IDE_PRIMARY + IDE_PORT.DRIVE
-	mov	al,	STATIC_IDE_MASTER
+	bt	ax,	VARIABLE_IDE_SR_BSY
+	jc	.wait	; urządzenie jest zajęte przetwarzaniem polecenia
+
+	; tryb LBA
+	mov	ax,	0xE0
+	mov	dx,	VARIABLE_IDE_PRIMARY_REG_DRIVE
 	out	dx,	al
 
-	; wyślij polecenie odczytu sektora
-	mov	dx,	STATIC_IDE_PRIMARY + IDE_PORT.COMMAND
-	mov	al,	STATIC_IDE_WRITE
+	pop	rax
+
+	call	ide_lba
+
+	mov	al,	VARIABLE_IDE_CMD_WRITE_PIO_EXT
+	mov	dx,	VARIABLE_IDE_PRIMARY_REG_COMMAND
 	out	dx,	al
 
-	; dx = 0x1F7
-	call	cyjon_ide_check_ready	; sprawdź gotowość nośnika
+.write:
+	call	ide_pool
 
-	; odczytaj dane z portu bufora dysku
-	mov	dx,	STATIC_IDE_PRIMARY + IDE_PORT.DATA	; port wejścia/wyjścia kontrolera IDE0
-	mov	rcx,	256	; 256 słów, 1 sektor, 512 Bajtów
+	mov	dx,	VARIABLE_IDE_PRIMARY_REG_DATA
+
+	push	rcx
+
+	mov	rcx,	256
 	rep	outsw
 
-	mov	dx,	STATIC_IDE_PRIMARY + IDE_PORT.COMMAND
-	in	al,	dx
-	in	al,	dx
-	in	al,	dx
-	in	al,	dx
+	pop	rcx
+
+	sub	rcx,	VARIABLE_DECREMENT
+	jnz	.write
+
+	mov	ax,	VARIABLE_IDE_CMD_CACHE_FLUSH_EXT
+	mov	dx,	VARIABLE_IDE_PRIMARY_REG_COMMAND
+	out	dx,	al
+
+	call	ide_pool
 
 	; przywróć oryginalne rejestry
 	pop	rsi
@@ -126,73 +239,181 @@ cyjon_ide_sector_write:
 	; powrót z procedury
 	ret
 
-cyjon_ide_lba:
+; rax - lba
+; rcx - ilość sektorów
+; rdi - gdzie zapisać
+ide_read_sectors:
+	; zachowaj oryginalne rejestry
+	push	rax
+	push	rbx
+	push	rcx
+	push	rdx
+	push	rdi
+	push	rax
+
+	mov	dx,	VARIABLE_IDE_PRIMARY_REG_STATUS
+
+.wait:
+	; pobierz status urządzenia
+	in	al,	dx
+
+	bt	ax,	VARIABLE_IDE_SR_BSY
+	jc	.wait	; urządzenie jest zajęte przetwarzaniem polecenia
+
+	; tryb LBA
+	mov	ax,	0xE0
+	mov	dx,	VARIABLE_IDE_PRIMARY_REG_DRIVE
+	out	dx,	al
+
+	pop	rax
+
+	call	ide_lba
+
+	mov	al,	VARIABLE_IDE_CMD_READ_PIO_EXT
+	mov	dx,	VARIABLE_IDE_PRIMARY_REG_COMMAND
+	out	dx,	al
+
+.read:
+	call	ide_pool
+	cmp	al,	VARIABLE_EMPTY
+	je	.ok
+
+	; wystąpił błąd urządzenia
+	jmp	$
+
+.ok:
+	mov	dx,	VARIABLE_IDE_PRIMARY_REG_DATA
+
+	push	rcx
+
+	mov	rcx,	256
+	rep	insw
+
+	pop	rcx
+
+	sub	rcx,	VARIABLE_DECREMENT
+	jnz	.read
+
+	; przywróć oryginalne rejestry
+	pop	rdi
+	pop	rdx
+	pop	rcx
+	pop	rbx
+	pop	rax
+
+	; powrót z procedury
+	ret
+
+ide_pool:
+	push	rcx
+	push	rdx
+
+	; 400ns
+	mov	cl,	4
+
+	mov	dx,	VARIABLE_IDE_PRIMARY_REG_ALTERNATE
+
+.wait:
+	in	al,	dx
+
+	sub	rcx,	VARIABLE_DECREMENT
+	jnz	.wait	; czekaj kolejne 100ns
+
+.bsy_bit:
+	; pobierz status urządzenia
+	in	al,	dx
+
+	bt	ax,	VARIABLE_IDE_SR_BSY
+	jc	.bsy_bit	; urządzenie jest zajęte przetwarzaniem polecenia
+
+	in	al,	dx
+
+	bt	ax,	VARIABLE_IDE_SR_ERR
+	jnc	.no_err
+
+	; błąd
+	mov	ax,	2
+
+	jmp	.end
+
+.no_err:
+	bt	ax,	VARIABLE_IDE_SR_DF
+	jnc	.no_df
+
+	; błąd urządzenia
+	mov	al,	1
+
+	jmp	.end
+
+.no_df:
+	bt	ax,	VARIABLE_IDE_SR_DRQ
+	jc	.ok
+
+	; błąd - brak danych do przesłania
+	mov	al,	3
+
+	jmp	.end
+
+.ok:
+	xor	al,	al
+
+.end:
+	; przywróć oryginalne rejestry
+	pop	rdx
+	pop	rcx
+
+	; powrót z procedury
+	ret
+
+ide_lba:
 	; zachowaj
 	mov	rbx,	rax
 
-	; pierwszy pusty Bajt
-	mov	dx,	STATIC_IDE_PRIMARY + IDE_PORT.FEATURES
-	mov	al,	0x00
-	out	dx,	al
-
 	; starsza część ilości odczytywanych sektorów
-	mov	dx,	STATIC_IDE_PRIMARY + IDE_PORT.COUNTER
+	mov	dx,	VARIABLE_IDE_PRIMARY_REG_COUNTER
 	mov	al,	0x00
-	out	dx,	al
-
-	; drugi pusty Bajt
-	mov	dx,	STATIC_IDE_PRIMARY + IDE_PORT.FEATURES
-	mov	al,	0x00
-	out	dx,	al
-
-	; młodsza część ilości odczytywanych sektorów
-	mov	dx,	STATIC_IDE_PRIMARY + IDE_PORT.COUNTER
-	mov	al,	0x01
 	out	dx,	al
 
 	; wyślij 48 bitowy numer sektora
 
 	; al = 31..24
-	mov	dx,	STATIC_IDE_PRIMARY + IDE_PORT.LBA_LOW
+	mov	dx,	VARIABLE_IDE_PRIMARY_REG_LBA_LOW
 	mov	rax,	rbx
 	shr	rax,	24
 	out	dx,	al
 
 	; al = 39..32
-	mov	dx,	STATIC_IDE_PRIMARY + IDE_PORT.LBA_MIDDLE
+	mov	dx,	VARIABLE_IDE_PRIMARY_REG_LBA_MIDDLE
 	mov	rax,	rbx
 	shr	rax,	32
 	out	dx,	al
 
 	; al = 47..40
-	mov	dx,	STATIC_IDE_PRIMARY + IDE_PORT.LBA_HIGH
+	mov	dx,	VARIABLE_IDE_PRIMARY_REG_LBA_HIGH
 	mov	rax,	rbx
 	shr	rax,	40
 	out	dx,	al
 
+	; młodsza część ilości odczytywanych sektorów
+	mov	dx,	VARIABLE_IDE_PRIMARY_REG_COUNTER
+	mov	al,	cl
+	out	dx,	al
+
 	; al = 7..0
-	mov	dx,	STATIC_IDE_PRIMARY + IDE_PORT.LBA_LOW
+	mov	dx,	VARIABLE_IDE_PRIMARY_REG_LBA_LOW
 	mov	rax,	rbx
 	out	dx,	al
 
 	; al = 15..8
-	mov	dx,	STATIC_IDE_PRIMARY + IDE_PORT.LBA_MIDDLE
+	mov	dx,	VARIABLE_IDE_PRIMARY_REG_LBA_MIDDLE
 	mov	al,	bh
 	out	dx,	al
 
 	; al = 23..16
-	mov	dx,	STATIC_IDE_PRIMARY + IDE_PORT.LBA_HIGH
+	mov	dx,	VARIABLE_IDE_PRIMARY_REG_LBA_HIGH
 	mov	rax,	rbx
 	shr	rax,	16
 	out	dx,	al
 
-	ret
-
-cyjon_ide_check_ready:
-	in	al,	dx	; pobierz stan dysku
-	test	al,	8	; czy 8 bit włączony?
-	jz	cyjon_ide_check_ready	; jeśli nie, czekaj
-
 	; powrót z procedury
 	ret
- 
