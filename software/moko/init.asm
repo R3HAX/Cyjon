@@ -89,14 +89,16 @@ initialization:
 	mov	rcx,	-1
 
 	; ustaw kursor w pozycji menu
-	mov	ax,	0x0105
-	mov	ebx,	dword [variable_screen_size + 0x04]
-	dec	rbx	; liczymy od ZERA
+	mov	ax,	VARIABLE_KERNEL_SERVICE_SCREEN_CURSOR_SET
+	mov	ebx,	dword [variable_screen_size + VARIABLE_QWORD_HIGH]
+	sub	rbx,	VARIABLE_DECREMENT
 	shl	rbx,	32
 	int	0x40
 
+	push	rax
+
 	; skrót X ==============================================================
-	mov	ax,	0x0101
+	mov	ax,	VARIABLE_KERNEL_SERVICE_SCREEN_PRINT_STRING
 	mov	rbx,	VARIABLE_COLOR_BACKGROUND_DEFAULT
 	mov	rdx,	VARIABLE_COLOR_DEFAULT
 	mov	rsi,	text_exit_shortcut
@@ -106,9 +108,19 @@ initialization:
 	xchg	rbx,	rdx
 	mov	rsi,	text_exit
 	int	0x40
+
+	; skrót R ==============================================================
+	xchg	rbx,	rdx
+	mov	rsi,	text_open_shortcut
+	int	0x40
+
+	; opis
+	xchg	rbx,	rdx
+	mov	rsi,	text_open
+	int	0x40
 	
 	; inicjalizuj początkową pozycje kursora na ekranie
-	mov	ax,	0x0105
+	pop	rax
 	mov	rbx,	VARIABLE_CURSOR_POSITION_INIT
 	int	0x40
 

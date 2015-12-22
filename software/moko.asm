@@ -161,4 +161,7 @@ text_header_default	db	"New file", VARIABLE_ASCII_CODE_TERMINATOR
 text_exit_shortcut	db	'^x', VARIABLE_ASCII_CODE_TERMINATOR
 text_exit		db	' Exit  ', VARIABLE_ASCII_CODE_TERMINATOR
 
+text_open_shortcut	db	'^r', VARIABLE_ASCII_CODE_TERMINATOR
+text_open		db	' Open  ', VARIABLE_ASCII_CODE_TERMINATOR
+
 stop:
