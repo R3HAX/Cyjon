@@ -11,6 +11,15 @@
 ; Use:
 ; nasm - http://www.nasm.us/
 
+struc	RECORD
+	.record_size	resb	1
+	.reserved	resb	1
+	.count		resw	1
+	.offset		resw	1
+	.segment	resw	1
+	.lba		resq	1
+endstruc
+
 ; 16 Bitowy kod programu
 [BITS 16]
 
@@ -461,8 +470,20 @@ load_kernel:
 	; załaduj fragment kodu jądra systemu do pamięci
 	call	read
 
-	; przesuń segment o 0x8000 Bajtów do przodu
-	add	word [packet + 0x06],	0x0800
+	; przesuń offset o 0x8000 Bajtów do przodu
+	cmp	word [packet + RECORD.offset],	0x8000
+	jne	.offset
+
+	mov	word [packet + RECORD.offset],	0x0000
+	add	word [packet + RECORD.segment],	0x1000
+
+	jmp	.segment
+
+.offset:
+	add	word [packet + RECORD.offset],	0x8000
+
+.segment:
+	add	word [packet + RECORD.lba],	0x40
 
 	; kontynuuj z pozostałymi fragmentami
 	loop	.loop
@@ -478,7 +499,7 @@ modulo:
 	inc	eax
 
 	; zapisz informację do pakietu
-	mov	word [packet + 0x02],	ax
+	mov	word [packet + RECORD.count],	ax
 
 	; ustaw numer urządzenia
 	mov	dx,	bx
@@ -612,6 +633,8 @@ print_number_16bit:
 
 	; powrót z procedury
 	ret
+
+
 
 packet:
 	db	0x10	; rozmiar pakietu (16 bajtów)

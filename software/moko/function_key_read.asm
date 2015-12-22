@@ -269,6 +269,8 @@ key_function_read:
 	sub	rcx,	VARIABLE_DECREMENT
 	jnz	.print
 
+	jmp	.end
+
 file_identificator			dq	VARIABLE_EMPTY
 file_name_chars_count			dq	VARIABLE_EMPTY
 file_name_buffor	times	256	db	VARIABLE_EMPTY
