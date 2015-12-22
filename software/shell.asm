@@ -95,8 +95,10 @@ start:
 	jnc	.noClear
 
 	; wyczyść ekran
-	mov	ax,	0x0100	; procedura czyści ekran
-	int	0x40	; wykonaj
+	mov	ax,	VARIABLE_KERNEL_SERVICE_SCREEN_CLEAN	; procedura czyszcząca ekran
+	xor	rbx,	rbx	; od początku ekranu
+	xor	rcx,	rcx	; cały ekran
+	int	VARIABLE_KERNEL_SERVICE	; wykonaj
 
 	; restart powłoki
 	jmp	start

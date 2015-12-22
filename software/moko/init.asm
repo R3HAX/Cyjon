@@ -45,10 +45,12 @@ initialization:
 	; wyświetl interfejs ---------------------------------------------------
 
 	; wyczyść ekran
-	mov	ax,	0x0100
-	int	0x40	; wykonaj
+	mov	ax,	VARIABLE_KERNEL_SERVICE_SCREEN_CLEAN
+	xor	rbx,	rbx
+	xor	rcx,	rcx
+	int	VARIABLE_KERNEL_SERVICE	; wykonaj
 
-	xor	rcx,	-1
+	mov	rcx,	VARIABLE_FULL
 
 	; ustaw tło nagłówka
 	mov	ax,	0x0102

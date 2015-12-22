@@ -679,15 +679,19 @@ irq64_filesystem:
 	jmp	irq64.end
 
 .filesystem_file_read:
-	push	rax
 	push	r8
 
-	mov	rax,	rcx
 	mov	r8,	variable_partition_specification_home
+
+	mov	rax,	rbx
+
+	call	cyjon_filesystem_kfs_find_file
+	jnc	.filesystem_file_read_end
+
 	call	cyjon_filesystem_kfs_file_read
 
+.filesystem_file_read_end:
 	pop	r8
-	pop	rax
 
 	; koniec obsługi procedury
 	jmp	irq64.end

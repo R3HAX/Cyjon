@@ -27,23 +27,25 @@
 
 start:
 	; procedura - wyświetl ciąg znaków na ekranie w miejscu kursora
-	mov	rax,	0x0101
-	mov	rcx,	-1	; wyświetl wszystkie znaki z ciągu
+	mov	rax,	VARIABLE_KERNEL_SERVICE_SCREEN_PRINT_STRING
+	mov	rcx,	VARIABLE_FULL	; wyświetl wszystkie znaki z ciągu
 	mov	rdx,	VARIABLE_COLOR_BACKGROUND_DEFAULT
 
 	;kolor znaków
 	mov	rbx,	VARIABLE_COLOR_DEFAULT
 	; wskaźnik do ciągu znaków zakończony terminatorem lub licznikiem
 	mov	rsi,	text_init
-	int	0x40	; wykonaj
+	int	VARIABLE_KERNEL_SERVICE	; wykonaj
 
 	; pierwszą inicjalizacje nie rozpoczynaj od czyszczenia ekranu
 	jmp	.start
 
 .reload:
 	; wyczyść ekran
-	mov	rax,	0x0100
-	int	0x40	; wykonaj
+	mov	ax,	VARIABLE_KERNEL_SERVICE_SCREEN_CLEAN	; procedura czyszcząca ekran
+	xor	rbx,	rbx	; od początku ekranu
+	xor	rcx,	rcx	; cały ekran
+	int	VARIABLE_KERNEL_SERVICE	; wykonaj
 
 .start:
 	; wyświetl zaproszenie

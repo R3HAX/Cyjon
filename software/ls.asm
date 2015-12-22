@@ -86,7 +86,7 @@ start:
 
 	; wczytaj plik
 	mov	rax,	0x0400
-	xor	rcx,	rcx	; katalog główny
+	xor	rbx,	rbx	; katalog główny
 	int	0x40
 
 	; przystępujemy do wyświetlenia zawartości

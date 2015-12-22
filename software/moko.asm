@@ -13,11 +13,12 @@
 
 %include	"config.asm"
 
-%define	VARIABLE_PROGRAM_VERSION		""
+%define	VARIABLE_PROGRAM_VERSION		"0.92"
 
 VARIABLE_CURSOR_POSITION_INIT		equ	0x0000000200000000
 VARIABLE_INTERFACE_HEADER_HEIGHT	equ	2
 VARIABLE_INTERFACE_MENU_HEIGHT		equ	3
+VARIABLE_INTERFACE_INTERACTIVE		equ	VARIABLE_INTERFACE_MENU_HEIGHT - VARIABLE_DECREMENT
 VARIABLE_INTERFACE_HEIGHT		equ	VARIABLE_INTERFACE_HEADER_HEIGHT + VARIABLE_INTERFACE_MENU_HEIGHT
 
 [BITS 64]
@@ -81,6 +82,9 @@ start:
 	cmp	ax,	"x"
 	je	key_function_exit
 
+	cmp	ax,	"r"
+	je	key_function_read
+
 .no_shortcut:
 	; sprawdź czy znak jest możliwy do wyświetlenia ------------------------
 
@@ -119,6 +123,7 @@ start:
 %include	"software/moko/key_ctrl.asm"
 
 %include	"software/moko/function_key_exit.asm"
+%include	"software/moko/function_key_read.asm"
 
 %include	"software/moko/save_into_document.asm"
 %include	"software/moko/update_line_on_screen.asm"
@@ -128,6 +133,8 @@ start:
 %include	"software/moko/find_line_indicator.asm"
 
 %include	"library/align_address_up_to_page.asm"
+%include	"library/find_first_word.asm"
+%include	"library/input.asm"
 
 variable_document_address_start			dq	VARIABLE_EMPTY
 variable_document_address_end			dq	VARIABLE_EMPTY

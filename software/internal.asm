@@ -206,8 +206,12 @@ create_readme:
 	mov	rcx,	qword [file_readme]	; ilość znaków w nazwie pliku
 	mov	rsi,	file_readme_pointer
 
+	push	rax
+
 	call	cyjon_filesystem_kfs_find_file
 	jc	.exists
+
+	pop	rax
 
 	call	cyjon_filesystem_kfs_file_create
 
@@ -234,7 +238,11 @@ create_readme:
 	mov	rsi,	text_readme
 	call	cyjon_filesystem_kfs_file_update
 
+	ret
+
 .exists:
+	pop	rax
+
 	ret
 
 text_readme:

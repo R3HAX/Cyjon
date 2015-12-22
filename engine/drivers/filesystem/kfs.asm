@@ -11,6 +11,8 @@
 ; Use:
 ; nasm - http://www.nasm.us/
 
+; LIMIT ROZMIARU PROGRAMU 2044 KiB ! (tymczasowo)
+
 struc	SUPERBLOCK
 	.s_block_count			resq	1
 	.s_block_size			resq	1
@@ -102,11 +104,6 @@ cyjon_filesystem_kfs_find_file:
 .not_found:
 	clc
 
-	jmp	.end
-
-.found:
-	pop	rdi
-
 .end:
 	; przywróć oryginalne rejestry
 	pop	rax
@@ -114,6 +111,20 @@ cyjon_filesystem_kfs_find_file:
 	pop	rdx
 
 	; powrót z procedury
+	ret
+
+.found:
+	pop	rdi
+
+	; zwróć informacje o numerze supła odnalezionego pliku
+	mov	rax,	qword [rdi + ENTRY.knot_id]
+	add	rsp,	0x08	; nie przywracaj rejestru rax z stosu
+	pop	rdi
+	pop	rdx
+
+	; ustaw flagę CF
+	stc
+
 	ret
 
 cyjon_filesystem_kfs_update:
@@ -487,7 +498,6 @@ cyjon_filesystem_kfs_file_read:
 	push	rax
 	push	rbx
 	push	rcx
-	push	rdx
 	push	rsi
 	push	rdi
 
@@ -528,12 +538,14 @@ cyjon_filesystem_kfs_file_read:
 	jmp	.indirect
 
 .end:
+	; zwróć rozmiar załądowanego plik w Bajtach
+	mov	rax,	qword [rsp + 0x20]
+	mul	qword [r8 + KFS.knot_size]
+	mov	rdi,	qword [r8 + KFS.knots_table_address]
+	mov	rdx,	qword [rdi + rax + KNOT.size_in_bytes]
 	pop	rdi
 
-	mov	rdx,	qword [rsi + KNOT.size_in_bytes]
-
 	pop	rsi
-	pop	rdx
 	pop	rcx
 	pop	rbx
 	pop	rax

@@ -177,6 +177,8 @@ screen_initialization:
 	call	cyjon_screen_cursor_enable_disable
 
 	; wyczyść ekran
+	xor	rbx,	rbx	; czyść od początku ekranu
+	xor	rcx,	rcx	; wyczyść cały ekran
 	call	cyjon_screen_clear
 
 	; wyświetl podstawową informację o trybie graficznym
@@ -281,18 +283,46 @@ screen_initialization_reload:
 cyjon_screen_clear:
 	; zachowaj oryginalne rejestry
 	push	rax
+	push	rbx
 	push	rcx
+	push	rdx
 	push	rdi
 
 	; wyłącz kursor programowy lub zwiększ poziom blokady
 	call	cyjon_screen_cursor_lock
 
-	; wyczyść przestrzeń pamięci ekranu karty graficznej
-	mov	eax,	VARIABLE_COLOR_BACKGROUND_DEFAULT
-	; rozmiar przestrzeni pamięci w pikselach
-	mov	rcx,	qword [variable_video_mode_pixels_count]
 	; adres początku przestrzeni pamięci ekranu
 	mov	rdi,	qword [variable_video_mode_memory_address]
+
+	cmp	rbx,	VARIABLE_EMPTY
+	je	.from_start
+
+	; oblicz numer linii, od której rozpocząć czyszczenie ekranu
+	mov	rax,	rbx
+	mul	qword [variable_video_mode_char_line_in_bytes]
+	add	rdi,	rax
+
+.from_start:
+	cmp	rcx,	VARIABLE_EMPTY
+	je	.clear_everything
+
+	; oblicz rozmiar przestrzeni ekranu do wyczyszczenia
+	mov	rax,	qword [variable_video_mode_pixels_per_line]
+	mul	rcx
+	mov	rcx,	qword [variable_font_y_in_pixels]
+	mul	rcx
+
+	; ustaw licznik
+	mov	rcx,	rax
+
+	jmp	.prepared
+
+.clear_everything:
+	mov	rcx,	qword [variable_video_mode_pixels_count]
+
+.prepared:
+	; wyczyść przestrzeń pamięci ekranu domyślnym kolorem tła
+	mov	eax,	VARIABLE_COLOR_BACKGROUND_DEFAULT
 
 	; koryguj kolor
 	cmp	byte [variable_video_mode_bpp],	0x01
@@ -320,8 +350,9 @@ cyjon_screen_clear:
 
 .bpp32:
 	; zapisz piksel o danym kolorze
-	stosd
-	sub	rcx,	1
+	mov	dword [rdi],	eax
+	add	rdi,	VARIABLE_INCREMENT * 4
+	sub	rcx,	VARIABLE_DECREMENT
 	; kontynuuj
 	jnz	.bpp32
 
@@ -330,20 +361,23 @@ cyjon_screen_clear:
 
 .bpp24:
 	; zapisz piksel o danym kolorze
-	stosw
+	mov	word [rdi],	ax
+	add	rdi,	VARIABLE_INCREMENT * 2
 	ror	eax,	16
-	stosb
+	mov	byte [rdi],	al
+	add	rdi,	VARIABLE_INCREMENT
 	rol	eax,	16
 
 	; kontynuuj
-	sub	rcx,	1
+	sub	rcx,	VARIABLE_DECREMENT
 	jnz	.bpp24
 
 	jmp	.ready
 
 .bpp8:
-	stosb
-	sub	rcx,	1
+	mov	byte [rdi],	al
+	add	rdi,	VARIABLE_INCREMENT
+	sub	rcx,	VARIABLE_DECREMENT
 	jnz	.bpp8
 
 .ready:
@@ -361,7 +395,9 @@ cyjon_screen_clear:
 
 	; przywróc oryginalne rejestry
 	pop	rdi
+	pop	rdx
 	pop	rcx
+	pop	rbx
 	pop	rax
 
 	; powrót z procedury
