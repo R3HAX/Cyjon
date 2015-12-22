@@ -246,7 +246,7 @@ create_readme:
 	ret
 
 text_readme:
-%include	"files/readme.asm"
+%include	"doc/readme.asm"
 text_readme_end:
 
 ; etykiete końca kodu jądra wyrównaj do pełnego adresu strony
