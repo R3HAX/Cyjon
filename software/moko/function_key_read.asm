@@ -97,8 +97,6 @@ key_function_read:
 	; przesuń
 	rep	movsb
 
-	xchg	bx,	bx
-
 	; załaduj plik do przestrzeni dokumentu
 	mov	rax,	VARIABLE_KERNEL_SERVICE_FILESYSTEM_READ_FILE
 	mov	rbx,	0	; katalog /   [nie mamy jeszcze obsługi przekazywania argumentów specjalnych (np. aktualny katalog, rozmiar wewnętrzny terminala, zmienne globalne)]
