@@ -18,6 +18,7 @@ db	" Grupe wybieramy za pomoca rejestru AH. Rejestr AL jest numerem uslugi z dan
 db	" grupy. Ponizsza tabelka przedstawia aktualnie wszystkie dostepne uslugi dla", VARIABLE_ASCII_CODE_NEWLINE
 db	" programow.", VARIABLE_ASCII_CODE_NEWLINE
 db	"", VARIABLE_ASCII_CODE_NEWLINE
+db	" Tabela nr 1", VARIABLE_ASCII_CODE_NEWLINE
 db	" ------------------------------------------------------------------------------", VARIABLE_ASCII_CODE_NEWLINE
 db	" | GRUPA | USLUGA | OPIS                                                      |", VARIABLE_ASCII_CODE_NEWLINE
 db	" ------------------------------------------------------------------------------", VARIABLE_ASCII_CODE_NEWLINE
@@ -45,8 +46,74 @@ db	" |       |        |    rcx - numer PID procesu do sprawdzenia.              
 db	" |       |        |                                                           |", VARIABLE_ASCII_CODE_NEWLINE
 db	" |       |        | Wyjscie:                                                  |", VARIABLE_ASCII_CODE_NEWLINE
 db	" |       |        |    rcx - jesli ZERO, proces nie istnieje, w innym         |", VARIABLE_ASCII_CODE_NEWLINE
-db	" |       |        |          rejestr nie zmiania wartosci.                    |", VARIABLE_ASCII_CODE_NEWLINE
+db	" |       |        |          przypadku pozostaje bez zmian.                   |", VARIABLE_ASCII_CODE_NEWLINE
 db	" |       |        |                                                           |", VARIABLE_ASCII_CODE_NEWLINE
-db	" |       |        |  Pozostale rejestry zachowane.                           ", 0xFF, "|", VARIABLE_ASCII_CODE_NEWLINE
+db	" |       |        | Pozostale rejestry zachowane.                             |", VARIABLE_ASCII_CODE_NEWLINE
+db	" ------------------------------------------------------------------------------", VARIABLE_ASCII_CODE_NEWLINE
+db	" |  0x00 |   0x03 | Popros o dostep do wiekszej przestrzeni pamieci.          |", VARIABLE_ASCII_CODE_NEWLINE
+db	" |       |        |                                                           |", VARIABLE_ASCII_CODE_NEWLINE
+db	" |       |        | Wejscie:                                                  |", VARIABLE_ASCII_CODE_NEWLINE
+db	" |       |        |    rcx - rozmiar przestrzeni do zaalokowania,             |", VARIABLE_ASCII_CODE_NEWLINE
+db	" |       |        |          wielokrotnosc 4096 Bajtow tj. 1 strony.          |", VARIABLE_ASCII_CODE_NEWLINE
+db	" |       |        |    rdi - adres pod jakim udostepnic przestrzen,           |", VARIABLE_ASCII_CODE_NEWLINE
+db	" |       |        |          pamietaj o wyrownaniu adresu do pelnej strony,   |", VARIABLE_ASCII_CODE_NEWLINE
+db	" |       |        |          and di, 0xF000                                   |", VARIABLE_ASCII_CODE_NEWLINE
+db	" |       |        |                                                           |", VARIABLE_ASCII_CODE_NEWLINE
+db	" |       |        | Wyjscie:                                                  |", VARIABLE_ASCII_CODE_NEWLINE
+db	" |       |        |    rcx - jesli ZERO - brak wolnej pamieci do              |", VARIABLE_ASCII_CODE_NEWLINE
+db	" |       |        |          przydzielenia.                                   |", VARIABLE_ASCII_CODE_NEWLINE
+db	" |       |        |                                                           |", VARIABLE_ASCII_CODE_NEWLINE
+db	" |       |        | Pozostale rejestry zachowane.                             |", VARIABLE_ASCII_CODE_NEWLINE
+db	" ------------------------------------------------------------------------------", VARIABLE_ASCII_CODE_NEWLINE
+db	" |  0x00 |   0x05 | Pobierz argumenty przeslane wraz z programem.             |", VARIABLE_ASCII_CODE_NEWLINE
+db	" |       |        |                                                           |", VARIABLE_ASCII_CODE_NEWLINE
+db	" |       |        | Wejscie:                                                  |", VARIABLE_ASCII_CODE_NEWLINE
+db	" |       |        |    rdi - wskaznik do miejsca zapisu pobranych argumentow. |", VARIABLE_ASCII_CODE_NEWLINE
+db	" |       |        |                                                           |", VARIABLE_ASCII_CODE_NEWLINE
+db	" |       |        | Wyjscie:                                                  |", VARIABLE_ASCII_CODE_NEWLINE
+db	" |       |        |    rcx - rozmiar danych w znakach, jesli ZERO - brak,     |", VARIABLE_ASCII_CODE_NEWLINE
+db	" |       |        |          przeslanych argumentow,                          |", VARIABLE_ASCII_CODE_NEWLINE
+db	" |       |        |    rdi - wskaznik do danych (argumentow).                 |", VARIABLE_ASCII_CODE_NEWLINE
+db	" |       |        |                                                           |", VARIABLE_ASCII_CODE_NEWLINE
+db	" |       |        | Pozostale rejestry zachowane.                             |", VARIABLE_ASCII_CODE_NEWLINE
+db	" ------------------------------------------------------------------------------", VARIABLE_ASCII_CODE_NEWLINE
+db	" |  0x01 |   0x00 | Wyczysc przestrzen ekranu.                                |", VARIABLE_ASCII_CODE_NEWLINE
+db	" |       |        |                                                           |", VARIABLE_ASCII_CODE_NEWLINE
+db	" |       |        | Wejscie:                                                  |", VARIABLE_ASCII_CODE_NEWLINE
+db	" |       |        |    rbx - numer linii od ktorej rozpoczac czyszczenie,     |", VARIABLE_ASCII_CODE_NEWLINE
+db	" |       |        |    rcx - ilosc linii do wyczyszczenia, jesli ZERO -       |", VARIABLE_ASCII_CODE_NEWLINE
+db	" |       |        |          wyczysc wszystkie liniie od linii wybranej.      |", VARIABLE_ASCII_CODE_NEWLINE
+db	" |       |        |                                                           |", VARIABLE_ASCII_CODE_NEWLINE
+db	" |       |        | Wyjscie:                                                  |", VARIABLE_ASCII_CODE_NEWLINE
+db	" |       |        |    brak                                                   |", VARIABLE_ASCII_CODE_NEWLINE
+db	" |       |        |                                                           |", VARIABLE_ASCII_CODE_NEWLINE
+db	" |       |        | Wszystkie rejestry zachowane.                             |", VARIABLE_ASCII_CODE_NEWLINE
+db	" ------------------------------------------------------------------------------", VARIABLE_ASCII_CODE_NEWLINE
+db	" |  0x01 |   0x01 | Wypisz tekst na ekranie od miejsca kursora.               |", VARIABLE_ASCII_CODE_NEWLINE
+db	" |       |        |                                                           |", VARIABLE_ASCII_CODE_NEWLINE
+db	" |       |        | Wejscie:                                                  |", VARIABLE_ASCII_CODE_NEWLINE
+db	" |       |        |    rbx - kolor znakow,                                    |", VARIABLE_ASCII_CODE_NEWLINE
+db	" |       |        |    rcx - ilosc znakow do wyswietlania z ciagu lub do      |", VARIABLE_ASCII_CODE_NEWLINE
+db	" |       |        |          pierwszego TERMINATORA (0x00),                   |", VARIABLE_ASCII_CODE_NEWLINE
+db	" |       |        |    rdx - kolor tla znakow,                                |", VARIABLE_ASCII_CODE_NEWLINE
+db	" |       |        |    rsi - wskaznik ciagu znakow do wyswietlenia.           |", VARIABLE_ASCII_CODE_NEWLINE
+db	" |       |        |                                                           |", VARIABLE_ASCII_CODE_NEWLINE
+db	" |       |        | Wyjscie:                                                  |", VARIABLE_ASCII_CODE_NEWLINE
+db	" |       |        |    brak                                                   |", VARIABLE_ASCII_CODE_NEWLINE
+db	" |       |        |                                                           |", VARIABLE_ASCII_CODE_NEWLINE
+db	" |       |        | Wszystkie rejestry zachowane.                             |", VARIABLE_ASCII_CODE_NEWLINE
+db	" ------------------------------------------------------------------------------", VARIABLE_ASCII_CODE_NEWLINE
+db	" |  0x01 |   0x02 | Wypisz znak na ekranie w miejscu kursora.                 |", VARIABLE_ASCII_CODE_NEWLINE
+db	" |       |        |                                                           |", VARIABLE_ASCII_CODE_NEWLINE
+db	" |       |        | Wejscie:                                                  |", VARIABLE_ASCII_CODE_NEWLINE
+db	" |       |        |    rbx - kolor znaku,                                     |", VARIABLE_ASCII_CODE_NEWLINE
+db	" |       |        |    rcx - ilosc znakow do wyswietlania (powtorzen),        |", VARIABLE_ASCII_CODE_NEWLINE
+db	" |       |        |    rdx - kolor tla znaku,                                 |", VARIABLE_ASCII_CODE_NEWLINE
+db	" |       |        |    r8  - kod ASCII znaku do wyswietlenia.                 |", VARIABLE_ASCII_CODE_NEWLINE
+db	" |       |        |                                                           |", VARIABLE_ASCII_CODE_NEWLINE
+db	" |       |        | Wyjscie:                                                  |", VARIABLE_ASCII_CODE_NEWLINE
+db	" |       |        |    brak                                                   |", VARIABLE_ASCII_CODE_NEWLINE
+db	" |       |        |                                                           |", VARIABLE_ASCII_CODE_NEWLINE
+db	" |       |        | Wszystkie rejestry zachowane.                             |", VARIABLE_ASCII_CODE_NEWLINE
 db	" ------------------------------------------------------------------------------", VARIABLE_ASCII_CODE_NEWLINE
 

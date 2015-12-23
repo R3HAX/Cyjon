@@ -675,6 +675,9 @@ irq64_filesystem:
 	cmp	al,	0x02
 	je	.filesystem_file_touch
 
+	cmp	al,	0x03
+	je	.filesystem_root_directory
+
 	; brak obsługi
 	jmp	irq64.end
 
@@ -687,6 +690,47 @@ irq64_filesystem:
 
 	call	cyjon_filesystem_kfs_find_file
 	jnc	.filesystem_file_read_end
+
+	; przygotuj miejsce w przestrzeni pamięci procesu na plik
+
+	push	rax
+	push	rbx
+	push	rcx
+	push	rdx
+	push	rsi
+	push	r8
+	push	r11
+
+	mul	qword [r8 + KFS.knot_size]
+	mov	rsi,	qword [r8 + KFS.knots_table_address]
+	add	rsi,	rax
+
+	mov	rax,	qword [rsi + KNOT.size_in_bytes]
+	xor	rdx,	rdx
+	mov	rcx,	VARIABLE_MEMORY_PAGE_SIZE
+	div	rcx
+
+	cmp	rdx,	VARIABLE_EMPTY
+	je	.filesystem_file_read_ok
+
+	add	rax,	VARIABLE_INCREMENT
+
+.filesystem_file_read_ok:
+	mov	rcx,	rax
+	mov	rax,	rdi
+	mov	rbx,	VARIABLE_MEMORY_HIGH_ADDRESS
+	sub	rax,	rbx
+	mov	rbx,	0x07	; flagi: Użytkownik, 4 KiB, Odczyt/Zapis, Dostępna
+	mov	r11,	cr3
+	call	cyjon_page_map_logical_area
+
+	pop	r11
+	pop	r8
+	pop	rsi
+	pop	rdx
+	pop	rcx
+	pop	rbx
+	pop	rax
 
 	call	cyjon_filesystem_kfs_file_read
 
@@ -735,6 +779,62 @@ irq64_filesystem:
 	mov	rax,	~VARIABLE_FALSE
 
 .filesystem_file_touch_end:
+	pop	r8
+
+	; koniec obsługi procedury
+	jmp	irq64.end
+
+.filesystem_root_directory:
+	push	r8
+
+	mov	r8,	variable_partition_specification_home
+
+	mov	rax,	rbx
+
+	; przygotuj miejsce w przestrzeni pamięci procesu na plik
+
+	push	rax
+	push	rbx
+	push	rcx
+	push	rdx
+	push	rsi
+	push	r8
+	push	r11
+
+	mul	qword [r8 + KFS.knot_size]
+	mov	rsi,	qword [r8 + KFS.knots_table_address]
+	add	rsi,	rax
+
+	mov	rax,	qword [rsi + KNOT.size_in_bytes]
+	xor	rdx,	rdx
+	mov	rcx,	VARIABLE_MEMORY_PAGE_SIZE
+	div	rcx
+
+	cmp	rdx,	VARIABLE_EMPTY
+	je	.filesystem_root_directory_ok
+
+	add	rax,	VARIABLE_INCREMENT
+
+.filesystem_root_directory_ok:
+	mov	rcx,	rax
+	mov	rax,	rdi
+	mov	rbx,	VARIABLE_MEMORY_HIGH_ADDRESS
+	sub	rax,	rbx
+	mov	rbx,	0x07	; flagi: Użytkownik, 4 KiB, Odczyt/Zapis, Dostępna
+	mov	r11,	cr3
+	call	cyjon_page_map_logical_area
+
+	pop	r11
+	pop	r8
+	pop	rsi
+	pop	rdx
+	pop	rcx
+	pop	rbx
+	pop	rax
+
+	call	cyjon_filesystem_kfs_file_read
+
+.filesystem_root_directory_end:
 	pop	r8
 
 	; koniec obsługi procedury

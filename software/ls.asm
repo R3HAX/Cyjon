@@ -64,28 +64,8 @@ start:
 	pop	rdi
 
 .no_args:
-	; pobierz rozmiar w Bajtach
-	mov	ax,	0x0401
-	mov	rbx,	0	; katalog główny
-	int	0x40	; wykonaj
-
-	; oblicz rozmiar wymaganego miejsca
-	mov	rax,	rcx
-	mov	rcx,	VARIABLE_MEMORY_PAGE_SIZE
-	div	rcx
-	cmp	rdx,	VARIABLE_EMPTY
-	je	.ok
-
-	add	rax,	VARIABLE_INCREMENT
-
-.ok:
-	mov	rcx,	rax
-	; zarezerwuj miejsce
-	mov	ax,	0x0003
-	int	0x40	; wykonaj
-
 	; wczytaj plik
-	mov	rax,	0x0400
+	mov	rax,	0x0403
 	xor	rbx,	rbx	; katalog główny
 	int	0x40
 

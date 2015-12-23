@@ -508,10 +508,13 @@ cyjon_filesystem_kfs_file_read:
 	mov	rax,	qword [rsi + KNOT.first_block]
 	mov	rbx,	qword [rsi + KNOT.size]
 
+	mov	rcx,	rbx
+
 	cmp	rax,	VARIABLE_EMPTY
 	je	.end	; plik pusty
 
 .read:
+	; przygotuj miejsce pod blok indirect pliku
 	mov	rcx,	1
 	call	cyjon_page_find_free_memory
 	push	rdi
@@ -520,21 +523,17 @@ cyjon_filesystem_kfs_file_read:
 	mov	rdi,	qword [rsp]
 
 .indirect:
+	; pobierz pierwszy blok danych pliku
 	mov	rax,	qword [rsi]
 	cmp	rax,	VARIABLE_EMPTY
-	ja	.direct
+	je	.end	; jeśli brak, koniec ładowania pliku do pamięci
 
-	call	cyjon_filesystem_kfs_find_free_block
-	mov	qword [rdi],	rax
-
-.direct:
 	call	cyjon_filesystem_kfs_block_read
 
 	sub	rbx,	VARIABLE_DECREMENT
 	jz	.end
 
 	add	rsi,	0x08
-	add	rdi,	qword [r8 + KFS.block_size]
 	jmp	.indirect
 
 .end:
