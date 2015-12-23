@@ -97,6 +97,8 @@ key_function_read:
 	; przesuń
 	rep	movsb
 
+	xchg	bx,	bx
+
 	; załaduj plik do przestrzeni dokumentu
 	mov	rax,	VARIABLE_KERNEL_SERVICE_FILESYSTEM_READ_FILE
 	mov	rbx,	0	; katalog /   [nie mamy jeszcze obsługi przekazywania argumentów specjalnych (np. aktualny katalog, rozmiar wewnętrzny terminala, zmienne globalne)]
@@ -116,9 +118,14 @@ key_function_read:
 	add	rdi,	qword [variable_document_address_start]
 	call	library_align_address_up_to_page
 
+	; czy plik był pusty?
+	cmp	rdi,	qword [variable_document_address_start]
+	je	.empty_file
+
 	; zapisz
 	mov	qword [variable_document_address_end],	rdi
 
+.empty_file:
 	; wyczyść pozostałą część przestrzeni pamięci dokumentu (strony)
 	; dmucham na zimne
 
@@ -191,6 +198,10 @@ key_function_read:
 
 	push	rsi
 
+	; dokument pusty?
+	cmp	rcx,	VARIABLE_EMPTY
+	je	.only_one_line
+
 .count_lines:
 	cmp	byte [rsi],	VARIABLE_ASCII_CODE_NEWLINE
 	jne	.check
@@ -202,6 +213,7 @@ key_function_read:
 	sub	rcx,	VARIABLE_DECREMENT
 	jnz	.count_lines
 
+.only_one_line:
 	; wyczyść przestrzeń dokumentu
 	mov	ax,	VARIABLE_KERNEL_SERVICE_SCREEN_CLEAN	; procedura czyszcząca ekran
 	mov	rbx,	VARIABLE_INTERFACE_HEADER_HEIGHT	; za nagłówkiem

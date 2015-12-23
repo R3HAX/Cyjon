@@ -701,11 +701,19 @@ irq64_filesystem:
 	push	r8
 	push	r11
 
+	push	rax
+
 	mul	qword [r8 + KFS.knot_size]
 	mov	rsi,	qword [r8 + KFS.knots_table_address]
 	add	rsi,	rax
 
+	cmp	qword [rsi + KNOT.size_in_bytes],	VARIABLE_EMPTY
+	je	.filesystem_file_read_empty
+	
 	mov	rax,	qword [rsi + KNOT.size_in_bytes]
+
+	add	rsp,	0x08
+
 	xor	rdx,	rdx
 	mov	rcx,	VARIABLE_MEMORY_PAGE_SIZE
 	div	rcx
@@ -739,6 +747,20 @@ irq64_filesystem:
 
 	; koniec obsługi procedury
 	jmp	irq64.end
+
+.filesystem_file_read_empty:
+	pop	rax
+	xor	rdx,	rdx
+
+	pop	r11
+	pop	r8
+	pop	rsi
+	add	rsp,	0x08
+	pop	rcx
+	pop	rbx
+	pop	rax
+
+	jmp	.filesystem_file_read_end
 
 .filesystem_file_size:
 	push	rax

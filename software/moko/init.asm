@@ -15,92 +15,61 @@
 [BITS 64]
 
 initialization:
-	; tworzenie dokumentu rozpocznij za kodem programu od adresu pełnej strony
-	mov	rdi,	stop
+	mov	rdi,	document_area
 	call	library_align_address_up_to_page
 
-	; zapisz adres początku dokumentu
 	mov	qword [variable_document_address_start],	rdi
-	mov	qword [variable_cursor_indicator],	rdi	; wskaźnik kursora na początku dokumentu
+	mov	qword [variable_cursor_indicator],	rdi
 
-	; zapisz adres końca dokumentu
 	mov	qword [variable_document_address_end],	rdi
 	add	qword [variable_document_address_end],	VARIABLE_MEMORY_PAGE_SIZE
 
-	; poproś o przestrzeń o rozmiarze jednej strony
-	mov	rcx,	1
+	mov	ax,	VARIABLE_KERNEL_SERVICE_PROCESS_MEMORY_ALLOCATE
+	mov	ecx,	VARIABLE_MEMORY_PAGE_SIZE / VARIABLE_MEMORY_PAGE_SIZE
+	int	STATIC_KERNEL_SERVICE
 
-	; zarezerwuj miejsce (rejestracja w tablicy stronicowania programu)
-	mov	ax,	0x0003
-	int	0x40	; wykonaj
-
-	; pobierz informacje o ekranie
-	mov	ax,	0x0106
-	int	0x40
-
-	; zapisz rozmiar ekranu w znakach
+	mov	ax,	VARIABLE_KERNEL_SERVICE_SCREEN_SIZE
+	int	STATIC_KERNEL_SERVICE
 	mov	qword [variable_screen_size],	rbx
 
-	;-----------------------------------------------------------------------
 	; wyświetl interfejs ---------------------------------------------------
 
-	; wyczyść ekran
 	mov	ax,	VARIABLE_KERNEL_SERVICE_SCREEN_CLEAN
-	xor	rbx,	rbx
-	xor	rcx,	rcx
-	int	VARIABLE_KERNEL_SERVICE	; wykonaj
-
-	mov	rcx,	VARIABLE_FULL
+	xor	ebx,	ebx
+	xor	ecx,	ecx
+	int	STATIC_KERNEL_SERVICE
 
 	; ustaw tło nagłówka
-	mov	ax,	0x0102
-	mov	rbx,	VARIABLE_COLOR_BACKGROUND_DEFAULT
+	mov	ax,	VARIABLE_KERNEL_SERVICE_SCREEN_PRINT_CHAR
+	mov	ebx,	VARIABLE_COLOR_BACKGROUND_DEFAULT
 	mov	ecx,	dword [variable_screen_size]
+	mov	edx,	VARIABLE_COLOR_DEFAULT
 	mov	r8,	VARIABLE_ASCII_CODE_SPACE
-	mov	rdx,	VARIABLE_COLOR_DEFAULT
-	int	0x40
+	int	STATIC_KERNEL_SERVICE
 
-	; ustaw kursor w pozycji nazwy pliku
-	mov	ax,	0x0105
-	mov	ebx,	1	; wiersz 0, kolumna 1
-	int	0x40
+	; ustaw kursor w nagłówku (nazwa pliku)
+	mov	ax,	VARIABLE_KERNEL_SERVICE_SCREEN_CURSOR_SET
+	mov	ebx,	1
+	int	STATIC_KERNEL_SERVICE
 
 	; wyświetl nazwę pliku
-	mov	ax,	0x0101
-	mov	rbx,	VARIABLE_COLOR_BACKGROUND_DEFAULT
-	mov	rdx,	VARIABLE_COLOR_DEFAULT
-
-	; sprawdź czy plik został wczytany lub zapisany pod konkretną nazwą
-	cmp	qword [variable_file_name_count_of_chars],	VARIABLE_EMPTY
-	je	.new_file
-
-	; plik posiada nazwę własną
-	mov	rcx,	qword [variable_file_name_count_of_chars]
-	mov	rsi,	variable_file_name_buffor
-
-	jmp	.named
-
-.new_file:
+	mov	ax,	VARIABLE_KERNEL_SERVICE_SCREEN_PRINT_STRING
+	mov	ebx,	VARIABLE_COLOR_BACKGROUND_DEFAULT
 	mov	rsi,	text_header_default
+	int	STATIC_KERNEL_SERVICE
 
-.named:
-	int	0x40
-
-	mov	rcx,	-1
-
-	; ustaw kursor w pozycji menu
+	; ustaw kursor w stopce (menu)
 	mov	ax,	VARIABLE_KERNEL_SERVICE_SCREEN_CURSOR_SET
 	mov	ebx,	dword [variable_screen_size + VARIABLE_QWORD_HIGH]
-	sub	rbx,	VARIABLE_DECREMENT
+	sub	ebx,	VARIABLE_DECREMENT
 	shl	rbx,	32
-	int	0x40
+	int	STATIC_KERNEL_SERVICE
 
 	push	rax
 
 	; skrót X ==============================================================
 	mov	ax,	VARIABLE_KERNEL_SERVICE_SCREEN_PRINT_STRING
 	mov	rbx,	VARIABLE_COLOR_BACKGROUND_DEFAULT
-	mov	rdx,	VARIABLE_COLOR_DEFAULT
 	mov	rsi,	text_exit_shortcut
 	int	0x40
 
@@ -124,5 +93,20 @@ initialization:
 	mov	rbx,	VARIABLE_CURSOR_POSITION_INIT
 	int	0x40
 
+	; sprawdź czy podano w argumentach plik do odczytu
+	mov	ax,	VARIABLE_KERNEL_SERVICE_PROCESS_ARGS
+	int	STATIC_KERNEL_SERVICE
+
+	add	rdi,	VARIABLE_PROGRAM_ARGS_IGNORE_NAME
+	sub	rcx,	VARIABLE_PROGRAM_ARGS_IGNORE_NAME
+	jz	.end
+	cmp	rcx,	VARIABLE_FULL
+	je	.end
+
+	mov	rax,	qword [variable_cursor_position]
+	mov	qword [rsp],	rax
+	jmp	key_function_read.file_name
+
+.end:
 	; powrót z procedury
 	ret

@@ -26,16 +26,12 @@
 [ORG VARIABLE_MEMORY_HIGH_REAL_ADDRESS]
 
 start:
-	; procedura - wyświetl ciąg znaków na ekranie w miejscu kursora
 	mov	rax,	VARIABLE_KERNEL_SERVICE_SCREEN_PRINT_STRING
-	mov	rcx,	VARIABLE_FULL	; wyświetl wszystkie znaki z ciągu
-	mov	rdx,	VARIABLE_COLOR_BACKGROUND_DEFAULT
-
-	;kolor znaków
 	mov	rbx,	VARIABLE_COLOR_DEFAULT
-	; wskaźnik do ciągu znaków zakończony terminatorem lub licznikiem
+	mov	rcx,	VARIABLE_FULL
+	mov	rdx,	VARIABLE_COLOR_BACKGROUND_DEFAULT
 	mov	rsi,	text_init
-	int	VARIABLE_KERNEL_SERVICE	; wykonaj
+	int	STATIC_KERNEL_SERVICE
 
 	; pierwszą inicjalizacje nie rozpoczynaj od czyszczenia ekranu
 	jmp	.start

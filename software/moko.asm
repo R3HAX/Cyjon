@@ -14,6 +14,8 @@
 %include	"config.asm"
 
 %define	VARIABLE_PROGRAM_VERSION		"0.92"
+%define VARIABLE_PROGRAM_ARGS_IGNORE_NAME	5	; ilość pierwszych znaków, które zignorować w przesłanych argumentach
+							; czyli. nazwe programu i spacje za nim towarzyszącą.
 
 VARIABLE_CURSOR_POSITION_INIT		equ	0x0000000200000000
 VARIABLE_INTERFACE_HEADER_HEIGHT	equ	2
@@ -164,4 +166,4 @@ text_exit		db	' Exit  ', VARIABLE_ASCII_CODE_TERMINATOR
 text_open_shortcut	db	'^r', VARIABLE_ASCII_CODE_TERMINATOR
 text_open		db	' Open  ', VARIABLE_ASCII_CODE_TERMINATOR
 
-stop:
+document_area:
