@@ -72,12 +72,16 @@ interrupt_descriptor_table:
 	mov	rcx,	1	; modyfikuj jeden rekord
 	; ustaw adres rekordu
 	mov	rdi,	qword [variable_interrupt_descriptor_table_address]
-	add	rdi,	0x10 * 32	; podrekord 0x00
+	add	rdi,	0x10 * 32	; podrekord 0
 	call	recreate_record	; wykonaj
 
 	; procedura obsługi przerwania sprzętowego klawiatury
 	mov	rax,	irq33	; plik: engine/keyboard.asm
-	call	recreate_record	; wykonaj
+	call	recreate_record
+
+	mov	rax,	irq43
+	mov	rdi,	qword [variable_interrupt_descriptor_table_address]
+	add	rdi,	0x10 * 43	; podrekord 12
 
 	;---------------------------------------------------------------
 
@@ -87,8 +91,8 @@ interrupt_descriptor_table:
 	mov	rcx,	1	; modyfikuj jeden rekord
 	; ustaw adres rekordu
 	mov	rdi,	qword [variable_interrupt_descriptor_table_address]
-	add	rdi,	0x10 * 64	; 40-ty wpis
-	call	recreate_record	; wykonaj
+	add	rdi,	0x10 * 64
+	call	recreate_record
 
 	;---------------------------------------------------------------
 

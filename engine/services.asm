@@ -619,6 +619,10 @@ irq64_system:
 	cmp	al,	0x01
 	je	.system_date
 
+	; udostępnić informacje o pamięci?
+	cmp	al,	0x02
+	je	.system_memory
+
 	; brak obsługi
 	jmp	irq64.end
 
@@ -660,6 +664,14 @@ irq64_system:
 	; przeładuj
 	shl	rbx,	8
 	mov	bl,	00000001b	; tryb 24 godzinny
+
+	; koniec obsługi procedury
+	jmp	irq64.end
+
+.system_memory:
+	mov	rbx,	qword [variable_binary_memory_map_total_pages]
+	mov	rcx,	qword [variable_binary_memory_map_free_pages]
+	xor	rdx,	rdx
 
 	; koniec obsługi procedury
 	jmp	irq64.end

@@ -46,6 +46,8 @@ start:
 	call	multitasking
 	; konfiguruj klawiature
 	call	keyboard
+	; skonfiguruj myszke PS2
+	call	mouse
 	; przygotuj obsługę wyjątków i przerwań procesora, przerwań użyktownika
 	call	interrupt_descriptor_table
 
@@ -53,9 +55,9 @@ start:
 	sti	; tchnij życie
 
 	; włącz przerwania sprzętowe IRQ0 (planista), IRQ1 (klawiatura)
-	mov	al,	11111111b
+	mov	al,	11101111b	; irq15, irq14, irq13, mouse, irq11, irq10, irq9, irq8
 	out	0xA1,	al
-	mov	al,	11111100b	; irq0, irq1
+	mov	al,	11111100b	; irq7, irq6, irq5, irq4, irq3, irq2, keyboard, sheduler/clock
 	out	0x21,	al
 
 	; zainicjalizuj dostęp do nośnika IDE0 Master
@@ -119,6 +121,7 @@ start:
 %include	"engine/programmable_interval_timer.asm"
 %include	"engine/multitasking.asm"
 %include	"engine/keyboard.asm"
+%include	"engine/mouse.asm"
 %include	"engine/interrupt_descriptor_table.asm"
 %include	"engine/virtual_file_system.asm"
 %include	"engine/process.asm"

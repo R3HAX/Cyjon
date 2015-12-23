@@ -158,6 +158,12 @@ files_table:
 	dq	file_touch_end
 	db	'touch'
 
+	dq	4
+	dq	file_free_end - file_free
+	dq	file_free
+	dq	file_free_end
+	db	'free'
+
 	; koniec tablicy plików
 	dq	VARIABLE_EMPTY
 
@@ -193,6 +199,9 @@ file_args_end:
 
 file_touch:		incbin	'touch.bin'
 file_touch_end:
+
+file_free:		incbin	'free.bin'
+file_free_end:
 
 text_virtial_file_system	db	" Virtual file system initialized.", VARIABLE_ASCII_CODE_ENTER, VARIABLE_ASCII_CODE_NEWLINE, VARIABLE_ASCII_CODE_TERMINATOR
 
