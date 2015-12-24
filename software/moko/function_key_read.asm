@@ -229,41 +229,48 @@ key_function_read:
 	mov	ecx,	dword [variable_screen_size + VARIABLE_QWORD_HIGH]
 	sub	rcx,	VARIABLE_INTERFACE_HEIGHT
 
-	mov	ax,	VARIABLE_KERNEL_SERVICE_SCREEN_PRINT_CHAR
+	mov	ax,	VARIABLE_KERNEL_SERVICE_SCREEN_PRINT_STRING
 	mov	ebx,	VARIABLE_COLOR_DEFAULT
 	mov	edx,	VARIABLE_COLOR_BACKGROUND_DEFAULT
 
 .print:
-	; załaduj znak
-	movzx	r8,	byte [rsi]
-
-	; koniec dokumentu?
-	cmp	r8,	VARIABLE_ASCII_CODE_TERMINATOR
+	cmp	byte [rsi],	VARIABLE_ASCII_CODE_TERMINATOR
 	je	.end
 
-	; znak nowej linii?
-	cmp	r8,	VARIABLE_ASCII_CODE_NEWLINE
+	cmp	byte [rsi],	VARIABLE_ASCII_CODE_NEWLINE
 	je	.new_line
 
-	; wyświetl znak
 	push	rcx
-	mov	ecx,	VARIABLE_TRUE
+
+	call	count_chars_in_line
+
+	push	rcx
+
+	cmp	ecx,	dword [variable_screen_size]
+	jb	.line_size_ok
+
+	mov	ecx,	dword [variable_screen_size]
+	sub	ecx,	VARIABLE_DECREMENT
+
+.line_size_ok:
+	; wyświetl linię
 	int	VARIABLE_KERNEL_SERVICE	; wykonaj
+
 	pop	rcx
 
-	add	rsi,	VARIABLE_INCREMENT
+	add	rsi,	rcx
+
+	pop	rcx
 
 	; kontynuuj
 	jmp	.print
 
 .new_line:
 	; zachowaj oryginalne rejestry
-	push	rax
 	push	rcx
 	push	rsi
 
 	; wyświetl spacje do końca linii
-	mov	ax,	VARIABLE_KERNEL_SERVICE_SCREEN_PRINT_STRING
 	mov	rcx,	VARIABLE_FULL
 	mov	rsi,	text_new_line
 	int	VARIABLE_KERNEL_SERVICE
@@ -271,7 +278,6 @@ key_function_read:
 	; przywróć oryginalne rejestry
 	pop	rsi
 	pop	rcx
-	pop	rax
 
 	add	rsi,	VARIABLE_INCREMENT
 
