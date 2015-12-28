@@ -87,6 +87,9 @@ start:
 	cmp	ax,	"r"
 	je	key_function_read
 
+	cmp	ax,	"o"
+	je	key_function_write
+
 .no_shortcut:
 	; sprawdź czy znak jest możliwy do wyświetlenia ------------------------
 
@@ -126,6 +129,7 @@ start:
 
 %include	"software/moko/function_key_exit.asm"
 %include	"software/moko/function_key_read.asm"
+%include	"software/moko/function_key_write.asm"
 
 %include	"software/moko/save_into_document.asm"
 %include	"software/moko/update_line_on_screen.asm"
@@ -165,5 +169,8 @@ text_exit		db	' Exit  ', VARIABLE_ASCII_CODE_TERMINATOR
 
 text_open_shortcut	db	'^r', VARIABLE_ASCII_CODE_TERMINATOR
 text_open		db	' Open  ', VARIABLE_ASCII_CODE_TERMINATOR
+
+text_save_shortcut	db	'^o', VARIABLE_ASCII_CODE_TERMINATOR
+text_save		db	' Save  ', VARIABLE_ASCII_CODE_TERMINATOR
 
 document_area:

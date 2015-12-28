@@ -87,6 +87,16 @@ initialization:
 	xchg	rbx,	rdx
 	mov	rsi,	text_open
 	int	0x40
+
+	; skrót O ==============================================================
+	xchg	rbx,	rdx
+	mov	rsi,	text_save_shortcut
+	int	0x40
+
+	; opis
+	xchg	rbx,	rdx
+	mov	rsi,	text_save
+	int	0x40
 	
 	; inicjalizuj początkową pozycje kursora na ekranie
 	pop	rax
@@ -103,8 +113,11 @@ initialization:
 	cmp	rcx,	VARIABLE_FULL
 	je	.end
 
-	mov	rax,	qword [variable_cursor_position]
-	mov	qword [rsp],	rax
+	mov	ebx,	dword [variable_screen_size + VARIABLE_QWORD_HIGH]
+	sub	ebx,	VARIABLE_INTERFACE_INTERACTIVE
+	shl	rbx,	32	; przesuń do pozycji wiersza
+	push	rbx	; zapamiętaj
+
 	jmp	key_function_read.file_name
 
 .end:

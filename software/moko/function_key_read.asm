@@ -54,7 +54,7 @@ key_function_read:
 
 	; gdzie przechować wprowadzony ciąg znaków
 	mov	rdi,	file_name_buffor
-	; bufor nie zawiera danych
+	; rozmiar bufora (jeśli zawiera jakiekolwiek dane)
 	mov	r8,	qword [file_name_chars_count]
 	; pobierz od użytkownika tekst
 	call	library_input
@@ -191,7 +191,7 @@ key_function_read:
 	; wyświetl linię od początku
 	mov	qword [variable_line_print_start],	VARIABLE_EMPTY
 
-	mov	qword [variable_document_count_of_lines],	VARIABLE_TRUE
+	mov	qword [variable_document_count_of_lines],	VARIABLE_EMPTY
 	mov	rcx,	qword [variable_document_count_of_chars]
 
 	push	rsi

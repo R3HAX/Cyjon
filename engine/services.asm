@@ -878,6 +878,60 @@ irq64_filesystem:
 	jmp	irq64.end
 
 .filesystem_file_write:
+	push	rax
+	push	rbx
+	push	rsi
+	push	r8
+
+	; zapisz plik
+	; rbx - identyfikator katalogu
+	; rcx - rozmiar nazwy pliku
+	; rdx - rozmiar pliku w Bajtach
+	; rsi - nazwa pliku
+	; rdi - wskaźnik do danych pliku
+
+	mov	r8,	variable_partition_specification_home
+
+	mov	rax,	rbx
+
+	; sprawdź czy istnieje taki plik w podanym katalogu
+	call	cyjon_filesystem_kfs_find_file
+	jc	.filesystem_file_write_found
+
+	; utwórz pusty plik
+	mov	rax,	rbx
+	mov	rbx,	0x8000	; plik
+	call	cyjon_filesystem_kfs_file_create
+
+.filesystem_file_write_found:
+	; załaduj do pliku dane
+	; rax - numer supła
+	; rbx - rozmiar danych w blokach
+	; rdx - rozmiar pliku w Bajtach
+	; rsi - gdzie są dane
+	; r8 - specyfikacja systemu plików
+	mov	rbx,	rdx
+
+	; usuń młodszą część rozmiaru
+	and	bx,	0xF000
+	; sprawdź czy adres jest identyczny z zachowaną na stosie
+	cmp	rbx,	rdx
+	je	.filesystem_file_write_found_size_equal	; jeśli tak, koniec
+
+	; przesuń adres o jedną ramkę do przodu
+	add	rbx,	qword [r8 + KFS.block_size]
+
+.filesystem_file_write_found_size_equal:
+	shr	rbx,	12
+
+	mov	rsi,	rdi
+	call	cyjon_filesystem_kfs_file_update
+
+	pop	r8
+	pop	rsi
+	pop	rbx
+	pop	rax
+
 	jmp	irq64.end
 
 ; pozostała część w trakcie przepisywania
