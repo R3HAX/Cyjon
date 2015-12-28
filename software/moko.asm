@@ -113,6 +113,29 @@ start:
 	call	check_cursor
 	call	update_line_on_screen
 
+	cmp	byte [variable_semaphore_modified],	VARIABLE_EMPTY
+	ja	start.noKey
+
+	mov	byte [variable_semaphore_modified],	VARIABLE_TRUE
+
+	; wyświetl znacznik "zmodyfikowany"
+	mov	ax,	VARIABLE_KERNEL_SERVICE_SCREEN_CURSOR_SET
+	mov	ebx,	dword [variable_screen_size]
+	sub	rbx,	qword [test_modified_chars_count]
+	dec	rbx
+	int	STATIC_KERNEL_SERVICE
+
+	mov	ax,	VARIABLE_KERNEL_SERVICE_SCREEN_PRINT_STRING
+	mov	ebx,	VARIABLE_COLOR_BACKGROUND_DEFAULT
+	mov	rcx,	qword [test_modified_chars_count]
+	mov	edx,	VARIABLE_COLOR_DEFAULT
+	mov	rsi,	text_modified
+	int	STATIC_KERNEL_SERVICE
+
+	mov	ax,	VARIABLE_KERNEL_SERVICE_SCREEN_CURSOR_SET
+	mov	rbx,	qword [variable_cursor_position]
+	int	STATIC_KERNEL_SERVICE
+
 	jmp	start.noKey
 
 %include	"software/moko/init.asm"
@@ -157,20 +180,24 @@ variable_screen_size				dq	VARIABLE_EMPTY
 variable_semaphore_key_ctrl			db	VARIABLE_EMPTY
 variable_semaphore_status			db	VARIABLE_EMPTY
 variable_semaphore_backspace			db	VARIABLE_EMPTY
+variable_semaphore_modified			db	VARIABLE_EMPTY
 
 variable_file_name_count_of_chars		dq	VARIABLE_EMPTY
 variable_file_name_buffor	times	256	db	VARIABLE_EMPTY
 
-text_new_line		db	VARIABLE_ASCII_CODE_ENTER, VARIABLE_ASCII_CODE_NEWLINE, VARIABLE_ASCII_CODE_TERMINATOR
-text_header_default	db	"New file", VARIABLE_ASCII_CODE_TERMINATOR
+text_new_line			db	VARIABLE_ASCII_CODE_ENTER, VARIABLE_ASCII_CODE_NEWLINE, VARIABLE_ASCII_CODE_TERMINATOR
+text_header_default		db	"New file", VARIABLE_ASCII_CODE_TERMINATOR
 
-text_exit_shortcut	db	'^x', VARIABLE_ASCII_CODE_TERMINATOR
-text_exit		db	' Exit  ', VARIABLE_ASCII_CODE_TERMINATOR
+text_modified			db	"[modified]", VARIABLE_ASCII_CODE_TERMINATOR
+test_modified_chars_count	dq	10
 
-text_open_shortcut	db	'^r', VARIABLE_ASCII_CODE_TERMINATOR
-text_open		db	' Open  ', VARIABLE_ASCII_CODE_TERMINATOR
+text_exit_shortcut		db	'^x', VARIABLE_ASCII_CODE_TERMINATOR
+text_exit			db	' Exit  ', VARIABLE_ASCII_CODE_TERMINATOR
 
-text_save_shortcut	db	'^o', VARIABLE_ASCII_CODE_TERMINATOR
-text_save		db	' Save  ', VARIABLE_ASCII_CODE_TERMINATOR
+text_open_shortcut		db	'^r', VARIABLE_ASCII_CODE_TERMINATOR
+text_open			db	' Open  ', VARIABLE_ASCII_CODE_TERMINATOR
+
+text_save_shortcut		db	'^o', VARIABLE_ASCII_CODE_TERMINATOR
+text_save			db	' Save  ', VARIABLE_ASCII_CODE_TERMINATOR
 
 document_area:
