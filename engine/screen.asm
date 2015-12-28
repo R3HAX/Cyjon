@@ -1151,6 +1151,14 @@ cyjon_screen_scroll:
 	push	rdx
 	push	rsi
 	push	rdi
+	push	r8
+	push	r9
+	push	r10
+	push	r11
+	push	r12
+	push	r13
+	push	r14
+	push	r15
 
 	; wyłącz kursor programowy lub zwiększ poziom blokady
 	call	cyjon_screen_cursor_lock
@@ -1168,18 +1176,49 @@ cyjon_screen_scroll:
 	; oblicz rozmiar pamięci do przesunięcia
 	mov	rcx,	qword [variable_video_mode_memory_size]
 	sub	rcx,	rax	; pomiń rozmiar jednej linii znaków
-	shr	rcx,	2	; kopiuj po 4 Bajty na raz
-	shr	rcx,	1
+
+	mov	rax,	rcx
+	xor	rdx,	rdx
+	mov	ecx,	64
+	div	rcx
+
+	mov	rcx,	rax
 
 .loop:
 	; kopiuj 8 Bajtów
-	mov	rax,	qword [rsi]
-	mov	qword [rdi],	rax
-	add	rdi,	0x08
-	add	rsi,	0x08
-	sub	rcx,	VARIABLE_DECREMENT
+	mov	r8,	qword [rsi]
+	mov	r9,	qword [rsi + 0x08]
+	mov	r10,	qword [rsi + 0x10]
+	mov	r11,	qword [rsi + 0x18]
+	mov	r12,	qword [rsi + 0x20]
+	mov	r13,	qword [rsi + 0x28]
+	mov	r14,	qword [rsi + 0x30]
+	mov	r15,	qword [rsi + 0x38]
+	add	rsi,	0x40
+	mov	qword [rdi],	r8
+	mov	qword [rdi + 0x08],	r9
+	mov	qword [rdi + 0x10],	r10
+	mov	qword [rdi + 0x18],	r11
+	mov	qword [rdi + 0x20],	r12
+	mov	qword [rdi + 0x28],	r13
+	mov	qword [rdi + 0x30],	r14
+	mov	qword [rdi + 0x38],	r15
+	add	rdi,	0x40
+	dec	rcx
 	jnz	.loop
 
+	cmp	rdx,	VARIABLE_EMPTY
+	je	.moved
+
+	mov	rcx,	rdx
+
+.loop2:
+	mov	al,	byte [rsi]
+	mov	byte [rdi],	al
+	dec	rcx
+	jnz	.loop2
+
+.moved:
 	; wyczyść ostatnią linię
 	mov	rax,	rdx	; kolor sprecyzowany
 
@@ -1227,6 +1266,14 @@ cyjon_screen_scroll:
 	call	cyjon_screen_cursor_unlock
 
 	; przywróć oryginalne rejestry
+	pop	r15
+	pop	r14
+	pop	r13
+	pop	r12
+	pop	r11
+	pop	r10
+	pop	r9
+	pop	r8
 	pop	rdi
 	pop	rsi
 	pop	rdx

@@ -16,6 +16,106 @@
 
 variable_page_semaphore_allocate	db	VARIABLE_EMPTY
 
+cyjon_page_release_specified_area:
+	; zachowaj oryginalne rejestry
+	push	rax
+	push	rcx
+	push	rdi
+	push	r8
+	push	r9
+	push	r10
+	push	r11
+	push	r12
+	push	r13
+	push	r14
+	push	r15
+
+	mov	rax,	rdi
+	mov	r11,	cr3
+	call	cyjon_page_prepare_pml_variables
+
+	xor	rax,	rax
+
+.pml1:
+	; przetworzono wszystkie rekordy w tablicy PML1?
+	cmp	r12,	VARIABLE_MEMORY_PAGE_RECORD_COUNT
+	je	.pml2	; poberz adres następnej talicy PML1 z rekordu w tablicy PML2
+
+.pml1_continue:
+	push	rdi
+	mov	rdi,	qword [rdi]
+	and	di,	0xF000	; usuń właściwości rekordu
+	call	cyjon_page_release	; zwolnij stronę wykorzystaną do stronicowania
+	pop	rdi
+
+	; usuń rekord w tablicy PML1
+	mov	qword [rdi],	rax
+	add	rdi,	VARIABLE_QWORD_SIZE
+
+	; zlicz ilość rekordów znajdujących się przed wskaźnikiem rdi
+	inc	r12
+
+	; sprawdź czy pozostały następne strony do zwolnienia
+	dec	rcx
+	jnz	.pml1
+
+	; przywróć oryginalne rejestry
+	pop	r15
+	pop	r14
+	pop	r13
+	pop	r12
+	pop	r11
+	pop	r10
+	pop	r9
+	pop	r8
+	pop	rdi
+	pop	rcx
+	pop	rax
+
+	; powrót z procedury
+	ret
+
+.pml2:
+	; przetworzono wszystkie rekordy w tablicy PML2?
+	cmp	r13,	VARIABLE_MEMORY_PAGE_RECORD_COUNT
+	je	.pml3	; poberz adres następnej talicy PML1 z rekordu w tablicy PML3
+
+.pml2_continue:
+	; pobierz adres nowej tablicy PML1
+	mov	rdi,	qword [r9]
+	add	r9,	VARIABLE_QWORD_SIZE
+	; zlicz ilość rekordów znajdujących się przed wskaźnikiem r9
+	inc	r13
+
+	jmp	.pml1_continue
+
+.pml3:
+	; przetworzono wszystkie rekordy w tablicy PML3?
+	cmp	r14,	VARIABLE_MEMORY_PAGE_RECORD_COUNT
+	je	.pml4	; poberz adres następnej talicy PML1 z rekordu w tablicy PML4
+
+.pml3_continue:
+	; pobierz adres nowej tablicy PML2
+	mov	r9,	qword [r10]
+	add	r10,	VARIABLE_QWORD_SIZE
+	; zlicz ilość rekordów znajdujących się przed wskaźnikiem r10
+	inc	r14
+
+	jmp	.pml2_continue
+
+.pml4:
+	; przetworzono wszystkie rekordy w tablicy PML4? Uh, że co kuźwa!?
+	cmp	r15,	VARIABLE_MEMORY_PAGE_RECORD_COUNT
+	je	cyjon_panic
+
+	; pobierz adres nowej tablicy PML3
+	mov	r10,	qword [r11]
+	add	r11,	VARIABLE_QWORD_SIZE
+	; zlicz ilość rekordów znajdujących się przed wskaźnikiem r11
+	inc	r15
+
+	jmp	.pml3_continue
+
 ;=======================================================================
 ; pobiera adres fizyczny wolnej strony do wykorzystania
 ; IN:

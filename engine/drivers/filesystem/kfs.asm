@@ -58,6 +58,7 @@ variable_partition_specification_home	times	8	dq	VARIABLE_EMPTY
 ; zwraca: flagę CF jeśli znaleziono plik
 cyjon_filesystem_kfs_find_file:
 	; zachowaj oryginalne rejestry
+	push	rcx
 	push	rdx
 	push	rdi
 	push	rax
@@ -73,10 +74,15 @@ cyjon_filesystem_kfs_find_file:
 	add	rax,	VARIABLE_INCREMENT
 
 .size_ok:
+	mov	rcx,	rax
 	call	cyjon_page_find_free_memory
+	push	rdi
+	push	rcx
 
-	mov	rax,	qword [rsp]
+	mov	rax,	qword [rsp + 0x10]
 	call	cyjon_filesystem_kfs_file_read
+
+	mov	rcx,	qword [rsp + 0x28]
 
 .loop:
 	cmp	byte [rdi + ENTRY.chars],	VARIABLE_EMPTY
@@ -105,10 +111,16 @@ cyjon_filesystem_kfs_find_file:
 	clc
 
 .end:
+	pop	rcx
+	pop	rdi
+	call	cyjon_page_release_specified_area
+	; zwolnij tą przestrzeń pamięci !
+
 	; przywróć oryginalne rejestry
 	pop	rax
 	pop	rdi
 	pop	rdx
+	pop	rcx
 
 	; powrót z procedury
 	ret
@@ -118,9 +130,16 @@ cyjon_filesystem_kfs_find_file:
 
 	; zwróć informacje o numerze supła odnalezionego pliku
 	mov	rax,	qword [rdi + ENTRY.knot_id]
+
+	pop	rcx
+	pop	rdi
+	call	cyjon_page_release_specified_area
+	; zwolnij tą przestrzeń pamięci !
+
 	add	rsp,	0x08	; nie przywracaj rejestru rax z stosu
 	pop	rdi
 	pop	rdx
+	pop	rcx
 
 	; ustaw flagę CF
 	stc
@@ -151,12 +170,6 @@ cyjon_filesystem_kfs_update:
 
 .knot_table:
 	call	cyjon_filesystem_kfs_block_write
-
-	; lol BIG BOOM!
-;	add	rax,	VARIABLE_INCREMENT
-;	add	rsi,	qword [r8 + KFS.block_size]
-;	sub	rcx,	VARIABLE_DECREMENT
-;	jnz	.knot_table
 
 .end:
 	pop	rsi
@@ -200,9 +213,9 @@ cyjon_filesystem_kfs_file_update:
 	mov	qword [rdi + KNOT.first_block],	rax
 
 .first_block_exists:
-	mov	rcx,	1
-	call	cyjon_page_find_free_memory
+	call	cyjon_page_allocate
 	push	rdi
+	mov	rcx,	1
 	call	cyjon_filesystem_kfs_block_read
 	mov	rdi,	qword [rsp]
 	push	rax
@@ -251,6 +264,8 @@ cyjon_filesystem_kfs_file_update:
 	mov	rcx,	1
 	pop	rsi
 	call	cyjon_filesystem_kfs_block_write
+	mov	rdi,	rsi
+	call	cyjon_page_release
 
 .the_end:
 	; sprawdź czy plik był większy, zwolnij pozostałe miejsce w przeestrzeni partycji
@@ -515,12 +530,12 @@ cyjon_filesystem_kfs_file_read:
 
 .read:
 	; przygotuj miejsce pod blok indirect pliku
-	mov	rcx,	1
-	call	cyjon_page_find_free_memory
+	call	cyjon_page_allocate	; blok zawsze ma rozmiar 4 KiB
 	push	rdi
+	mov	rcx,	1
 	call	cyjon_filesystem_kfs_block_read
-	pop	rsi
-	mov	rdi,	qword [rsp]
+	mov	rsi,	qword [rsp]
+	mov	rdi,	qword [rsp + 0x08]
 
 .indirect:
 	; pobierz pierwszy blok danych pliku
@@ -538,10 +553,14 @@ cyjon_filesystem_kfs_file_read:
 
 .end:
 	; zwróć rozmiar załądowanego plik w Bajtach
-	mov	rax,	qword [rsp + 0x20]
+	mov	rax,	qword [rsp + 0x28]
 	mul	qword [r8 + KFS.knot_size]
 	mov	rdi,	qword [r8 + KFS.knots_table_address]
 	mov	rdx,	qword [rdi + rax + KNOT.size_in_bytes]
+
+	pop	rdi
+	call	cyjon_page_release
+
 	pop	rdi
 
 	pop	rsi
@@ -691,6 +710,12 @@ cyjon_filesystem_kfs_directory_entry_add:
 	call	cyjon_filesystem_kfs_file_update
 
 .end:
+	; BUGgie
+	mov	rcx,	rbx
+	mov	rdi,	rsi
+	call	cyjon_page_release_specified_area
+	; zwolnij tą przestrzeń pamięci !
+
 	pop	rcx
 	pop	rdi
 	pop	rcx

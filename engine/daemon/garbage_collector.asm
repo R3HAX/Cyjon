@@ -196,6 +196,18 @@ garbage_collector:
 	; zmniejsz ilość procesów przechowywanych w tablicy
 	dec	qword [variable_multitasking_serpentine_record_counter]
 
+	cmp	qword [rdi + VARIABLE_TABLE_SERPENTINE_RECORD.ARGS],	VARIABLE_EMPTY
+	je	.no_args
+
+	; zwolnij przestrzeń pod argumenty
+	push	rdi
+
+	mov	rdi,	qword [rdi + VARIABLE_TABLE_SERPENTINE_RECORD.ARGS]
+	call	cyjon_page_release
+
+	pop	rdi
+
+.no_args:
 	; wyczyść rekord w tablicy
 	mov	qword [rdi + VARIABLE_TABLE_SERPENTINE_RECORD.FLAGS],	VARIABLE_EMPTY
 

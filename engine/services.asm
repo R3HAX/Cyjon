@@ -690,6 +690,9 @@ irq64_filesystem:
 	cmp	al,	0x03
 	je	.filesystem_root_directory
 
+	cmp	al,	0x04
+	je	.filesystem_file_write
+
 	; brak obsługi
 	jmp	irq64.end
 
@@ -872,6 +875,9 @@ irq64_filesystem:
 	pop	r8
 
 	; koniec obsługi procedury
+	jmp	irq64.end
+
+.filesystem_file_write:
 	jmp	irq64.end
 
 ; pozostała część w trakcie przepisywania
