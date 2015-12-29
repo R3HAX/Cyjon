@@ -29,7 +29,7 @@ start:
 	add	rdi,	VARIABLE_MEMORY_PAGE_SIZE
 
 	mov	ax,	VARIABLE_KERNEL_SERVICE_PROCESS_ARGS
-	int	VARIABLE_KERNEL_SERVICE
+	int	STATIC_KERNEL_SERVICE
 
 	cmp	rcx,	VARIABLE_EMPTY
 	je	.no_args
@@ -46,12 +46,12 @@ start:
 	mov	rbx,	VARIABLE_FILESYSTEM_TYPE_FILE	; plik
 	mov	rdx,	0	; w katalogu /
 	mov	rsi,	rdi
-	int	VARIABLE_KERNEL_SERVICE	; wykonaj
+	int	STATIC_KERNEL_SERVICE	; wykonaj
 
 .no_args:
 	; program kończy działanie
 	xor	ax,	ax
-	int	VARIABLE_KERNEL_SERVICE	; wykonaj
+	int	STATIC_KERNEL_SERVICE	; wykonaj
 
 %include	"library/find_first_word.asm"
 

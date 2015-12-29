@@ -164,6 +164,12 @@ files_table:
 	dq	file_free_end
 	db	'free'
 
+	dq	4
+	dq	file_conf_end - file_conf
+	dq	file_conf
+	dq	file_conf_end
+	db	'conf'
+
 	; koniec tablicy plików
 	dq	VARIABLE_EMPTY
 
@@ -202,6 +208,9 @@ file_touch_end:
 
 file_free:		incbin	'free.bin'
 file_free_end:
+
+file_conf:		incbin	'conf.bin'
+file_conf_end:
 
 text_virtial_file_system	db	" Virtual file system initialized.", VARIABLE_ASCII_CODE_ENTER, VARIABLE_ASCII_CODE_NEWLINE, VARIABLE_ASCII_CODE_TERMINATOR
 

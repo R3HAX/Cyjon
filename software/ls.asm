@@ -65,8 +65,7 @@ start:
 
 .no_args:
 	; wczytaj plik
-	mov	rax,	0x0403
-	xor	rbx,	rbx	; katalog główny
+	mov	rax,	VARIABLE_KERNEL_SERVICE_FILESYSTEM_ROOT_DIR
 	int	0x40
 
 	; przystępujemy do wyświetlenia zawartości

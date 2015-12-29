@@ -13,7 +13,7 @@
 
 %include	"config.asm"
 
-%define	VARIABLE_PROGRAM_VERSION		"0.92"
+%define	VARIABLE_PROGRAM_VERSION		"0.93"
 %define VARIABLE_PROGRAM_ARGS_IGNORE_NAME	5	; ilość pierwszych znaków, które zignorować w przesłanych argumentach
 							; czyli. nazwe programu i spacje za nim towarzyszącą.
 

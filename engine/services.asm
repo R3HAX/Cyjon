@@ -693,6 +693,9 @@ irq64_filesystem:
 	cmp	al,	0x04
 	je	.filesystem_file_write
 
+	cmp	al,	0x05
+	je	.filesystem_file_delete
+
 	; brak obsługi
 	jmp	irq64.end
 
@@ -822,15 +825,11 @@ irq64_filesystem:
 	jmp	irq64.end
 
 .filesystem_root_directory:
+	; przygotuj miejsce w przestrzeni pamięci procesu na plik
 	push	r8
 
 	mov	r8,	variable_partition_specification_home
 
-	mov	rax,	rbx
-
-	; przygotuj miejsce w przestrzeni pamięci procesu na plik
-
-	push	rax
 	push	rbx
 	push	rcx
 	push	rdx
@@ -838,9 +837,7 @@ irq64_filesystem:
 	push	r8
 	push	r11
 
-	mul	qword [r8 + KFS.knot_size]
 	mov	rsi,	qword [r8 + KFS.knots_table_address]
-	add	rsi,	rax
 
 	mov	rax,	qword [rsi + KNOT.size_in_bytes]
 	xor	rdx,	rdx
@@ -867,8 +864,8 @@ irq64_filesystem:
 	pop	rdx
 	pop	rcx
 	pop	rbx
-	pop	rax
 
+	xor	rax,	rax
 	call	cyjon_filesystem_kfs_file_read
 
 .filesystem_root_directory_end:
@@ -932,6 +929,9 @@ irq64_filesystem:
 	pop	rbx
 	pop	rax
 
+	jmp	irq64.end
+
+.filesystem_file_delete:
 	jmp	irq64.end
 
 ; pozostała część w trakcie przepisywania

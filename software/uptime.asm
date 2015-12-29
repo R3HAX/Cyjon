@@ -14,6 +14,10 @@
 ; kolory, stałe
 %include	'config.asm'
 
+VARIABLE_MINUTE_SECONDS	equ	60
+VARIABLE_HOUR_SECONDS	equ	VARIABLE_MINUTE_SECONDS * 60
+VARIABLE_DAY_SECONDS	equ	VARIABLE_HOUR_SECONDS * 24
+
 ; 64 Bitowy kod programu
 [BITS 64]
 
@@ -25,8 +29,8 @@
 
 start:
 	; procedura - pobierz uptime systemu
-	mov	ax,	0x0300
-	int	0x40	; wykonaj
+	mov	ax,	VARIABLE_KERNEL_SERVICE_SYSTEM_UPTIME
+	int	STATIC_KERNEL_SERVICE
 
 	; domyślny kolor czcionki i tła
 	mov	rbx,	VARIABLE_COLOR_DEFAULT
@@ -36,87 +40,87 @@ start:
 	push	rcx
 
 	; wyświetl wstęp
-	mov	ax,	0x0101
-	mov	rcx,	-1
+	mov	ax,	VARIABLE_KERNEL_SERVICE_SCREEN_PRINT_STRING
+	mov	rcx,	VARIABLE_FULL
 	mov	rsi,	text_up
-	int	0x40	; wykonaj
+	int	STATIC_KERNEL_SERVICE
 
 	; przywróć
 	pop	rax
 
 	; oblicz ilość dni
-	mov	rcx,	60 * 60 * 24	; sekund * minut * godzin
+	mov	rcx,	VARIABLE_DAY_SECONDS
 	xor	rdx,	rdx	; wyczyść resztę / starszą część
-	div	rcx	; wykonaj
+	div	rcx
 
 	; zapamiętaj resztę z dzielenia
 	push	rdx
 
 	; sprawdź czy wyświetlić
-	cmp	rax,	0
+	cmp	rax,	VARIABLE_EMPTY
 	je	.less_than_a_day
 
 	; ustaw licznik
 	mov	r8,	rax
 
 	; wyświetl liczbę
-	mov	ax,	0x0103
+	mov	ax,	VARIABLE_KERNEL_SERVICE_SCREEN_PRINT_NUMBER
 	mov	rcx,	10	; system dziesiętny
 	mov	rdx,	VARIABLE_COLOR_BACKGROUND_DEFAULT
-	int	0x40	; wykonaj
+	int	STATIC_KERNEL_SERVICE
 
 	; sprawdź pisownię dzień/dni
 	cmp	r8,	1
 	ja	.few_days
 
 	; wyświetl jeden dzień
-	mov	ax,	0x0101
+	mov	ax,	VARIABLE_KERNEL_SERVICE_SCREEN_PRINT_STRING
 	mov	rsi,	text_day
-	int	0x40	; wykonaj
+	int	STATIC_KERNEL_SERVICE
 
 	; kontynuuj
 	jmp	.less_than_a_day
 
 .few_days:
 	; wyświetl ' days, '
-	mov	ax,	0x0101
+	mov	ax,	VARIABLE_KERNEL_SERVICE_SCREEN_PRINT_STRING
 	mov	rsi,	text_days
-	int	0x40	; wykonaj
+	int	STATIC_KERNEL_SERVICE
 
 .less_than_a_day:
 	; załaduj resztę z dzielenia
 	pop	rax
 
 	; przelicz na godziny
-	mov	rcx,	60 * 60	; sekund * minut
+	mov	rcx,	VARIABLE_HOUR_SECONDS	; sekund * minut
 	xor	rdx,	rdx	; wyczyść starszą część / resztę
-	div	rcx	; wykonaj
+	div	rcx
 
 	; zapamiętaj resztę z dzielenia
 	push	rdx
 
 	; sprawdź czy wyświetlić godzinę
-	cmp	rax,	0
+	cmp	rax,	VARIABLE_EMPTY
 	je	.less_than_a_hour	; nie
 
 	; wyświetl godzinę
 	mov	r8,	rax
-	mov	ax,	0x0103
+	mov	ax,	VARIABLE_KERNEL_SERVICE_SCREEN_PRINT_NUMBER
 	mov	rdx,	VARIABLE_COLOR_BACKGROUND_DEFAULT
 	mov	rcx,	10	; system dziesiętny
-	int	0x40
+	int	STATIC_KERNEL_SERVICE
 
 	; wyświetlono godzinę
-	mov	byte [variable_semaphore],	0x01
+	mov	byte [variable_semaphore],	VARIABLE_TRUE
 
 .less_than_a_hour:
 	; załaduj resztę z dzielenia
 	pop	rax
 
 	; przelicz na minuty
-	mov	rcx,	60	; sekund
+	mov	rcx,	VARIABLE_MINUTE_SECONDS	; sekund
 	xor	rdx,	rdx	; wyczyść starszą część / resztę
-	div	rcx	; wykonaj
+	div	rcx
 
 	; zapamiętaj wynik
 	push	rax
@@ -138,41 +142,41 @@ start:
 	je	.no_hour
 
 	; wyświetl tekst
-	mov	ax,	0x0101
+	mov	ax,	VARIABLE_KERNEL_SERVICE_SCREEN_PRINT_STRING
 	mov	rdx,	VARIABLE_COLOR_BACKGROUND_DEFAULT
 	mov	rsi,	text_caution
-	int	0x40	; wykonaj
+	int	STATIC_KERNEL_SERVICE
 
 .no_hour:
 	; ustaw licznik
 	pop	r8
 
 	; wyświetl liczbę
-	mov	ax,	0x0103
+	mov	ax,	VARIABLE_KERNEL_SERVICE_SCREEN_PRINT_NUMBER
 	mov	rcx,	10	; system dziesiętny
 	mov	rdx,	VARIABLE_COLOR_BACKGROUND_DEFAULT
-	int	0x40	; wykonaj
+	int	STATIC_KERNEL_SERVICE
 
 	; była wyświetlana godzina?
-	cmp	byte [variable_semaphore],	0x01
+	cmp	byte [variable_semaphore],	VARIABLE_TRUE
 	je	.end
 
 	; wyświetl ' min'
-	mov	ax,	0x0101
-	mov	rcx,	-1
+	mov	ax,	VARIABLE_KERNEL_SERVICE_SCREEN_PRINT_STRING
+	mov	rcx,	VARIABLE_FULL
 	mov	rdx,	VARIABLE_COLOR_BACKGROUND_DEFAULT
 	mov	rsi,	text_min
-	int	0x40	; wykonaj
+	int	STATIC_KERNEL_SERVICE
 
 .end:
 	; zakończ wyświetlanie informacji o pamięci ram - nową linią i karetką
-	mov	ax,	0x0101
+	mov	ax,	VARIABLE_KERNEL_SERVICE_SCREEN_PRINT_STRING
 	mov	rsi,	text_end
-	int	0x40	; wykonaj
+	int	STATIC_KERNEL_SERVICE
 
 	; program kończy działanie
 	xor	ax,	ax
-	int	0x40	; wykonaj
+	int	STATIC_KERNEL_SERVICE
 
 variable_semaphore	db	VARIABLE_EMPTY
 

@@ -60,6 +60,9 @@ start:
 	mov	al,	11111100b	; irq7, irq6, irq5, irq4, irq3, irq2, keyboard, sheduler/clock
 	out	0x21,	al
 
+	; resetuj karte dźwiękową SB16
+	call	sound
+
 	; zainicjalizuj dostęp do nośnika IDE0 Master
 	call	ide_initialize
 
@@ -122,6 +125,7 @@ start:
 %include	"engine/multitasking.asm"
 %include	"engine/keyboard.asm"
 %include	"engine/mouse.asm"
+%include	"engine/sound.asm"
 %include	"engine/interrupt_descriptor_table.asm"
 %include	"engine/virtual_file_system.asm"
 %include	"engine/process.asm"

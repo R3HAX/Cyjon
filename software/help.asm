@@ -28,23 +28,18 @@ start:
 	mov	rsi,	command_table + 0x08	; pomiń pierwszą wartość
 
 	; pobierz rozmiar komórki 'polecenie'
-	mov	r8,	qword [rsi - 0x08]
+	mov	r8,	qword [command_table]
 
-	; procedura - wyświetl ciąg znaków na ekranie w miejscu kursora
-	mov	ax,	0x0101
-
-	; domyślny kolor tła
-	mov	rdx,	VARIABLE_COLOR_BACKGROUND_DEFAULT
+	mov	ax,	VARIABLE_KERNEL_SERVICE_SCREEN_PRINT_STRING
+	mov	edx,	VARIABLE_COLOR_BACKGROUND_DEFAULT
 
 .loop:
-	; sprawdź czy koniec tablicy?
 	cmp	qword [rsi],	VARIABLE_EMPTY
-	je	.end	; tak
+	je	.end
 
-	; wyświetl polecenie
 	mov	ebx,	VARIABLE_COLOR_DEFAULT
-	mov	rcx,	r8	; rozmiar ciągu znaków
-	int	0x40	; wykonaj
+	mov	rcx,	r8
+	int	STATIC_KERNEL_SERVICE
 
 	; zachowaj wskaźnik
 	push	rsi
@@ -54,15 +49,15 @@ start:
 
 	; wyświetl opis polecenia
 	mov	ebx,	VARIABLE_COLOR_GRAY
-	mov	rcx,	-1	; wyświetl cały ciąg
-	int	0x40	; wykonaj
+	mov	rcx,	VARIABLE_FULL
+	int	STATIC_KERNEL_SERVICE
 
 	; przywróć wskaźnik
 	pop	rsi
 
 	; przesuń wskaźnik na następny rekord
 	add	rsi,	r8	; rozmiar komórki 'polecenie'
-	add	rsi,	0x08	; rozmiar wskaźnika do ciągu opisu
+	add	rsi,	VARIABLE_QWORD_SIZE	; rozmiar wskaźnika do ciągu opisu
 
 	; kontynuuj
 	jmp	.loop
@@ -70,7 +65,7 @@ start:
 .end:
 	; wyjdź z programu
 	xor	ax,	ax
-	int	0x40	; wykonaj
+	int	STATIC_KERNEL_SERVICE
 
 command_table:
 	dq	7	; rozmiar komórki 'polecenie'
@@ -80,6 +75,9 @@ command_table:
 
 	db	'clear  '
 	dq	text_clear
+
+	db	'conf   '
+	dq	text_conf
 
 	db	'date   '
 	dq	text_date
@@ -113,6 +111,7 @@ command_table:
 
 text_args	db	"example: transfer variables(args) from command line to process,", VARIABLE_ASCII_CODE_ENTER, VARIABLE_ASCII_CODE_NEWLINE, VARIABLE_ASCII_CODE_TERMINATOR
 text_clear	db	"clean console screen,", VARIABLE_ASCII_CODE_ENTER, VARIABLE_ASCII_CODE_NEWLINE, VARIABLE_ASCII_CODE_TERMINATOR
+text_conf	db	"system configuration tool,", VARIABLE_ASCII_CODE_ENTER, VARIABLE_ASCII_CODE_NEWLINE, VARIABLE_ASCII_CODE_TERMINATOR
 text_date	db	"display the current time,", VARIABLE_ASCII_CODE_ENTER, VARIABLE_ASCII_CODE_NEWLINE, VARIABLE_ASCII_CODE_TERMINATOR
 text_exit	db	"logout,", VARIABLE_ASCII_CODE_ENTER, VARIABLE_ASCII_CODE_NEWLINE, VARIABLE_ASCII_CODE_TERMINATOR
 text_free	db	"display amount of free and used memory in the system,", VARIABLE_ASCII_CODE_ENTER, VARIABLE_ASCII_CODE_NEWLINE, VARIABLE_ASCII_CODE_TERMINATOR

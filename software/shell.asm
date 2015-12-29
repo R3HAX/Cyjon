@@ -14,7 +14,7 @@
 ; zestaw imiennych wartości stałych
 %include	"config.asm"
 
-%define	VARIABLE_SHELL_VERSION	"w0.47"
+%define	VARIABLE_PROGRAM_VERSION	"w0.47"
 
 ; adresacja względna
 [DEFAULT REL]
@@ -27,21 +27,21 @@
 
 prestart:
 	; wyświetl wstępną informacje przy pierwszym uruchomieniu programu
-	mov	ax,	0x0101	; procedura wyświetlająca ciąg znaków zakończony TERMINATOREM lub sprecyzowaną ilością
+	mov	ax,	VARIABLE_KERNEL_SERVICE_SCREEN_PRINT_STRING	; procedura wyświetlająca ciąg znaków zakończony TERMINATOREM lub sprecyzowaną ilością
 	mov	rbx,	VARIABLE_COLOR_DEFAULT
-	mov	rcx,	-1	; wyświetl wszystkie znaki z ciągu
+	mov	rcx,	VARIABLE_FULL	; wyświetl wszystkie znaki z ciągu
 	mov	rdx,	VARIABLE_COLOR_BACKGROUND_DEFAULT
 	mov	rsi,	text_help
-	int	0x40	; wykonaj
+	int	STATIC_KERNEL_SERVICE
 	
 start:
 	; wyświetl znak zachęty
-	mov	ax,	0x0101	; procedura wyświetlająca ciąg znaków zakończony TERMINATOREM lub sprecyzowaną ilością
+	mov	ax,	VARIABLE_KERNEL_SERVICE_SCREEN_PRINT_STRING	; procedura wyświetlająca ciąg znaków zakończony TERMINATOREM lub sprecyzowaną ilością
 	mov	rbx,	VARIABLE_COLOR_LIGHT_RED
-	mov	rcx,	-1	; wyświetl wszystkie znaki z ciągu
+	mov	rcx,	VARIABLE_FULL	; wyświetl wszystkie znaki z ciągu
 	mov	rdx,	VARIABLE_COLOR_BACKGROUND_DEFAULT
 	mov	rsi,	text_prompt
-	int	0x40	; wykonaj
+	int	STATIC_KERNEL_SERVICE
 
 .loop:
 	; pobierz od użytkownika polecenie
@@ -49,19 +49,19 @@ start:
 	mov	rcx,	256	; maksymalny rozmiar polecenia do pobrania
 	mov	rdi,	command_cache	; gdzie przechować wprowadzony ciąg znaków
 	xor	r8,	r8	; bufor nie zawiera danych
-	call	library_input	; wykonaj
+	call	library_input
 
 	; czy użytkownik wpisał cokolwiek?
 	jc	.text
 
 .restart:
 	; wyświetl znak zachęty od nowej linii
-	mov	ax,	0x0101	; procedura wyświetlająca ciąg znaków zakończony TERMINATOREM lub sprecyzowaną ilością
+	mov	ax,	VARIABLE_KERNEL_SERVICE_SCREEN_PRINT_STRING	; procedura wyświetlająca ciąg znaków zakończony TERMINATOREM lub sprecyzowaną ilością
 	mov	rbx,	VARIABLE_COLOR_LIGHT_RED
-	mov	rcx,	-1	; wyświetl wszystkie znaki z ciągu
+	mov	rcx,	VARIABLE_FULL	; wyświetl wszystkie znaki z ciągu
 	mov	rdx,	VARIABLE_COLOR_BACKGROUND_DEFAULT
 	mov	rsi,	text_prompt_with_newline
-	int	0x40	; wykonaj
+	int	STATIC_KERNEL_SERVICE
 
 	; kontynuuj
 	jmp	.loop
@@ -71,10 +71,10 @@ start:
 	mov	qword [command_cache_size],	rcx
 
 	; przejdź do nowej linii
-	mov	ax,	0x0101	; procedura wyświetlająca ciąg znaków zakończony TERMINATOREM lub sprecyzowaną ilością
-	mov	rcx,	-1	; wyświetl wszystkie znaki z ciągu
+	mov	ax,	VARIABLE_KERNEL_SERVICE_SCREEN_PRINT_STRING	; procedura wyświetlająca ciąg znaków zakończony TERMINATOREM lub sprecyzowaną ilością
+	mov	rcx,	VARIABLE_FULL	; wyświetl wszystkie znaki z ciągu
 	mov	rsi,	text_newline
-	int	0x40	; wykonaj
+	int	STATIC_KERNEL_SERVICE
 
 	; przywróć ilość znaków w buforze
 	mov	rcx,	qword [command_cache_size]
@@ -98,7 +98,7 @@ start:
 	mov	ax,	VARIABLE_KERNEL_SERVICE_SCREEN_CLEAN	; procedura czyszcząca ekran
 	xor	rbx,	rbx	; od początku ekranu
 	xor	rcx,	rcx	; cały ekran
-	int	VARIABLE_KERNEL_SERVICE	; wykonaj
+	int	STATIC_KERNEL_SERVICE
 
 	; restart powłoki
 	jmp	start
@@ -114,11 +114,11 @@ start:
 	jnc	.noShell
 
 	; wyświetl informację o braku danego programu na partycji systemowej
-	mov	ax,	0x0101	; procedura wyświetlająca ciąg znaków zakończony TERMINATOREM lub sprecyzowaną ilością
-	mov	rcx,	-1	; wyświetl wszystkie znaki z ciągu
+	mov	ax,	VARIABLE_KERNEL_SERVICE_SCREEN_PRINT_STRING	; procedura wyświetlająca ciąg znaków zakończony TERMINATOREM lub sprecyzowaną ilością
+	mov	rcx,	VARIABLE_FULL	; wyświetl wszystkie znaki z ciągu
 	mov	rdx,	VARIABLE_COLOR_BACKGROUND_DEFAULT
 	mov	rsi,	text_inception
-	int	0x40	; wykonaj
+	int	STATIC_KERNEL_SERVICE
 
 	; restart powłoki
 	jmp	start
@@ -134,11 +134,11 @@ start:
 	jnc	.noInit
 
 	; wyświetl informację o braku danego programu na partycji systemowej
-	mov	ax,	0x0101	; procedura wyświetlająca ciąg znaków zakończony TERMINATOREM lub sprecyzowaną ilością
-	mov	rcx,	-1	; wyświetl wszystkie znaki z ciągu
+	mov	ax,	VARIABLE_KERNEL_SERVICE_SCREEN_PRINT_STRING	; procedura wyświetlająca ciąg znaków zakończony TERMINATOREM lub sprecyzowaną ilością
+	mov	rcx,	VARIABLE_FULL	; wyświetl wszystkie znaki z ciągu
 	mov	rdx,	VARIABLE_COLOR_BACKGROUND_DEFAULT
 	mov	rsi,	text_blocked
-	int	0x40	; wykonaj
+	int	STATIC_KERNEL_SERVICE
 
 	; restart powłoki
 	jmp	start
@@ -154,11 +154,11 @@ start:
 	jnc	.noLogin
 
 	; wyświetl informację o braku danego programu na partycji systemowej
-	mov	ax,	0x0101	; procedura wyświetlająca ciąg znaków zakończony TERMINATOREM lub sprecyzowaną ilością
-	mov	rcx,	-1	; wyświetl wszystkie znaki z ciągu
+	mov	ax,	VARIABLE_KERNEL_SERVICE_SCREEN_PRINT_STRING	; procedura wyświetlająca ciąg znaków zakończony TERMINATOREM lub sprecyzowaną ilością
+	mov	rcx,	VARIABLE_FULL	; wyświetl wszystkie znaki z ciągu
 	mov	rdx,	VARIABLE_COLOR_BACKGROUND_DEFAULT
 	mov	rsi,	text_login
-	int	0x40	; wykonaj
+	int	STATIC_KERNEL_SERVICE
 
 	; restart powłoki
 	jmp	start
@@ -175,38 +175,38 @@ start:
 
 	; wyloguj z powłoki systemu
 	xor	rax,	rax
-	int	0x40	; wykonaj
+	int	STATIC_KERNEL_SERVICE
 
 .noExit:
 	; uruchom program o podanej nazwie
-	mov	ax,	0x0001
+	mov	ax,	VARIABLE_KERNEL_SERVICE_PROCESS_NEW
 	mov	rsi,	rdi	; załaduj wskaźnik nazwy pliku
 	; przekaż listę argumentów do uruchamianego procesu
 	mov	rdi,	command_cache
 	mov	rdx,	qword [command_cache_size]
-	int	0x40	; wykonaj
+	int	STATIC_KERNEL_SERVICE
 
 	; sprawdź czy uruchomiono nowy proces
 	cmp	rcx,	VARIABLE_EMPTY
 	ja	.process
 
 	; wyświetl informację o braku danego programu na partycji systemowej
-	mov	ax,	0x0101	; procedura wyświetlająca ciąg znaków zakończony TERMINATOREM lub sprecyzowaną ilością
-	mov	rcx,	-1	; wyświetl wszystkie znaki z ciągu
+	mov	ax,	VARIABLE_KERNEL_SERVICE_SCREEN_PRINT_STRING	; procedura wyświetlająca ciąg znaków zakończony TERMINATOREM lub sprecyzowaną ilością
+	mov	rcx,	VARIABLE_FULL	; wyświetl wszystkie znaki z ciągu
 	mov	rdx,	VARIABLE_COLOR_BACKGROUND_DEFAULT
 	mov	rsi,	text_ups
-	int	0x40	; wykonaj
+	int	STATIC_KERNEL_SERVICE
 
 	; pobierz następne polecenie od użytkownika
 	jmp	start
 
 .process:
 	; sprawdź czy proces istnieje
-	mov	ax,	0x0002	; procedura przeszukuje tablice procesów za podanym identyfikatorem w rejestrze RCX
+	mov	ax,	VARIABLE_KERNEL_SERVICE_PROCESS_CHECK	; procedura przeszukuje tablice procesów za podanym identyfikatorem w rejestrze RCX
 
 .wait:
 	; sprawdź
-	int	0x40	; wykonaj
+	int	STATIC_KERNEL_SERVICE
 
 	; sprawdź czy proces zakończył pracę
 	cmp	rcx,	VARIABLE_EMPTY
@@ -219,7 +219,7 @@ start:
 %include	'library/find_first_word.asm'
 %include	'library/compare_string.asm'
 
-command_cache	times	256	db	0x00
+command_cache	times	256	db	VARIABLE_EMPTY
 				db	VARIABLE_ASCII_CODE_TERMINATOR
 command_cache_size		dq	VARIABLE_EMPTY
 
