@@ -24,7 +24,7 @@ key_function_read:
 	sub	ebx,	VARIABLE_INTERFACE_INTERACTIVE
 	shl	rbx,	32	; przesuń do pozycji wiersza
 	push	rbx	; zapamiętaj
-	int	VARIABLE_KERNEL_SERVICE	; wykonaj
+	int	STATIC_KERNEL_SERVICE	; wykonaj
 
 	; zmień kolor linii zapytań
 	mov	ax,	VARIABLE_KERNEL_SERVICE_SCREEN_PRINT_CHAR
@@ -32,12 +32,12 @@ key_function_read:
 	mov	ecx,	dword [variable_screen_size]	; szerokość ekranu w znakach
 	mov	rdx,	VARIABLE_COLOR_LIGHT_GRAY
 	mov	r8,	VARIABLE_ASCII_CODE_SPACE
-	int	VARIABLE_KERNEL_SERVICE	; wykonaj
+	int	STATIC_KERNEL_SERVICE	; wykonaj
 
 	; ustaw kursor w wierszu informacyjnym
 	mov	ax,	VARIABLE_KERNEL_SERVICE_SCREEN_CURSOR_SET
 	mov	rbx,	qword [rsp]
-	int	VARIABLE_KERNEL_SERVICE	; wykonaj
+	int	STATIC_KERNEL_SERVICE	; wykonaj
 
 	; wyświetl pytanie
 	mov	ax,	VARIABLE_KERNEL_SERVICE_SCREEN_PRINT_STRING
@@ -45,7 +45,7 @@ key_function_read:
 	mov	rcx,	VARIABLE_FULL	; wyświetl pełny ciąg znaków, zakończony terminatorem
 	mov	rdx,	VARIABLE_COLOR_LIGHT_GRAY
 	mov	rsi,	text_open_file
-	int	VARIABLE_KERNEL_SERVICE	; wykonaj
+	int	STATIC_KERNEL_SERVICE	; wykonaj
 
 	; rozmiar polecenia do pobrania
 	mov	ecx,	dword [variable_screen_size]
@@ -64,7 +64,7 @@ key_function_read:
 	; ustaw kursor
 	mov	ax,	VARIABLE_KERNEL_SERVICE_SCREEN_CURSOR_SET
 	pop	rbx
-	int	VARIABLE_KERNEL_SERVICE
+	int	STATIC_KERNEL_SERVICE
 
 	; wyczyść linię zapytań
 	mov	ax,	VARIABLE_KERNEL_SERVICE_SCREEN_PRINT_CHAR
@@ -72,12 +72,12 @@ key_function_read:
 	mov	ecx,	dword [variable_screen_size]	; szerokość ekranu w znakach
 	mov	rdx,	VARIABLE_COLOR_BACKGROUND_DEFAULT
 	mov	r8,	VARIABLE_ASCII_CODE_SPACE
-	int	VARIABLE_KERNEL_SERVICE	; wykonaj
+	int	STATIC_KERNEL_SERVICE	; wykonaj
 
 	; ustaw kursor
 	mov	ax,	VARIABLE_KERNEL_SERVICE_SCREEN_CURSOR_SET
 	mov	rbx,	qword [variable_cursor_position]
-	int	VARIABLE_KERNEL_SERVICE
+	int	STATIC_KERNEL_SERVICE
 
 	; zakończ obługę funkcji
 	jmp	start.noKey
@@ -103,7 +103,7 @@ key_function_read:
 	mov	rcx,	qword [file_name_chars_count]
 	mov	rsi,	file_name_buffor
 	mov	rdi,	qword [variable_document_address_start]
-	int	VARIABLE_KERNEL_SERVICE
+	int	STATIC_KERNEL_SERVICE
 
 	cmp	rax,	VARIABLE_EMPTY
 	je	.end	; lub wyświetl informację, pliku nie znaleziono i pozwól na poprawę nazwy (do zrobienia)
@@ -150,7 +150,7 @@ key_function_read:
 	; ustaw kursor w nagłówku
 	mov	ax,	VARIABLE_KERNEL_SERVICE_SCREEN_CURSOR_SET
 	xor	rbx,	rbx
-	int	VARIABLE_KERNEL_SERVICE
+	int	STATIC_KERNEL_SERVICE
 
 	; wyczyść nagłówek
 	mov	ax,	VARIABLE_KERNEL_SERVICE_SCREEN_PRINT_CHAR
@@ -158,12 +158,12 @@ key_function_read:
 	mov	ecx,	dword [variable_screen_size]	; szerokość ekranu w znakach
 	mov	rdx,	VARIABLE_COLOR_LIGHT_GRAY
 	mov	r8,	VARIABLE_ASCII_CODE_SPACE
-	int	VARIABLE_KERNEL_SERVICE	; wykonaj
+	int	STATIC_KERNEL_SERVICE	; wykonaj
 
 	; ustaw kursor w nagłówku
 	mov	ax,	VARIABLE_KERNEL_SERVICE_SCREEN_CURSOR_SET
 	mov	ebx,	1
-	int	VARIABLE_KERNEL_SERVICE	; wykonaj
+	int	STATIC_KERNEL_SERVICE	; wykonaj
 
 	; wyświetl nawę pliku w nagłówku
 	mov	ax,	VARIABLE_KERNEL_SERVICE_SCREEN_PRINT_STRING
@@ -171,7 +171,7 @@ key_function_read:
 	mov	rcx,	qword [file_name_chars_count]	; przywróć ilość znaków przypadających na nazwe pliku
 	mov	rdx,	VARIABLE_COLOR_LIGHT_GRAY
 	mov	rsi,	file_name_buffor	; przywróć wskaźnik do nazwy pliku
-	int	VARIABLE_KERNEL_SERVICE	; wykonaj
+	int	STATIC_KERNEL_SERVICE	; wykonaj
 
 	; inicjalizacja załadowanego dokumentu -------------------------
 
@@ -217,12 +217,12 @@ key_function_read:
 	mov	rbx,	VARIABLE_INTERFACE_HEADER_HEIGHT	; za nagłówkiem
 	mov	ecx,	dword [variable_screen_size + VARIABLE_QWORD_HIGH]
 	sub	rcx,	VARIABLE_INTERFACE_HEIGHT	; tylko przestrzeń dokumentu
-	int	VARIABLE_KERNEL_SERVICE	; wykonaj
+	int	STATIC_KERNEL_SERVICE	; wykonaj
 
 	; ustaw kursor na początku przestrzeni dokumentu
 	mov	ax,	VARIABLE_KERNEL_SERVICE_SCREEN_CURSOR_SET
 	mov	rbx,	VARIABLE_CURSOR_POSITION_INIT
-	int	VARIABLE_KERNEL_SERVICE	; wykonaj
+	int	STATIC_KERNEL_SERVICE	; wykonaj
 
 	pop	rsi
 
@@ -254,7 +254,7 @@ key_function_read:
 
 .line_size_ok:
 	; wyświetl linię
-	int	VARIABLE_KERNEL_SERVICE	; wykonaj
+	int	STATIC_KERNEL_SERVICE	; wykonaj
 
 	pop	rcx
 
@@ -273,7 +273,7 @@ key_function_read:
 	; wyświetl spacje do końca linii
 	mov	rcx,	VARIABLE_FULL
 	mov	rsi,	text_new_line
-	int	VARIABLE_KERNEL_SERVICE
+	int	STATIC_KERNEL_SERVICE
 
 	; przywróć oryginalne rejestry
 	pop	rsi

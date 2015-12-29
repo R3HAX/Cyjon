@@ -26,7 +26,7 @@
 start:
 	mov	ax,	VARIABLE_KERNEL_SERVICE_SCREEN_PRINT_STRING
 	mov	ebx,	VARIABLE_COLOR_DEFAULT
-	mov	rcx,	VARIABLE_FULL
+	mov	ecx,	VARIABLE_FULL
 	mov	edx,	VARIABLE_COLOR_BACKGROUND_DEFAULT
 	mov	rsi,	text_header
 	int	STATIC_KERNEL_SERVICE
@@ -39,7 +39,7 @@ start:
 	push	rdx
 
 	mov	ax,	VARIABLE_KERNEL_SERVICE_SCREEN_PRINT_NUMBER
-	mov	rcx,	10	; system dziesiętny
+	mov	ecx,	10	; system dziesiętny
 	mov	r8,	rbx
 	shl	r8,	2	; *4 KiB
 	mov	ebx,	VARIABLE_COLOR_WHITE
@@ -56,15 +56,15 @@ start:
 
 	push	rbx
 
-	mov	dword [rsp],	23	; used column
+	mov	dword [rsp],	23	; 'used' column
 	mov	rbx,	qword [rsp]
 
 	mov	ax,	VARIABLE_KERNEL_SERVICE_SCREEN_CURSOR_SET
 	int	STATIC_KERNEL_SERVICE
 
 	mov	ax,	VARIABLE_KERNEL_SERVICE_SCREEN_PRINT_NUMBER
-	mov	r8,	qword [rsp + 0x18]
-	sub	r8,	qword [rsp + 0x10]
+	mov	r8,	qword [rsp + VARIABLE_QWORD_SIZE * 3]
+	sub	r8,	qword [rsp + VARIABLE_QWORD_SIZE * 2]
 	shl	r8,	2	; *4 KiB
 	mov	ebx,	VARIABLE_COLOR_WHITE
 	int	STATIC_KERNEL_SERVICE
@@ -74,14 +74,14 @@ start:
 	mov	rsi,	text_kib
 	int	STATIC_KERNEL_SERVICE
 
-	mov	dword [rsp],	38	; free column
+	mov	dword [rsp],	38	; 'free' column
 	mov	rbx,	qword [rsp]
 
 	mov	ax,	VARIABLE_KERNEL_SERVICE_SCREEN_CURSOR_SET
 	int	STATIC_KERNEL_SERVICE
 
 	mov	ax,	VARIABLE_KERNEL_SERVICE_SCREEN_PRINT_NUMBER
-	mov	r8,	qword [rsp + 0x10]
+	mov	r8,	qword [rsp + VARIABLE_QWORD_SIZE * 2]
 	shl	r8,	2	; *4 KiB
 	mov	ebx,	VARIABLE_COLOR_WHITE
 	int	STATIC_KERNEL_SERVICE
@@ -91,14 +91,14 @@ start:
 	mov	rsi,	text_kib
 	int	STATIC_KERNEL_SERVICE
 
-	mov	dword [rsp],	53	; shared column
+	mov	dword [rsp],	53	; 'shared' column
 	mov	rbx,	qword [rsp]
 
 	mov	ax,	VARIABLE_KERNEL_SERVICE_SCREEN_CURSOR_SET
 	int	STATIC_KERNEL_SERVICE
 
 	mov	ax,	VARIABLE_KERNEL_SERVICE_SCREEN_PRINT_NUMBER
-	mov	r8,	qword [rsp + 0x08]
+	mov	r8,	qword [rsp + VARIABLE_QWORD_SIZE]
 	shl	r8,	2	; *4 KiB
 	mov	ebx,	VARIABLE_COLOR_WHITE
 	int	STATIC_KERNEL_SERVICE

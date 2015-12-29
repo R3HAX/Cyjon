@@ -44,22 +44,22 @@ start:
 	call	library_align_address_up_to_page
 
 	; pobierz listę aktywnych procesów (prócz jądra systemu)
-	mov	ax,	0x0004
-	int	0x40
+	mov	ax,	VARIABLE_KERNEL_SERVICE_PROCESS_LIST
+	int	STATIC_KERNEL_SERVICE
 
 	; wyświetl nagłówek
-	mov	rax,	0x0101
+	mov	rax,	VARIABLE_KERNEL_SERVICE_SCREEN_PRINT_STRING
 	mov	rbx,	VARIABLE_COLOR_DEFAULT
-	mov	rcx,	-1
+	mov	rcx,	VARIABLE_FULL
 	mov	rdx,	VARIABLE_COLOR_BACKGROUND_DEFAULT
 	mov	rsi,	text_header
-	int	0x40
+	int	STATIC_KERNEL_SERVICE
 
 	; pobierz rozmiar rekordu
 	mov	r9,	qword [rdi]
 
 	; przejdź do pierwszego rekordu
-	add	rdi,	0x08
+	add	rdi,	VARIABLE_QWORD_SIZE
 
 .loop:
 	push	rdi
@@ -77,32 +77,32 @@ start:
 
 .color_ok:
 	; wyświetl numer PID
-	mov	ax,	0x0103
-	mov	ecx,	10
+	mov	ax,	VARIABLE_KERNEL_SERVICE_SCREEN_PRINT_NUMBER
+	mov	ecx,	10	; system dziesiętny
 	mov	r8,	qword [rdi]
-	int	0x40
+	int	STATIC_KERNEL_SERVICE
 
 	push	rbx
 
-	mov	ax,	0x0104
-	int	0x40
+	mov	ax,	VARIABLE_KERNEL_SERVICE_SCREEN_CURSOR_GET
+	int	STATIC_KERNEL_SERVICE
 
 	push	rbx
 	mov	dword [rsp],	0x08
 	pop	rbx
 
-	mov	ax,	0x0105
-	int	0x40
+	mov	ax,	VARIABLE_KERNEL_SERVICE_SCREEN_CURSOR_SET
+	int	STATIC_KERNEL_SERVICE
 
 	pop	rbx
-	mov	ax,	0x0101
+	mov	ax,	VARIABLE_KERNEL_SERVICE_SCREEN_PRINT_STRING
 	mov	rcx,	32	; maksymalna ilość znaków na nazwę procesu
 	mov	rsi,	rdi
 	add	rsi,	VARIABLE_TABLE_SERPENTINE_RECORD.NAME
-	int	0x40
+	int	STATIC_KERNEL_SERVICE
 
 	mov	rsi,	text_paragraph
-	int	0x40
+	int	STATIC_KERNEL_SERVICE
 
 	pop	rdi
 
@@ -112,7 +112,7 @@ start:
 	jne	.loop
 
 	xor	ax,	ax
-	int	0x40
+	int	STATIC_KERNEL_SERVICE
 
 %include	"library/align_address_up_to_page.asm"
 

@@ -19,6 +19,9 @@ struc	ENTRY
 	.name				resb	1
 endstruc
 
+VARIABLE_ENTRY_TYPE_FILE	equ	0x8000
+VARIABLE_ENTRY_TYPE_DIR		equ	0x4000
+
 ; kolory, stałe
 %include	'config.asm'
 
@@ -34,10 +37,10 @@ endstruc
 start:
 	mov	rdi,	end
 	and	di,	0xF000
-	add	rdi,	0x1000
+	add	rdi,	VARIABLE_MEMORY_PAGE_SIZE
 
-	mov	ax,	0x0005
-	int	0x40
+	mov	ax,	VARIABLE_KERNEL_SERVICE_PROCESS_ARGS
+	int	STATIC_KERNEL_SERVICE
 
 	cmp	rcx,	VARIABLE_EMPTY
 	je	.no_args
@@ -60,18 +63,18 @@ start:
 	mov	byte [variable_semaphore_all],	VARIABLE_INCREMENT
 
 .no_option:
-	add	rsp,	0x08
+	add	rsp,	VARIABLE_QWORD_SIZE
 	pop	rdi
 
 .no_args:
 	; wczytaj plik
-	mov	rax,	VARIABLE_KERNEL_SERVICE_FILESYSTEM_ROOT_DIR
-	int	0x40
+	mov	ax,	VARIABLE_KERNEL_SERVICE_FILESYSTEM_ROOT_DIR
+	int	STATIC_KERNEL_SERVICE
 
 	; przystępujemy do wyświetlenia zawartości
 
 	; ustaw dane przerwania
-	mov	ax,	0x0101	; al - narzędzia ekranu, ah - procedura - wyświetl ciąg tekstu znajdujący się pod adresem logicznym w rejestrze rsi, zakończony terminatorem (0x00)
+	mov	ax,	VARIABLE_KERNEL_SERVICE_SCREEN_PRINT_STRING	; al - narzędzia ekranu, ah - procedura - wyświetl ciąg tekstu znajdujący się pod adresem logicznym w rejestrze rsi, zakończony terminatorem (0x00)
 
 	; oblicz koniec "tablicy" katalogu głównego użyszkodnika
 	add	rdx,	rdi
@@ -96,7 +99,7 @@ start:
 	movzx	rcx,	byte [rsi + ENTRY.chars]
 
 	; rozpoznaj atrybut katalogu i dostosuj kolor wyświetlanego tekstu
-	cmp	word [rsi + ENTRY.type],	0x4000
+	cmp	word [rsi + ENTRY.type],	VARIABLE_ENTRY_TYPE_DIR
 	je	.catalog
 
 	; załaduj kolor dla zwykłego pliku
@@ -117,12 +120,12 @@ start:
 
 	; przesuń wskaźnik na ciąg znaków przedstawiający nazwe pliku
 	add	rsi,	ENTRY.name
-	int	0x40	; wykonaj
+	int	STATIC_KERNEL_SERVICE	; wykonaj
 
 	; wyświetl odstęp pomięczy nazwami
-	mov	cl,	-1	; wyświetl wszystkie znaki z ciągu zakończonego terminatorem
+	mov	cl,	VARIABLE_FULL	; wyświetl wszystkie znaki z ciągu zakończonego terminatorem
 	mov	rsi,	text_separate
-	int	0x40	; wykonaj
+	int	STATIC_KERNEL_SERVICE
 
 	pop	rsi
 	pop	rdx
@@ -140,16 +143,16 @@ start:
 	; zakończ wyświetlanie zawartości katalogu głównego użyszkodnika nową linią i karetką
 	mov	edx,	VARIABLE_COLOR_BACKGROUND_DEFAULT
 	mov	rsi,	text_new_line
-	int	0x40	; wykonaj
+	int	STATIC_KERNEL_SERVICE	; wykonaj
 
 	; program kończy działanie
 	xor	ax,	ax
-	int	0x40	; wykonaj
+	int	STATIC_KERNEL_SERVICE	; wykonaj
 
 %include	'library/find_first_word.asm'
 %include	'library/compare_string.asm'
 
-variable_semaphore_all	db	0x00
+variable_semaphore_all	db	VARIABLE_EMPTY
 
 text_option_all	db	'-a'
 text_separate	db	'  ', VARIABLE_ASCII_CODE_TERMINATOR

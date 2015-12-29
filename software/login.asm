@@ -25,39 +25,39 @@
 
 start:
 	; wyświetl nawe jednostki i prośbę o nazwe konta
-	mov	rax,	0x0101	; procedura - wyświetl ciąg znaków na ekranie w miejscu kursora
+	mov	rax,	VARIABLE_KERNEL_SERVICE_SCREEN_PRINT_STRING
 	mov	rbx,	VARIABLE_COLOR_DEFAULT
-	mov	rcx,	-1	; wszystkie znaki z ciągu
+	mov	rcx,	VARIABLE_FULL	; wszystkie znaki z ciągu
 	mov	rdx,	VARIABLE_COLOR_BACKGROUND_DEFAULT
 	mov	rsi,	text_login	; wskaźnik do ciągu znaków zakończony terminatorem lub licznikiem
-	int	0x40	; wykonaj
+	int	STATIC_KERNEL_SERVICE
 
 	; pobierz od użytkownika ciąg znaków
 	mov	rbx,	VARIABLE_COLOR_WHITE
 	mov	rcx,	16	; ilość pobieranych znaków
 	mov	rdi,	text_login_cache	; gdzie przechować pobrane znaki
-	call	library_input	; wykonaj
+	call	library_input
 
 	; wyświetl prośbę o podanie hasła
 	mov	rbx,	VARIABLE_COLOR_DEFAULT
-	mov	rcx,	-1	; wszystkie znaki z ciągu
+	mov	rcx,	VARIABLE_FULL	; wszystkie znaki z ciągu
 	mov	rsi,	text_password	; wskaźnik do ciągu znaków zakończony terminatorem lub licznikiem
-	int	0x40	; wykonaj
+	int	STATIC_KERNEL_SERVICE
 
 	; pobierz od użytkownika ciąg znaków
 	mov	rbx,	VARIABLE_COLOR_BACKGROUND_DEFAULT
 	mov	rcx,	16	; ilość pobieranych znaków
 	mov	rdi,	text_password_cache	; gdzie przechować pobrane znaki
-	call	library_input	; wykonaj
+	call	library_input
 
 	; przesuń kursor na początek linii
-	mov	rcx,	-1	; wszystkie znaki z ciągu
+	mov	rcx,	VARIABLE_FULL	; wszystkie znaki z ciągu
 	mov	rsi,	text_space	; wskaźnik do ciągu znaków zakończony terminatorem lub licznikiem
-	int	0x40	; wykonaj
+	int	STATIC_KERNEL_SERVICE
 
 	; zakończ działanie procesu/programu
 	xor	rax,	rax
-	int	0x40	; wykonaj
+	int	STATIC_KERNEL_SERVICE
 
 %include	'library/input.asm'
 %include	'library/compare_string.asm'
@@ -66,7 +66,7 @@ variable_passwd_tmp		db	'toor'
 variable_passwd_tmp_count	db	4
 
 text_login				db	'localhost login: ', VARIABLE_ASCII_CODE_TERMINATOR
-text_login_cache	times	16	db	0x00
+text_login_cache	times	16	db	VARIABLE_EMPTY
 text_password				db	VARIABLE_ASCII_CODE_ENTER, VARIABLE_ASCII_CODE_NEWLINE, 'Password: ', VARIABLE_ASCII_CODE_TERMINATOR
-text_password_cache	times	16	db	0x00
+text_password_cache	times	16	db	VARIABLE_EMPTY
 text_space				db	VARIABLE_ASCII_CODE_ENTER, VARIABLE_ASCII_CODE_NEWLINE, VARIABLE_ASCII_CODE_NEWLINE, VARIABLE_ASCII_CODE_TERMINATOR

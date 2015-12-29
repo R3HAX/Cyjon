@@ -33,8 +33,8 @@ start:
 
 .noKey:
 	; pobierz znak z bufora klawiatury
-	mov	ax,	0x0200
-	int	0x40	; wykonaj
+	mov	ax,	VARIABLE_KERNEL_SERVICE_KEYBOARD_GET_KEY
+	int	STATIC_KERNEL_SERVICE
 
 	cmp	ax,	VARIABLE_EMPTY	
 	je	.noKey

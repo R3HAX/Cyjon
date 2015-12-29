@@ -66,4 +66,23 @@ sound:
 	; karta dźwiękowa zresetowana i gotowa do pracy
 	mov	byte [variable_sound_card_sb16_semaphore],	VARIABLE_TRUE
 
+	; wyświetl podstawową informację o trybie graficznym
+	mov	rbx,	VARIABLE_COLOR_GREEN
+	mov	rcx,	VARIABLE_FULL
+	mov	rdx,	VARIABLE_COLOR_BACKGROUND_DEFAULT
+	mov	rsi,	text_caution
+	call	cyjon_screen_print_string
+
+	mov	rbx,	VARIABLE_COLOR_DEFAULT
+	mov	rsi,	text_sound_blaster_16
+	call	cyjon_screen_print_string
+
 	ret
+
+text_sound_blaster_16	db	' ISA Sound Blaster 16, found.', VARIABLE_ASCII_CODE_ENTER, VARIABLE_ASCII_CODE_NEWLINE, VARIABLE_ASCII_CODE_TERMINATOR
+
+; sound IRQ5
+irq37:
+	xchg	bx,	bx
+
+	iretq

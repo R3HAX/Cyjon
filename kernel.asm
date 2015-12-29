@@ -57,7 +57,7 @@ start:
 	; włącz przerwania sprzętowe IRQ0 (planista), IRQ1 (klawiatura)
 	mov	al,	11101111b	; irq15, irq14, irq13, mouse, irq11, irq10, irq9, irq8
 	out	0xA1,	al
-	mov	al,	11111100b	; irq7, irq6, irq5, irq4, irq3, irq2, keyboard, sheduler/clock
+	mov	al,	11011100b	; irq7, irq6, sound, irq4, irq3, irq2, keyboard, sheduler/clock
 	out	0x21,	al
 
 	; resetuj karte dźwiękową SB16

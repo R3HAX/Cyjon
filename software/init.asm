@@ -11,7 +11,7 @@
 ; Use:
 ; nasm - http://www.nasm.us/
 
-%define	VARIABLE_VERSION	"v0.2"
+%define	VARIABLE_PROGRAM_VERSION	"v0.2"
 
 ; kolory, stałe
 %include	'config.asm'
@@ -26,10 +26,10 @@
 [ORG VARIABLE_MEMORY_HIGH_REAL_ADDRESS]
 
 start:
-	mov	rax,	VARIABLE_KERNEL_SERVICE_SCREEN_PRINT_STRING
-	mov	rbx,	VARIABLE_COLOR_DEFAULT
-	mov	rcx,	VARIABLE_FULL
-	mov	rdx,	VARIABLE_COLOR_BACKGROUND_DEFAULT
+	mov	ax,	VARIABLE_KERNEL_SERVICE_SCREEN_PRINT_STRING
+	mov	ebx,	VARIABLE_COLOR_DEFAULT
+	mov	ecx,	VARIABLE_FULL
+	mov	edx,	VARIABLE_COLOR_BACKGROUND_DEFAULT
 	mov	rsi,	text_init
 	int	STATIC_KERNEL_SERVICE
 
@@ -41,52 +41,52 @@ start:
 	mov	ax,	VARIABLE_KERNEL_SERVICE_SCREEN_CLEAN	; procedura czyszcząca ekran
 	xor	rbx,	rbx	; od początku ekranu
 	xor	rcx,	rcx	; cały ekran
-	int	VARIABLE_KERNEL_SERVICE	; wykonaj
+	int	STATIC_KERNEL_SERVICE
 
 .start:
 	; wyświetl zaproszenie
 
 	; procedura - wyświetl ciąg znaków na ekranie w miejscu kursora
-	mov	rax,	0x0101
-	mov	rcx,	-1	; wyświetl wszystkie znaki z ciągu
-	mov	rdx,	VARIABLE_COLOR_BACKGROUND_DEFAULT
+	mov	ax,	VARIABLE_KERNEL_SERVICE_SCREEN_PRINT_STRING
+	mov	ecx,	VARIABLE_FULL	; wyświetl wszystkie znaki z ciągu
+	mov	edx,	VARIABLE_COLOR_BACKGROUND_DEFAULT
 
 	;kolor znaków
-	mov	rbx,	VARIABLE_COLOR_LIGHT_BLUE
+	mov	ebx,	VARIABLE_COLOR_LIGHT_BLUE
 	; wskaźnik do ciągu znaków zakończony terminatorem lub licznikiem
 	mov	rsi,	text_welcome
-	int	0x40	; wykonaj
+	int	STATIC_KERNEL_SERVICE
 
 	;kolor znaków
-	mov	rbx,	VARIABLE_COLOR_DEFAULT
+	mov	ebx,	VARIABLE_COLOR_DEFAULT
 	; wskaźnik do ciągu znaków zakończony terminatorem lub licznikiem
 	mov	rsi,	text_separator
-	int	0x40	; wykonaj
+	int	STATIC_KERNEL_SERVICE
 
 	;kolor znaków
-	mov	rbx,	VARIABLE_COLOR_LIGHT_GRAY
+	mov	ebx,	VARIABLE_COLOR_LIGHT_GRAY
 	; wskaźnik do ciągu znaków zakończony terminatorem lub licznikiem
 	mov	rsi,	text_version
-	int	0x40	; wykonaj
+	int	STATIC_KERNEL_SERVICE
 
 	;=======================================================================
 	; uruchom proces logowania do konsoli
-	mov	rax,	0x0001
-	mov	rcx,	qword [file_login_name_length]	; ilość znaków w nazwie pliku
+	mov	ax,	VARIABLE_KERNEL_SERVICE_PROCESS_NEW
+	mov	ecx,	dword [file_login_name_length]	; ilość znaków w nazwie pliku
 	xor	rdx,	rdx	; brak argumentów
 	mov	rsi,	file_login	; wskaźnik do nazwy pliku
-	int	0x40	; wykonaj
+	int	STATIC_KERNEL_SERVICE
 
 	; sprawdź czy proces zakończył pracę
 	call	check
 
 	;=======================================================================
 	; uruchom powłokę systemu
-	mov	rax,	0x0001
-	mov	rcx,	qword [file_shell_name_length]	; ilość znaków w nazwie pliku
+	mov	ax,	VARIABLE_KERNEL_SERVICE_PROCESS_NEW
+	mov	ecx,	dword [file_shell_name_length]	; ilość znaków w nazwie pliku
 	xor	rdx,	rdx	; brak argumentów
 	mov	rsi,	file_shell
-	int	0x40	; wykonaj
+	int	STATIC_KERNEL_SERVICE
 
 	; sprawdź czy proces zakończył pracę
 	call	check
@@ -100,11 +100,11 @@ check:
 	push	rax
 
 	; pobierz informację o procesie
-	mov	rax,	0x0002	; sprawdź czy proces o numerze PID jest uruchomiony
+	mov	ax,	VARIABLE_KERNEL_SERVICE_PROCESS_CHECK
 	; rcx - numer PID procesu	
 
 .wait:
-	int	0x40	; wykonaj
+	int	STATIC_KERNEL_SERVICE
 
 	; sprawdź czy proces zakończył pracę / poprawne zalogowanie się do systemu
 	cmp	rcx,	VARIABLE_EMPTY
@@ -117,7 +117,7 @@ check:
 	ret
 
 text_init	db	VARIABLE_ASCII_CODE_ENTER, VARIABLE_ASCII_CODE_NEWLINE
-		db	"INIT: ", VARIABLE_VERSION, " ready.", VARIABLE_ASCII_CODE_ENTER, VARIABLE_ASCII_CODE_NEWLINE, VARIABLE_ASCII_CODE_TERMINATOR
+		db	"INIT: ", VARIABLE_PROGRAM_VERSION, " ready.", VARIABLE_ASCII_CODE_ENTER, VARIABLE_ASCII_CODE_NEWLINE, VARIABLE_ASCII_CODE_TERMINATOR
 text_welcome	db	VARIABLE_ASCII_CODE_ENTER, VARIABLE_ASCII_CODE_NEWLINE
 		db	"     W a t a h a . n e t", VARIABLE_ASCII_CODE_ENTER, VARIABLE_ASCII_CODE_NEWLINE, VARIABLE_ASCII_CODE_TERMINATOR
 text_separator	db	"   -----------------------", VARIABLE_ASCII_CODE_ENTER, VARIABLE_ASCII_CODE_NEWLINE, VARIABLE_ASCII_CODE_TERMINATOR

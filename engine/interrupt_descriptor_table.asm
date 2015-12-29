@@ -79,9 +79,15 @@ interrupt_descriptor_table:
 	mov	rax,	irq33	; plik: engine/keyboard.asm
 	call	recreate_record
 
+	mov	rax,	irq37	; plik: engine/sound.asm
+	mov	rdi,	qword [variable_interrupt_descriptor_table_address]
+	add	rdi,	0x10 * 37	; podrekord 5
+	call	recreate_record
+
 	mov	rax,	irq43
 	mov	rdi,	qword [variable_interrupt_descriptor_table_address]
 	add	rdi,	0x10 * 43	; podrekord 12
+	call	recreate_record
 
 	;---------------------------------------------------------------
 

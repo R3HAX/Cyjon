@@ -25,8 +25,8 @@
 
 start:
 	; procedura pobierz czas systemu
-	mov	ax,	0x0301
-	int	0x40	; wykonaj
+	mov	ax,	VARIABLE_KERNEL_SERVICE_SYSTEM_DATE
+	int	STATIC_KERNEL_SERVICE
 
 	; godzina i data pochodzi z CMOSu, zawsze ustawiam tam czas międzynarodowy GMT
 	; zadaniem systemu jest go modyfikować względem strefy czasu w danym państwie
@@ -55,7 +55,7 @@ start:
 	dec	r8
 
 	; oblicz numer rekordu w tablicy nazw tygodnia
-	mov	rax,	6
+	mov	eax,	6
 	mul	r8	; oblicz
 
 	; załaduj wskaźnik do wyliczonego tekstu
@@ -63,19 +63,19 @@ start:
 	add	rsi,	rax	; dodaj przesunięcie ("numer" rekordu)
 
 	; wypisz tekst na ekranie
-	mov	ax,	0x0101
-	mov	rbx,	VARIABLE_COLOR_DEFAULT
-	mov	rcx,	-1
-	mov	rdx,	VARIABLE_COLOR_BACKGROUND_DEFAULT
-	int	0x40	; wykonaj
+	mov	ax,	VARIABLE_KERNEL_SERVICE_SCREEN_PRINT_STRING
+	mov	ebx,	VARIABLE_COLOR_DEFAULT
+	mov	ecx,	VARIABLE_FULL
+	mov	edx,	VARIABLE_COLOR_BACKGROUND_DEFAULT
+	int	STATIC_KERNEL_SERVICE
 
 	; pobierz dzień miesiąca ---------------------------------------
 	movzx	r8,	byte [rsp + 0x06]
 
 	; wyświetl liczbę
-	mov	ax,	0x0103
-	mov	rcx,	10
-	int	0x40	; wykonaj
+	mov	ax,	VARIABLE_KERNEL_SERVICE_SCREEN_PRINT_NUMBER
+	mov	ecx,	10	; system dziesiętny
+	int	STATIC_KERNEL_SERVICE
 
 	; pobierz miesiąc ----------------------------------------------
 	movzx	r8,	byte [rsp + 0x05]
@@ -84,7 +84,7 @@ start:
 	dec	r8
 
 	; oblicz numer rekordu w tablicy miesięcy
-	mov	rax,	6
+	mov	eax,	6
 	mul	r8	; oblicz
 
 	; załaduj wskaźnik do wyliczonego tekstu
@@ -92,10 +92,10 @@ start:
 	add	rsi,	rax	; dodaj przesunięcie ("numer" rekordu)
 
 	; wypisz tekst na ekranie
-	mov	ax,	0x0101
-	mov	rcx,	-1	; wyświetl cały tekst
-	mov	rdx,	VARIABLE_COLOR_BACKGROUND_DEFAULT
-	int	0x40	; wykonaj
+	mov	ax,	VARIABLE_KERNEL_SERVICE_SCREEN_PRINT_STRING
+	mov	ecx,	VARIABLE_FULL
+	mov	edx,	VARIABLE_COLOR_BACKGROUND_DEFAULT
+	int	STATIC_KERNEL_SERVICE
 
 	; pobierz rok --------------------------------------------------
 	movzx	r8,	byte [rsp + 0x04]
@@ -104,14 +104,14 @@ start:
 	add	r8,	2000
 
 	; wyświetl liczbę
-	mov	ax,	0x0103
-	mov	rcx,	10
-	int	0x40	; wykonaj
+	mov	ax,	VARIABLE_KERNEL_SERVICE_SCREEN_PRINT_NUMBER
+	mov	rcx,	10	; system dziesiętny
+	int	STATIC_KERNEL_SERVICE
 
 	; wyświetl separator -------------------------------------------
 
 	; wyświetl separator bez cyfry wiodącej
-	mov	rcx,	2
+	mov	ecx,	2
 
 	; sprawdź, czy wyświetlić cyfrę wiodącą?
 	cmp	byte [rsp + 0x03],	9
@@ -122,22 +122,22 @@ start:
 
 .godzina:
 	; wyświetl tekst
-	mov	ax,	0x0101
+	mov	ax,	VARIABLE_KERNEL_SERVICE_SCREEN_PRINT_STRING
 	mov	rsi,	tekst_separator
-	int	0x40	; wykonaj
+	int	STATIC_KERNEL_SERVICE
 
 	; pobierz godzine ----------------------------------------------
 	movzx	r8,	byte [rsp + 0x03]
 
 	; wyświetl liczbę
-	mov	ax,	0x0103
-	mov	rcx,	10
-	int	0x40	; wykonaj
+	mov	ax,	VARIABLE_KERNEL_SERVICE_SCREEN_PRINT_NUMBER
+	mov	rcx,	10	; system dziesiętny
+	int	STATIC_KERNEL_SERVICE
 
 	; wyświetl dwukropek -------------------------------------------
 
 	; wyświetl dwukropek bez cyfry wiodącej
-	mov	rcx,	1
+	mov	ecx,	1
 
 	; sprawdź, czy wyświetlić cyfrę wiodącą?
 	cmp	byte [rsp + 0x02],	9
@@ -148,22 +148,22 @@ start:
 
 .minuta:
 	; wyświetl tekst
-	mov	ax,	0x0101
+	mov	ax,	VARIABLE_KERNEL_SERVICE_SCREEN_PRINT_STRING
 	mov	rsi,	tekst_dwukropek
-	int	0x40	; wykonaj
+	int	STATIC_KERNEL_SERVICE
 
 	; pobierz minute ----------------------------------------------
 	movzx	r8,	byte [rsp + 0x02]
 
 	; wyświetl liczbę
-	mov	ax,	0x0103
-	mov	rcx,	10
-	int	0x40	; wykonaj
+	mov	ax,	VARIABLE_KERNEL_SERVICE_SCREEN_PRINT_NUMBER
+	mov	rcx,	10	; system dziesiętny
+	int	STATIC_KERNEL_SERVICE
 
 	; wyświetl dwukropek -------------------------------------------
 
 	; wyświetl dwukropek bez cyfry wiodącej
-	mov	rcx,	1
+	mov	ecx,	1
 
 	; sprawdź, czy wyświetlić cyfrę wiodącą?
 	cmp	byte [rsp + 0x01],	9
@@ -174,27 +174,27 @@ start:
 
 .sekunda:
 	; wyświetl tekst
-	mov	ax,	0x0101
+	mov	ax,	VARIABLE_KERNEL_SERVICE_SCREEN_PRINT_STRING
 	mov	rsi,	tekst_dwukropek
-	int	0x40	; wykonaj
+	int	STATIC_KERNEL_SERVICE
 
 	; pobierz sekunde ----------------------------------------------
 	movzx	r8,	byte [rsp + 0x01]
 
 	; wyświetl liczbę
-	mov	ax,	0x0103
-	mov	rcx,	10
-	int	0x40	; wykonaj
+	mov	ax,	VARIABLE_KERNEL_SERVICE_SCREEN_PRINT_NUMBER
+	mov	rcx,	10	; system dziesiętny
+	int	STATIC_KERNEL_SERVICE
 
 	; wyświetl informacje o strefie czasowej -----------------------
-	mov	ax,	0x0101
-	mov	rcx,	-1
+	mov	ax,	VARIABLE_KERNEL_SERVICE_SCREEN_PRINT_STRING
+	mov	ecx,	VARIABLE_FULL
 	mov	rsi,	tekst_czas_miedzynarodowy
-	int	0x40	; wykonaj
+	int	STATIC_KERNEL_SERVICE
 
 	; procedura zakończenia działania procesu
 	xor	ax,	ax
-	int	0x40	; wykonaj
+	int	STATIC_KERNEL_SERVICE
 
 tekst_separator	db	', 0'
 tekst_dwukropek	db	':0'

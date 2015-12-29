@@ -29,27 +29,27 @@ start:
 	call	library_align_address_up_to_page
 
 	; pobierz argumenty
-	mov	ax,	0x0005
-	int	0x40
+	mov	ax,	VARIABLE_KERNEL_SERVICE_PROCESS_ARGS
+	int	STATIC_KERNEL_SERVICE
 
 	; sprawdź czy istniały jakiekowiek
 	cmp	rcx,	VARIABLE_EMPTY
 	je	.end
 
 	; wyświetl wszystkie na ekranie włącznie z nazwą wywołanego polecenia
-	mov	ax,	0x0101
+	mov	ax,	VARIABLE_KERNEL_SERVICE_SCREEN_PRINT_STRING
 	mov	ebx,	VARIABLE_COLOR_DEFAULT
 	mov	edx,	VARIABLE_COLOR_BACKGROUND_DEFAULT
 	mov	rsi,	rdi
-	int	0x40
+	int	STATIC_KERNEL_SERVICE
 
 	mov	rsi,	text_newline
-	int	0x40
+	int	STATIC_KERNEL_SERVICE
 
 .end:
 	; koniec procesu
 	xor	ax,	ax
-	int	0x40
+	int	STATIC_KERNEL_SERVICE
 
 %include	'library/align_address_up_to_page.asm'
 
