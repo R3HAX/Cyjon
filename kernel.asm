@@ -20,8 +20,15 @@
 ; położenie kodu jądra systemu w pamięci logicznej/fizycznej
 [ORG VARIABLE_KERNEL_PHYSICAL_ADDRESS]
 
+struc	HEADER
+	.cpu	resb	1
+	.video	resb	1
+endstruc
+
+header:
 	; NAGŁÓWEK =============================================================
 	db	0x40	; 64 bitowy kod jądra systemu
+	db	VARIABLE_FALSE	; true - tryb graficzny
 	; NAGŁÓWEK KONIEC ======================================================
 
 start:

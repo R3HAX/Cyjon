@@ -41,9 +41,9 @@ initialization:
 
 	; ustaw tło nagłówka
 	mov	ax,	VARIABLE_KERNEL_SERVICE_SCREEN_PRINT_CHAR
-	mov	ebx,	VARIABLE_COLOR_BACKGROUND_DEFAULT
+	mov	ebx,	VARIABLE_COLOR_BLACK
 	mov	ecx,	dword [variable_screen_size]
-	mov	edx,	VARIABLE_COLOR_DEFAULT
+	mov	edx,	VARIABLE_COLOR_BACKGROUND_LIGHT_GRAY
 	mov	r8,	VARIABLE_ASCII_CODE_SPACE
 	int	STATIC_KERNEL_SERVICE
 
@@ -54,7 +54,7 @@ initialization:
 
 	; wyświetl nazwę pliku
 	mov	ax,	VARIABLE_KERNEL_SERVICE_SCREEN_PRINT_STRING
-	mov	ebx,	VARIABLE_COLOR_BACKGROUND_DEFAULT
+	mov	ebx,	VARIABLE_COLOR_BLACK
 	mov	rsi,	text_header_default
 	int	STATIC_KERNEL_SERVICE
 
@@ -69,35 +69,40 @@ initialization:
 
 	; skrót X ==============================================================
 	mov	ax,	VARIABLE_KERNEL_SERVICE_SCREEN_PRINT_STRING
-	mov	rbx,	VARIABLE_COLOR_BACKGROUND_DEFAULT
+	mov	rbx,	VARIABLE_COLOR_BLACK
 	mov	rsi,	text_exit_shortcut
 	int	0x40
 
 	; opis
-	xchg	rbx,	rdx
+	mov	rbx,	VARIABLE_COLOR_DEFAULT
+	mov	rdx,	VARIABLE_COLOR_BACKGROUND_DEFAULT
 	mov	rsi,	text_exit
 	int	0x40
 
 	; skrót R ==============================================================
-	xchg	rbx,	rdx
+	mov	rbx,	VARIABLE_COLOR_BLACK
+	mov	rdx,	VARIABLE_COLOR_BACKGROUND_LIGHT_GRAY
 	mov	rsi,	text_open_shortcut
 	int	0x40
 
 	; opis
-	xchg	rbx,	rdx
+	mov	rbx,	VARIABLE_COLOR_DEFAULT
+	mov	rdx,	VARIABLE_COLOR_BACKGROUND_DEFAULT
 	mov	rsi,	text_open
 	int	0x40
 
 	; skrót O ==============================================================
-	xchg	rbx,	rdx
+	mov	rbx,	VARIABLE_COLOR_BLACK
+	mov	rdx,	VARIABLE_COLOR_BACKGROUND_LIGHT_GRAY
 	mov	rsi,	text_save_shortcut
 	int	0x40
 
 	; opis
-	xchg	rbx,	rdx
+	mov	rbx,	VARIABLE_COLOR_DEFAULT
+	mov	rdx,	VARIABLE_COLOR_BACKGROUND_DEFAULT
 	mov	rsi,	text_save
 	int	0x40
-	
+
 	; inicjalizuj początkową pozycje kursora na ekranie
 	pop	rax
 	mov	rbx,	VARIABLE_CURSOR_POSITION_INIT

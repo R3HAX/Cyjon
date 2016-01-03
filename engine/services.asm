@@ -423,6 +423,13 @@ irq64_screen:
 	; włącz kursor programowy lub zmniejsz poziom blokady
 	call	cyjon_screen_cursor_unlock
 
+	cmp	byte [variable_semaphore_video_text_mode],	VARIABLE_FALSE
+	je	.screen_char_end
+
+	; ustaw kursor na swoim miejscu
+	call	cyjon_screen_cursor_enable_disable
+
+.screen_char_end:
 	; przywróć oryginalne rejestry
 	pop	rdi
 	pop	rcx
@@ -438,8 +445,6 @@ irq64_screen:
 
 	; załaduj liczbe do wyświetlenia
 	mov	rax,	r8
-	; załaduj wskaźnik kursora w przestrzeni pamięci ekranu
-	mov	rdi,	qword [variable_video_mode_cursor_indicator]
 	; wykonaj
 	call	cyjon_screen_print_number
 
@@ -551,6 +556,21 @@ irq64_screen:
 	jmp	irq64.end
 
 screen_cursor_set_xy:
+	cmp	byte [variable_semaphore_video_text_mode],	VARIABLE_FALSE
+	je	.graphics_mode
+
+	push	rdi
+
+	mov	qword [variable_screen_cursor_xy],	rbx
+	call	cyjon_screen_cursor_calculate_indicator
+	mov	qword [variable_video_mode_cursor_indicator],	rdi
+	call	cyjon_screen_cursor_enable_disable
+
+	pop	rdi
+
+	ret
+
+.graphics_mode:
 	; zachowaj oryginalne rejestry
 	push	rbx
 	push	rdi
@@ -907,6 +927,11 @@ irq64_filesystem:
 	; rdx - rozmiar pliku w Bajtach
 	; rsi - gdzie są dane
 	; r8 - specyfikacja systemu plików
+
+	; utworzyliśmy pusty plik, jeśli i sam plik jest pusty - nie aktualizuj go na systemie plików
+	cmp	rdx,	VARIABLE_EMPTY
+	je	.filesystem_file_write_end
+
 	mov	rbx,	rdx
 
 	; usuń młodszą część rozmiaru
@@ -924,6 +949,7 @@ irq64_filesystem:
 	mov	rsi,	rdi
 	call	cyjon_filesystem_kfs_file_update
 
+.filesystem_file_write_end:
 	pop	r8
 	pop	rsi
 	pop	rbx

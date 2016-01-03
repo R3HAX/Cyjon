@@ -153,8 +153,7 @@ itd_cpu_exception:
 	call	cyjon_screen_print_string
 
 	pop	rax
-	mov	rcx,	16
-	mov	ch,	1
+	mov	rcx,	0x0810	; uzupełnienie do 8, podstawa 16
 	call	cyjon_screen_print_number
 
 	mov	dword [variable_screen_cursor_xy],	23
@@ -444,8 +443,7 @@ itd_cpu_exception:
 	xchg	rcx,	r8
 
 .noCF:
-	mov	rcx,	16
-	mov	ch,	1
+	mov	rcx,	0x0810	; uzupełnienie do 8, podstawa 16
 	mov	rsi,	text_cpu_exception_r8
 	call	cyjon_screen_print_string
 

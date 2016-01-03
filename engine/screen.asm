@@ -14,6 +14,16 @@
 ; 64 Bitowy kod programu
 [BITS 64]
 
+; wartości domyślne, przydzielane przez program rozuchowy
+VARIABLE_SCREEN_TEXT_MODE_BASE_ADDRESS		equ	0x000B8000
+VARIABLE_SCREEN_TEXT_MODE_WIDTH			equ	80
+VARIABLE_SCREEN_TEXT_MODE_HEIGHT		equ	50
+VARIABLE_SCREEN_TEXT_MODE_SIZE			equ	VARIABLE_SCREEN_TEXT_MODE_WIDTH * VARIABLE_SCREEN_TEXT_MODE_HEIGHT * 2
+VARIABLE_SCREEN_TEXT_MODE_DEPTH			equ	16
+VARIABLE_SCREEN_TEXT_MODE_CHAR_SIZE		equ	2	; kod ASCII + atrybut
+
+variable_semaphore_video_text_mode		db	0x00
+
 variable_video_mode_memory_address		dq	VARIABLE_EMPTY
 variable_video_mode_memory_size			dq	VARIABLE_EMPTY
 variable_video_mode_x_resolution		dq	VARIABLE_EMPTY
@@ -26,6 +36,7 @@ variable_video_mode_chars_x			dq	VARIABLE_EMPTY
 variable_video_mode_chars_y			dq	VARIABLE_EMPTY
 variable_video_mode_cursor_indicator		dq	VARIABLE_EMPTY	; określa wyliczoną pozycję wirtualnego kursora w przestrzeni pamięci ekranu na podstawie X,Y
 variable_video_mode_char_line_in_bytes		dq	VARIABLE_EMPTY
+variable_video_mode_char_size_in_bytes		dq	VARIABLE_EMPTY
 
 variable_screen_cursor_xy			dq	VARIABLE_EMPTY
 variable_screen_cursor_semaphore		dq	VARIABLE_EMPTY	; flaga, 0 == kursor włączony
@@ -74,6 +85,7 @@ text_screen_console		db	" Console: ", VARIABLE_ASCII_CODE_TERMINATOR
 text_screen_console_x		db	"x", VARIABLE_ASCII_CODE_TERMINATOR
 text_screen_console_separator	db	", ", VARIABLE_ASCII_CODE_TERMINATOR
 text_screen_console_bpp		db	" bpp", VARIABLE_ASCII_CODE_ENTER, VARIABLE_ASCII_CODE_NEWLINE, VARIABLE_ASCII_CODE_TERMINATOR
+text_screen_console_colors	db	" colors", VARIABLE_ASCII_CODE_ENTER, VARIABLE_ASCII_CODE_NEWLINE, VARIABLE_ASCII_CODE_TERMINATOR
 
 ;=======================================================================
 ; inicjalizuje podstawowe zmienne dotyczące właściwości trybu graficznego
@@ -92,6 +104,22 @@ screen_initialization:
 	push	rdi
 	push	rax
 
+	cmp	byte [header + HEADER.video],	VARIABLE_EMPTY
+	ja	.graphics_mode
+
+	mov	byte [variable_semaphore_video_text_mode],	VARIABLE_TRUE
+	mov	qword [variable_video_mode_memory_address],	VARIABLE_SCREEN_TEXT_MODE_BASE_ADDRESS
+	mov	qword [variable_video_mode_cursor_indicator],	VARIABLE_SCREEN_TEXT_MODE_BASE_ADDRESS
+	mov	qword [variable_video_mode_chars_x],	VARIABLE_SCREEN_TEXT_MODE_WIDTH
+	mov	qword [variable_video_mode_chars_y],	VARIABLE_SCREEN_TEXT_MODE_HEIGHT
+	mov	qword [variable_video_mode_char_line_in_bytes],	VARIABLE_SCREEN_TEXT_MODE_WIDTH * 2
+	mov	qword [variable_video_mode_char_size_in_bytes],	VARIABLE_SCREEN_TEXT_MODE_CHAR_SIZE
+	mov	qword [variable_video_mode_bpp],	VARIABLE_SCREEN_TEXT_MODE_DEPTH
+	mov	qword [variable_video_mode_memory_size],	VARIABLE_SCREEN_TEXT_MODE_HEIGHT * VARIABLE_SCREEN_TEXT_MODE_WIDTH * 2
+
+	jmp	.cursor
+
+.graphics_mode:
 	; ustaw adres tablicy SuperVGA Mode
 	mov	rsi,	rbx
 
@@ -173,6 +201,15 @@ screen_initialization:
 	mul	qword [variable_font_y_in_pixels]
 	mov	qword [variable_video_mode_char_line_in_bytes],	rax	; zapisz
 
+	; oblicz rozmiar znaku wszerz w Bajtach
+	mov	rax,	qword [variable_font_x_in_pixels]
+	xor	rdx,	rdx
+	mul	qword [variable_video_mode_bpp]
+
+	; zapisz
+	mov	qword [variable_video_mode_char_size_in_bytes],	rax
+
+.cursor:
 	; włącz kursor programowy
 	call	cyjon_screen_cursor_enable_disable
 
@@ -209,12 +246,27 @@ screen_initialization:
 	call	cyjon_screen_print_string
 
 	mov	rax,	qword [variable_video_mode_bpp]
+
+	cmp	byte [header + HEADER.video],	VARIABLE_EMPTY
+	je	.depth_ready
+
 	shl	rax,	3
+
+.depth_ready:
 	mov	rbx,	VARIABLE_COLOR_WHITE
 	call	cyjon_screen_print_number
 
-	mov	rbx,	VARIABLE_COLOR_DEFAULT
+	cmp	byte [header + HEADER.video],	VARIABLE_EMPTY
+	ja	.graphics_depth
+
+	mov	rsi,	text_screen_console_colors
+	jmp	.graphics_depth_ready
+
+.graphics_depth:
 	mov	rsi,	text_screen_console_bpp
+
+.graphics_depth_ready:
+	mov	rbx,	VARIABLE_COLOR_DEFAULT
 	call	cyjon_screen_print_string
 
 	; przywróć oryginalne rejestry
@@ -281,6 +333,9 @@ screen_initialization_reload:
 ;
 ; wszystkie rejestry zachowane
 cyjon_screen_clear:
+	cmp	byte [variable_semaphore_video_text_mode],	VARIABLE_TRUE
+	je	.text_mode
+
 	; zachowaj oryginalne rejestry
 	push	rax
 	push	rbx
@@ -403,6 +458,62 @@ cyjon_screen_clear:
 	; powrót z procedury
 	ret
 
+.text_mode:
+	push	rax
+	push	rcx
+	push	rdx
+	push	rdi
+
+	; oblicz rozmiar przestrzeni pamięci do wyczyszczenia w słowach (z atrybutami)
+	cmp	rcx,	VARIABLE_EMPTY
+	ja	.size_ok
+
+	mov	rcx,	qword [variable_video_mode_chars_y]
+
+.size_ok:
+	mov	rax,	rcx
+	xor	rdx,	rdx
+	mul	qword [variable_video_mode_chars_x]
+
+	push	rax
+
+	mov	rdi,	qword [variable_video_mode_memory_address]
+
+	mov	rax,	rbx
+
+	cmp	rbx,	VARIABLE_EMPTY
+	je	.base_leave
+
+	mov	rax,	rbx
+	xor	rdx,	rdx
+	mul	qword [variable_video_mode_char_line_in_bytes]
+
+.base_leave:
+	add	rdi,	rax
+
+	pop	rcx
+
+	mov	al,	VARIABLE_ASCII_CODE_SPACE
+	mov	ah,	VARIABLE_COLOR_DEFAULT + VARIABLE_COLOR_BACKGROUND_DEFAULT
+
+.loop:
+	stosw
+	dec	rcx
+	jnz	.loop
+
+	mov	qword [variable_video_mode_cursor_indicator],	VARIABLE_SCREEN_TEXT_MODE_BASE_ADDRESS
+	mov	qword [variable_screen_cursor_xy],	rcx
+
+	; ustaw kursor na swoją pozycję
+	call	cyjon_screen_cursor_enable_disable
+
+	pop	rdi
+	pop	rdx
+	pop	rcx
+	pop	rax
+
+	ret
+
 ;===============================================================================
 ; wyłącza i blokuje dostęp do kursora programowego
 ; IN:
@@ -412,6 +523,9 @@ cyjon_screen_clear:
 ;
 ; wszystkie rejestry zachowane
 cyjon_screen_cursor_lock:
+	cmp	byte [header + HEADER.video],	VARIABLE_EMPTY
+	je	.no_cursor_disable
+
 	; sprawdź czy kursor programowy jest wyłączony
 	cmp	qword [variable_screen_cursor_semaphore],	VARIABLE_EMPTY
 	ja	.blocked	; tak wyłączony
@@ -429,6 +543,7 @@ cyjon_screen_cursor_lock:
 	; zwiększ poziom blokady kursora programowego
 	inc	qword [variable_screen_cursor_semaphore]
 
+.no_cursor_disable:
 	; powrót z procedury
 	ret
 
@@ -441,6 +556,9 @@ cyjon_screen_cursor_lock:
 ;
 ; wszystkie rejestry zachowane
 cyjon_screen_cursor_unlock:
+	cmp	byte [header + HEADER.video],	VARIABLE_EMPTY
+	je	.no_cursor_enable
+
 	; zmniejsz poziom blokady kursora programowego
 	dec	qword [variable_screen_cursor_semaphore]
 
@@ -452,6 +570,7 @@ cyjon_screen_cursor_unlock:
 	call	cyjon_screen_cursor_enable_disable
 
 .no:
+.no_cursor_enable:
 	; powrót z procedury
 	ret
 
@@ -464,6 +583,9 @@ cyjon_screen_cursor_unlock:
 ;
 ; wszystkie rejestry zachowane
 cyjon_screen_cursor_enable_disable:
+	cmp	byte [variable_semaphore_video_text_mode],	VARIABLE_TRUE
+	je	.text_mode
+
 	; zachowaj oryginalne rejestry
 	push	rdi
 
@@ -479,6 +601,39 @@ cyjon_screen_cursor_enable_disable:
 	; powrót z procedury
 	ret
 
+.text_mode:
+	push	rax
+	push	rcx
+	push	rdx
+
+	mov	rcx,	qword [variable_video_mode_cursor_indicator]
+	sub	rcx,	qword [variable_video_mode_memory_address]
+	shr	rcx,	1	; usuń atrybuty(kolor)
+
+	; młodszy port kursora (rejestr indeksowy VGA)
+	mov	al,	0x0F
+	mov	dx,	0x03D4
+	out	dx,	al
+
+	inc	dx	; 0x03D5
+	mov	al,	cl
+	out	dx,	al
+
+	; starszy port kursora
+	mov	al,	0x0E
+	dec	dx
+	out	dx,	al
+
+	inc	dx
+	mov	al,	ch
+	out	dx,	al
+
+	pop	rdx
+	pop	rcx
+	pop	rax
+
+	ret
+
 ;===============================================================================
 ; na podstawie współrzędnych wirtualnego kursora oblicza odpowiadający adres (wskaźnik RDI) w przestrzeni pamięci ekranu
 ; IN:
@@ -490,10 +645,12 @@ cyjon_screen_cursor_enable_disable:
 cyjon_screen_cursor_calculate_indicator:
 	; zachowaj oryginalne rejestry
 	push	rax
+	push	rcx
 	push	rdx
 
 	; oblicz przesunięcie do określonej linii Y
 	mov	rax,	qword [variable_video_mode_char_line_in_bytes]
+	xor	rdx,	rdx
 	mul	dword [variable_screen_cursor_xy + 0x04]
 
 	; ustaw wskaźnik kursora na poczatek ekranu
@@ -502,16 +659,15 @@ cyjon_screen_cursor_calculate_indicator:
 
 	; oblicz przesunięcie do określonej kolumny X
 	mov	eax,	dword [variable_screen_cursor_xy]
-	; przelicz rozmiar na szerokość w matrycy znaku
-	mul	qword [variable_font_x_in_pixels]
-	; zamień na Bajty
-	mul	qword [variable_video_mode_bpp]
+	mov	rcx,	qword [variable_video_mode_char_size_in_bytes]
+	mul	rcx
 
 	; zwróć sumę przesunięć jak i wskaźnik adresu w przestrzeni pamięci ekranu odpowiadający położeniu kursora
 	add	rdi,	rax
 
 	; przywróć oryginalne rejestry
 	pop	rdx
+	pop	rcx
 	pop	rax
 
 	; powrót z procedury
@@ -690,6 +846,9 @@ cyjon_screen_cursor_invert_color:
 ;
 ; pozostałe rejestry zachowane
 cyjon_screen_print_char:
+	cmp	byte [header + HEADER.video],	 VARIABLE_EMPTY
+	je	.text_mode
+
 	; zachowaj oryginalne rejestry
 	push	rax
 	push	rbx
@@ -700,7 +859,7 @@ cyjon_screen_print_char:
 
 	; koryguj kolor
 	cmp	byte [variable_video_mode_bpp],	0x01
-	je	.color_ok
+	je	.color_8bit
 
 	push	rax
 
@@ -708,6 +867,8 @@ cyjon_screen_print_char:
 	mov	rax,	table_color_palette_24_bit
 	mov	ebx,	dword [rax + rbx]
 
+	; tryb graficzny korzysta z tej samej numeracji co kolor znaku
+	shr	rdx,	4
 	shl	rdx,	2
 	mov	rax,	table_color_palette_24_bit
 	mov	edx,	dword [rax + rdx]
@@ -715,6 +876,10 @@ cyjon_screen_print_char:
 	pop	rax
 
 	jmp	.color_ok
+
+.color_8bit:
+	; tryb graficzny korzysta z tej samej numeracji co kolor znaku
+	shr	rdx,	4
 
 .color_ok:
 	; wyłącz kursor programowy lub zwiększ poziom blokady
@@ -908,6 +1073,73 @@ cyjon_screen_print_char:
 	; powrót z procedury
 	ret
 
+.text_mode:
+	push	rax
+
+	; kolor i tło
+	mov	ah,	bl
+	add	ah,	dl
+
+	cmp	al,	VARIABLE_ASCII_CODE_ENTER
+	je	.text_mode_enter
+
+	cmp	al,	VARIABLE_ASCII_CODE_NEWLINE
+	je	.text_mode_new_line
+
+	cmp	al,	VARIABLE_ASCII_CODE_BACKSPACE
+	je	.text_mode_backspace
+
+	stosw
+
+	inc	dword [variable_screen_cursor_xy]
+
+.text_mode_end:
+	pop	rax
+
+	ret
+
+.text_mode_enter:
+	push	rcx
+	push	rdx
+
+	push	rdi
+	sub	rdi,	qword [variable_video_mode_memory_address]
+
+	; oblicz resztę z dzielenia / rozmiar aktualnej linii
+	mov	rax,	rdi
+	xor	rdx,	rdx
+	div	qword [variable_video_mode_char_line_in_bytes]
+
+	pop	rdi
+
+	; przesuń wskaźnik na początek tej linii
+	sub	rdi,	rdx
+
+	pop	rdx
+	pop	rcx
+
+	mov	dword [variable_screen_cursor_xy],	VARIABLE_EMPTY
+
+	jmp	.text_mode_end
+
+.text_mode_new_line:
+	add	rdi,	qword [variable_video_mode_char_line_in_bytes]
+
+	inc	dword [variable_screen_cursor_xy + VARIABLE_QWORD_HIGH]
+
+	jmp	.text_mode_end
+
+.text_mode_backspace:
+	; cofnij wskaźnik o jeden znak +atrybut
+	sub	rdi,	VARIABLE_WORD_SIZE
+
+	mov	al,	VARIABLE_ASCII_CODE_SPACE
+	mov	word [rdi],	ax
+
+	dec	dword [variable_screen_cursor_xy]
+
+	jmp	.text_mode_end
+
 ;=======================================================================
 ; wyświetla znak z macierzy czcionki pod adresem wskaźnika w przestrzeni pamięci ekranu
 ; IN:
@@ -1077,9 +1309,18 @@ cyjon_screen_print_string:
 	; zapisz aktualny wskaźnik kursora
 	mov	qword [variable_video_mode_cursor_indicator],	rdi
 
+	cmp	byte [header + HEADER.video],	 VARIABLE_EMPTY
+	je	.no_cursor_enable
+
 	; włącz kursor programowy lub zmniejsz poziom blokady
 	call	cyjon_screen_cursor_unlock
+	jmp	.cursor_enabled
 
+.no_cursor_enable:
+	; ustaw kursor na końcu wyświetlonego tekstu
+	call	cyjon_screen_cursor_enable_disable
+
+.cursor_enabled:
 	; przywróć oryginalne rejestry
 	pop	rdi
 	pop	rsi
@@ -1107,7 +1348,7 @@ cyjon_screen_cursor_check_position:
 	jb	.inX	; nie wyszedł poza ekran
 
 	; przesuń kursor w do nowej linii
-	inc	qword [variable_screen_cursor_xy + 0x04]
+	inc	qword [variable_screen_cursor_xy + VARIABLE_QWORD_HIGH]
 	; przesuń kursor na początek nowej linii
 	mov	dword [variable_screen_cursor_xy],	VARIABLE_EMPTY
 
@@ -1117,17 +1358,17 @@ cyjon_screen_cursor_check_position:
 .inX:
 	; sprawdź czy kursor znajduje się poza ekranem w wzdłóż
 	mov	rax,	qword [variable_video_mode_chars_y]
-	cmp	dword [variable_screen_cursor_xy + 0x04],	eax
+	cmp	dword [variable_screen_cursor_xy + VARIABLE_QWORD_HIGH],	eax
 	jb	.inY
 
 	; ustaw kursor spowrotem na ekran (ostatnia linia)
-	dec	dword [variable_screen_cursor_xy + 0x04]
-
-	; przewiń zawartość ekranu o jedną linię w górę
-	call	cyjon_screen_scroll
+	dec	dword [variable_screen_cursor_xy + VARIABLE_QWORD_HIGH]
 
 	; oblicz nową pozycję kursora w przestrzeni pamięci ekranu
 	call	cyjon_screen_cursor_calculate_indicator
+
+	; przewiń zawartość ekranu o jedną linię w górę
+	call	cyjon_screen_scroll
 
 .inY:
 	; przywróć oryginalne rejestry
@@ -1145,6 +1386,9 @@ cyjon_screen_cursor_check_position:
 ;
 ; wszystkie rejestry zachowane
 cyjon_screen_scroll:
+	cmp	byte [header + HEADER.video],	VARIABLE_EMPTY
+	je	.text_mode
+
 	; zachowaj oryginalne rejestry
 	push	rax
 	push	rcx
@@ -1283,12 +1527,59 @@ cyjon_screen_scroll:
 	; powrót z procedury
 	ret
 
+.text_mode:
+	push	rax
+	push	rcx
+	push	rsi
+	push	rdi
+
+	; pobierz rozmiar jednej linii w Bajtach
+	mov	rax,	qword [variable_video_mode_char_line_in_bytes]
+
+	; adres docelowy przesunięcia zawartości pamięci ekranu na początek
+	mov	rdi,	qword [variable_video_mode_memory_address]
+
+	; oblicz adres źródłowy przsunięcia zawartości ekranu
+	mov	rsi,	rdi	; początek ekranu
+	add	rsi,	rax	; linia nr 1
+
+	; oblicz rozmiar pamięci do przesunięcia
+	mov	rcx,	qword [variable_video_mode_memory_size]
+	sub	rcx,	rax	; pomiń rozmiar jednej linii znaków
+	shr	rcx,	1	; usuń atrybuty
+
+	rep	movsw
+
+	; wyczyść ostatnią linię
+	mov	al,	VARIABLE_ASCII_CODE_SPACE
+	mov	rcx,	qword [variable_video_mode_chars_x]
+
+	push	qword [variable_screen_cursor_xy]
+
+.text_mode_loop:
+	call	cyjon_screen_print_char
+
+	dec	rcx
+	jnz	.text_mode_loop
+
+	pop	qword [variable_screen_cursor_xy]
+
+	pop	rdi
+	pop	rsi
+	pop	rcx
+	pop	rax
+
+	ret
+
 ;=======================================================================
 ; wyświetla liczbę o podanej podstawie
 ; IN:
 ;	rax - liczba/cyfra do wyświetlenia
 ;	ebx - kolor liczby
 ;	cl - podstawa liczbowa
+;	ch - uzupełnienie o zera np.
+;		ch=4 dla liczby 257 > 0x0101 lub 0257
+;		ch=4 dla liczby 15 > 0x000F lub 0015
 ;	edx - kolor tła tło
 ;	rdi - wskaźnik przestrzeni pamięci ekranu dla pozycji wyświetlanej liczby
 ; OUT:
@@ -1324,15 +1615,16 @@ cyjon_screen_print_number:
 	xor	rdx,	rdx
 
 	; zapamiętaj flagi
-	mov	r9,	rcx
+	mov	r9w,	cx
+	shr	r9,	8
 
-	; wyczyść flagi
+	; wyczyść uzupełnienie
 	xor	ch,	ch
 
 	; utwórz stos zmiennych lokalnych
 	mov	rbp,	rsp
 
-	; zreseruj licznik cyfr
+	; zresetuj licznik cyfr
 	xor	r10,	r10
 
 .loop:
@@ -1358,36 +1650,18 @@ cyjon_screen_print_number:
 	; załaduj wskaźnik pozycji kursora
 	mov	rdi,	qword [variable_video_mode_cursor_indicator]
 
-	; przywróć flagi
-	mov	rcx,	r9
+	; sprawdź zasadność flagi
+	cmp	r10,	r9
+	jae	.print	; brak uzupełnienia
 
-	; flagi dostępne?
-	cmp	ch,	VARIABLE_EMPTY
-	je	.print
+	; oblicz różnicę
+	sub	r9,	r10
 
-	; wyświetl uzupełnienie do liczby 64 bitowej
-	cmp	ch,	0x01
-	jne	.no_64bit
+.zero_before:
+	push	VARIABLE_EMPTY	; zero digit
 
-	; przywróć tło
-	mov	rdx,	r8
-
-	; cyfra
-	mov	rcx,	1
-	; zero
-	mov	rax,	"0"
-
-.bit64:
-	cmp	r10,	16
-	jae	.print
-
-	call	cyjon_screen_print_char
-
-	inc	r10
-
-	jmp	.bit64
-
-.no_64bit:
+	dec	r9
+	jnz	.zero_before
 
 .print:
 	; pobierz z zmiennych lokalnych cyfrę
@@ -1418,9 +1692,18 @@ cyjon_screen_print_number:
 	mov	qword [variable_video_mode_cursor_indicator],	rdi
 
 .end:
+	cmp	byte [header + HEADER.video],	 VARIABLE_EMPTY
+	je	.no_cursor_enable
+
 	; włącz kursor programowy lub zmniejsz poziom blokady
 	call	cyjon_screen_cursor_unlock
+	jmp	.cursor_enabled
 
+.no_cursor_enable:
+	; ustaw kursor na końcu wyświetlonego tekstu
+	call	cyjon_screen_cursor_enable_disable
+
+.cursor_enabled:
 	; przywróć oryginalne rejestry
 	pop	r10
 	pop	r9

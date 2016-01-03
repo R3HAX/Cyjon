@@ -126,9 +126,9 @@ start:
 	int	STATIC_KERNEL_SERVICE
 
 	mov	ax,	VARIABLE_KERNEL_SERVICE_SCREEN_PRINT_STRING
-	mov	ebx,	VARIABLE_COLOR_BACKGROUND_DEFAULT
+	mov	ebx,	VARIABLE_COLOR_BLACK
 	mov	rcx,	qword [test_modified_chars_count]
-	mov	edx,	VARIABLE_COLOR_DEFAULT
+	mov	edx,	VARIABLE_COLOR_BACKGROUND_LIGHT_GRAY
 	mov	rsi,	text_modified
 	int	STATIC_KERNEL_SERVICE
 

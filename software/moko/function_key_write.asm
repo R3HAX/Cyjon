@@ -30,7 +30,7 @@ key_function_write:
 	mov	ax,	VARIABLE_KERNEL_SERVICE_SCREEN_PRINT_CHAR
 	mov	ebx,	VARIABLE_COLOR_BLACK
 	mov	ecx,	dword [variable_screen_size]	; szerokość ekranu w znakach
-	mov	rdx,	VARIABLE_COLOR_LIGHT_GRAY
+	mov	rdx,	VARIABLE_COLOR_BACKGROUND_LIGHT_GRAY
 	mov	r8,	VARIABLE_ASCII_CODE_SPACE
 	int	STATIC_KERNEL_SERVICE	; wykonaj
 
@@ -43,7 +43,7 @@ key_function_write:
 	mov	ax,	VARIABLE_KERNEL_SERVICE_SCREEN_PRINT_STRING
 	mov	rbx,	VARIABLE_COLOR_BLACK
 	mov	rcx,	VARIABLE_FULL	; wyświetl pełny ciąg znaków, zakończony terminatorem
-	mov	rdx,	VARIABLE_COLOR_LIGHT_GRAY
+	mov	rdx,	VARIABLE_COLOR_BACKGROUND_LIGHT_GRAY
 	mov	rsi,	text_save_file
 	int	STATIC_KERNEL_SERVICE	; wykonaj
 
@@ -114,7 +114,7 @@ key_function_write:
 	mov	ax,	VARIABLE_KERNEL_SERVICE_SCREEN_PRINT_CHAR
 	mov	rbx,	VARIABLE_COLOR_BLACK
 	mov	ecx,	dword [variable_screen_size]	; szerokość ekranu w znakach
-	mov	rdx,	VARIABLE_COLOR_LIGHT_GRAY
+	mov	rdx,	VARIABLE_COLOR_BACKGROUND_LIGHT_GRAY
 	mov	r8,	VARIABLE_ASCII_CODE_SPACE
 	int	STATIC_KERNEL_SERVICE	; wykonaj
 
@@ -127,7 +127,7 @@ key_function_write:
 	mov	ax,	VARIABLE_KERNEL_SERVICE_SCREEN_PRINT_STRING
 	mov	rbx,	VARIABLE_COLOR_BLACK
 	mov	rcx,	qword [file_name_chars_count]	; przywróć ilość znaków przypadających na nazwe pliku
-	mov	rdx,	VARIABLE_COLOR_LIGHT_GRAY
+	mov	rdx,	VARIABLE_COLOR_BACKGROUND_LIGHT_GRAY
 	mov	rsi,	file_name_buffor	; przywróć wskaźnik do nazwy pliku
 	int	STATIC_KERNEL_SERVICE	; wykonaj
 

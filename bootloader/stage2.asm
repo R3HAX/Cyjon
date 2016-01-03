@@ -35,6 +35,18 @@ start:
 	out	0xA1,	al
 	out	0x21,	al
 
+	; załaduj standardową macierz czcionki 8x8 > tryb tekstowy 80x50
+	mov	ax,	0x1112
+	int	0x10
+
+	; załaduj własną czcionkę do przestrzeni BIOSu
+	mov	ax,	0x1110
+	mov	bx,	0x0800	; bh, wysokość znaku (8 pikseli)
+	mov	cx,	256	; ilość znaków do załadowania
+	xor	dx,	dx	; rozpocząć od pierwszego
+	mov	bp,	font
+	int	0x10
+
 	; sprawdź typ procesora
 	call	check_cpu
 
@@ -69,9 +81,16 @@ start:
 	; WYBIERZ TRYB PROCESORA NA PODSTAWIE NAGŁÓWKA ZAŁADOWANEGO JĄDRA SYSTEMU
 	;-----------------------------------------------------------------------
 
-	; nie włączaj trybu graficznego dla jądra systemu 16 bitowego
-	cmp	byte [es:0x0000],	0x10
+	; załaduj do rejestru segmentowego ekstra adres położenia kodu jądra systemu
+	push	0x1000
+	pop	es
+
+	; właczyć tryb graficzny?
+	cmp	byte [es:0x0001],	0x00
 	je	.missing
+
+	push	0x0000
+	pop	es
 
 	; ustaw tryb graficzny 800x600@32bpp
 	mov	ax,	0x4F00
@@ -113,10 +132,6 @@ start:
 	int	0x10	; wykonaj
 
 .missing:
-	; załaduj do rejestru segmentowego ekstra adres położenia kodu jądra systemu
-	push	0x1000
-	pop	es
-
 	; wyczyść zbędne rejestry
 	xor	ebx,	ebx
 
@@ -155,7 +170,7 @@ start:
 	; skocz do kodu jądra systemu operacyjnego 16 Bitowego
 	pushf	; odłóż flagi na stos
 	push	0x1000	; odłóż na stos segment kodu jądra systemu
-	push	0x0001	; odłóż na stos IP początku kodu jądra systemu
+	push	0x0002	; odłóż na stos IP początku kodu jądra systemu
 	iretw	; skocz do kodu jądra systemu
 	
 .no:
@@ -728,7 +743,7 @@ protected_mode:
 	mov	esi,	0x00000500
 
 	; skocz do kodu jądra systemu operacyjnego
-	jmp	long 0x08:0x00100001
+	jmp	long 0x08:0x00100002
 
 .no:
 	; utwórz podstawowe stronicowanie dla trybu 64 Bitowego
@@ -880,7 +895,7 @@ long_mode:
 	mov	rsi,	0x00000500
 
 	; skocz do kodu jądra systemu operacyjnego
-	jmp	0x0000000000100001
+	jmp	0x0000000000100002
 
 text_cpu		db	'64 Bit CPU available.', 0x0D, 0x0A, 0x00
 text_no_cpu		db	'No 64 Bit instructions available with this CPU!', 0x0D, 0x0A, 0x00
@@ -898,6 +913,8 @@ align	0x08
 supervga_info	times	256	db	0x00
 ; tablica informacyjna o wybranym trybie graficznym
 supervga_mode	times	256	db	0x00
+
+%include	'font/sinclair.asm'
 
 ; wyrównaj pozycje kodu jądra systemu do pełnego sektora
 align	0x0200
