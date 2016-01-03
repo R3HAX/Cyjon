@@ -525,8 +525,8 @@ irq64_screen:
 
 	; przewiń w górę
 .screen_scroll_loop_1:
-	movsq
-	sub	rcx,	8
+	movsw
+	sub	rcx,	2
 	jnz	.screen_scroll_loop_1
 	jmp	.screen_scroll_end
 
@@ -537,10 +537,12 @@ irq64_screen:
 	add	rsi,	rcx
 
 .screen_scroll_loop_2:
-	movsq
-	sub	rsi,	16
-	sub	rdi,	16
-	sub	rcx,	8
+	; przydała by się optymalizacja
+	mov	ax,	word [rsi]
+	mov	word [rdi],	ax
+	sub	rsi,	2
+	sub	rdi,	2
+	sub	rcx,	2
 	jnz	.screen_scroll_loop_2
 
 .screen_scroll_end:
