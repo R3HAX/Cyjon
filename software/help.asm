@@ -79,6 +79,9 @@ command_table:
 	db	'clear  '
 	dq	text_clear
 
+	db	'colors '
+	dq	text_colors
+
 	db	'conf   '
 	dq	text_conf
 
@@ -113,8 +116,9 @@ command_table:
 	dq	VARIABLE_EMPTY
 
 text_args	db	"example: transfer variables(args) from command line to process,", VARIABLE_ASCII_CODE_ENTER, VARIABLE_ASCII_CODE_NEWLINE, VARIABLE_ASCII_CODE_TERMINATOR
-text_ascii	db	"ASCII table,", VARIABLE_ASCII_CODE_ENTER, VARIABLE_ASCII_CODE_NEWLINE, VARIABLE_ASCII_CODE_TERMINATOR
+text_ascii	db	"ASCII table, all available characters,", VARIABLE_ASCII_CODE_ENTER, VARIABLE_ASCII_CODE_NEWLINE, VARIABLE_ASCII_CODE_TERMINATOR
 text_clear	db	"clean console screen,", VARIABLE_ASCII_CODE_ENTER, VARIABLE_ASCII_CODE_NEWLINE, VARIABLE_ASCII_CODE_TERMINATOR
+text_colors	db	"hexadecimal table of colors,", VARIABLE_ASCII_CODE_ENTER, VARIABLE_ASCII_CODE_NEWLINE, VARIABLE_ASCII_CODE_TERMINATOR
 text_conf	db	"system configuration tool,", VARIABLE_ASCII_CODE_ENTER, VARIABLE_ASCII_CODE_NEWLINE, VARIABLE_ASCII_CODE_TERMINATOR
 text_date	db	"display the current time,", VARIABLE_ASCII_CODE_ENTER, VARIABLE_ASCII_CODE_NEWLINE, VARIABLE_ASCII_CODE_TERMINATOR
 text_exit	db	"logout,", VARIABLE_ASCII_CODE_ENTER, VARIABLE_ASCII_CODE_NEWLINE, VARIABLE_ASCII_CODE_TERMINATOR
