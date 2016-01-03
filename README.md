@@ -5,6 +5,10 @@ Prosty i wielozadaniowy system operacyjny, napisany w języku asemblera dla proc
 
 ![alt tag](http://wataha.net/shot/shot9.png)
 
+![alt tag](http://wataha.net/shot/message.png)
+
+![alt tag](http://wataha.net/shot/gif.gif)
+
 #Wymagania sprzętowe:
 - procesor z rodziny amd64/x86-64,
 - 1 MiB pamięci RAM pod adresem fizycznym 0x0000000000100000,

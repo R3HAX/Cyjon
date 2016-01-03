@@ -1529,7 +1529,9 @@ cyjon_screen_scroll:
 
 .text_mode:
 	push	rax
+	push	rbx
 	push	rcx
+	push	rdx
 	push	rsi
 	push	rdi
 
@@ -1552,7 +1554,9 @@ cyjon_screen_scroll:
 
 	; wyczyść ostatnią linię
 	mov	al,	VARIABLE_ASCII_CODE_SPACE
+	mov	ebx,	VARIABLE_COLOR_DEFAULT
 	mov	rcx,	qword [variable_video_mode_chars_x]
+	mov	edx,	VARIABLE_COLOR_BACKGROUND_DEFAULT
 
 	push	qword [variable_screen_cursor_xy]
 
@@ -1566,7 +1570,9 @@ cyjon_screen_scroll:
 
 	pop	rdi
 	pop	rsi
+	pop	rdx
 	pop	rcx
+	pop	rbx
 	pop	rax
 
 	ret

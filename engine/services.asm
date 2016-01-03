@@ -528,6 +528,15 @@ irq64_screen:
 	movsw
 	sub	rcx,	2
 	jnz	.screen_scroll_loop_1
+
+	; wyczyść ostatnią linię
+	mov	ax,	VARIABLE_KERNEL_SERVICE_SCREEN_PRINT_CHAR
+	mov	ebx,	VARIABLE_COLOR_DEFAULT
+	mov	rcx,	qword [variable_video_mode_chars_x]
+	mov	edx,	VARIABLE_COLOR_BACKGROUND_DEFAULT
+	mov	r8,	VARIABLE_ASCII_CODE_SPACE
+	int	STATIC_KERNEL_SERVICE
+
 	jmp	.screen_scroll_end
 
 .screen_scroll_down:
