@@ -376,6 +376,10 @@ irq64_screen:
 	cmp	al,	0x09
 	je	.screen_scroll
 
+	; przełącz cały ekran na cień
+	cmp	al,	0x0A
+	je	.screen_shadow
+
 	; brak obsługi
 	jmp	irq64.end
 
@@ -636,6 +640,13 @@ irq64_screen:
 
 	; koniec obsługi procedury
 	jmp	irq64.end
+
+.screen_shadow:
+	call	cyjon_screen_shadow
+
+	; koniec obsługi procedury
+	jmp	irq64.end
+
 
 screen_cursor_set_xy:
 	cmp	byte [variable_semaphore_video_text_mode],	VARIABLE_FALSE

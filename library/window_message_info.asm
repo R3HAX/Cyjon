@@ -28,8 +28,8 @@ VARIABLE_WINDOW_MESSAGE_INFO_MARGIN		equ	2	; marginesy - dwa o grubości 1, z ka
 
 variable_window_message_info_cursor		dq	VARIABLE_EMPTY
 variable_window_message_info_position		dq	VARIABLE_EMPTY
-variable_window_message_info_button_width	dq	6
-variable_window_message_info_button_pointer	db	"  OK  ", VARIABLE_ASCII_CODE_TERMINATOR
+variable_window_message_info_button_width	dq	4
+variable_window_message_info_button_pointer	db	" OK ", VARIABLE_ASCII_CODE_TERMINATOR
 
 ; wejście:
 ;	rdi - wskaźnik do tablicy WINDOW_MESSAGE_INFO
@@ -47,6 +47,10 @@ library_window_message_info:
 	push	r8
 	push	r9
 	push	qword [rdi + WINDOW_MESSAGE_INFO.position]
+
+	; wycieniuj ekran
+	mov	ax,	VARIABLE_KERNEL_SERVICE_SCREEN_SHADOW
+	int	STATIC_KERNEL_SERVICE
 
 	; zapamiętaj aktualną pozycję kursora
 	mov	ax,	VARIABLE_KERNEL_SERVICE_SCREEN_CURSOR_GET
@@ -112,6 +116,8 @@ library_window_message_info:
 	sub	r8,	VARIABLE_QWORD_SIZE
 
 .next_line:
+	mov	ax,	VARIABLE_KERNEL_SERVICE_SCREEN_PRINT_STRING
+	mov	ebx,	VARIABLE_WINDOW_MESSAGE_INFO_TEXT_COLOR
 	mov	rcx,	qword [r8]
 	int	STATIC_KERNEL_SERVICE
 
@@ -131,19 +137,11 @@ library_window_message_info:
 	sub	r8,	VARIABLE_QWORD_SIZE
 	add	rsp,	VARIABLE_QWORD_SIZE
 
-	; zachowaj oryginalne rejestry
-	push	rax
-	push	rbx
-
 	; przesuń kursor do następnej linii
 	mov	ax,	VARIABLE_KERNEL_SERVICE_SCREEN_CURSOR_SET
 	inc	dword [variable_window_message_info_position + VARIABLE_QWORD_HIGH]
 	mov	rbx,	qword [variable_window_message_info_position]
 	int	STATIC_KERNEL_SERVICE
-
-	; przywróć oryginalne rejestry
-	pop	rbx
-	pop	rax
 
 	; sprawdź, czy pozostały linie do wyświetlenia
 	dec	rbp
@@ -273,16 +271,23 @@ library_window_message_info_interface:
 	mov	qword [variable_window_message_info_position],	rbx
 	int	STATIC_KERNEL_SERVICE
 
-	add	rbp,	VARIABLE_WINDOW_MESSAGE_INFO_MARGIN
-
-.background:
+	; margines górny
 	mov	ebx,	VARIABLE_WINDOW_MESSAGE_INFO_COLOR
 	mov	edx,	VARIABLE_WINDOW_MESSAGE_INFO_BACKGROUND
+	mov	r8,	VARIABLE_ASCII_CODE_DASH_HORIZONTAL_BOLD
+	call	library_window_message_info_background
+
+.background:
+	; tło okna komunikatu
 	xor	r8,	r8
 	call	library_window_message_info_background
 
 	dec	rbp
 	jnz	.background
+
+	; margines dolny
+	mov	r8,	VARIABLE_ASCII_CODE_DASH_HORIZONTAL_BOLD
+	call	library_window_message_info_background
 
 	; przywróć oryginalne rejestry
 	pop	r8

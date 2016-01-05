@@ -324,6 +324,40 @@ screen_initialization_reload:
 	; powrót z procedury
 	ret
 
+cyjon_screen_shadow:
+	push	rax
+	push	rcx
+	push	rdx
+	push	rdi
+
+	cmp	byte [header + HEADER.video],	VARIABLE_EMPTY
+	ja	.end	; brak obsługi trybu graficznego (jeszcze)
+
+	mov	rax,	qword [variable_video_mode_chars_y]
+	xor	rdx,	rdx
+	mul	qword [variable_video_mode_chars_x]
+
+	mov	rcx,	rax
+
+	mov	al,	VARIABLE_COLOR_LIGHT_GRAY + VARIABLE_COLOR_BACKGROUND_DEFAULT
+
+	mov	rdi,	qword [variable_video_mode_memory_address]
+
+.loop:
+	inc	rdi
+	stosb
+
+	dec	rcx
+	jnz	.loop
+
+.end:
+	pop	rdi
+	pop	rdx
+	pop	rcx
+	pop	rax
+
+	ret
+
 ;=======================================================================
 ; czyści ekran na domyślny kolor tła
 ; IN:
