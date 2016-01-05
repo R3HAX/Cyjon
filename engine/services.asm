@@ -483,16 +483,87 @@ irq64_screen:
 	jmp	irq64.end
 
 .screen_cursor_hide:
+	cmp	byte [header + HEADER.video],	VARIABLE_EMPTY
+	je	.screen_cursor_hide_text_mode
+
 	call	cyjon_screen_cursor_lock
 
 	; koniec obsługi procedury
 	jmp	irq64.end
 
+.screen_cursor_hide_text_mode:
+	push	rax
+	push	rcx
+	push	rdx
+
+	; młodszy port kursora (rejestr indeksowy VGA)
+	mov	al,	0x0F
+	mov	dx,	0x03D4
+	out	dx,	al
+
+	inc	dx	; 0x03D5
+	mov	al,	0xFF
+	out	dx,	al
+
+	; starszy port kursora
+	mov	al,	0x0E
+	dec	dx
+	out	dx,	al
+
+	inc	dx
+	mov	al,	0xFF
+	out	dx,	al
+
+	pop	rdx
+	pop	rcx
+	pop	rax
+
+	; koniec obsługi procedury
+	jmp	irq64.end
+
 .screen_cursor_show:
+	cmp	byte [header + HEADER.video],	VARIABLE_EMPTY
+	je	.screen_cursor_show_text_mode
+
 	cmp	qword [variable_screen_cursor_semaphore], VARIABLE_EMPTY
 	je	irq64.end
 
 	call	cyjon_screen_cursor_unlock
+
+	; koniec obsługi procedury
+	jmp	irq64.end
+
+.screen_cursor_show_text_mode:
+	push	rax
+	push	rbx
+	push	rcx
+	push	rdx
+
+	mov	rbx,	qword [variable_screen_cursor_xy]
+
+	; młodszy port kursora (rejestr indeksowy VGA)
+	mov	al,	0x0F
+	mov	dx,	0x03D4
+	out	dx,	al
+
+	inc	dx	; 0x03D5
+	mov	al,	bl
+	out	dx,	al
+
+	; starszy port kursora
+	mov	al,	0x0E
+	dec	dx
+	out	dx,	al
+
+	inc	dx
+	shr	rbx,	32
+	mov	al,	bl
+	out	dx,	al
+
+	pop	rdx
+	pop	rcx
+	pop	rbx
+	pop	rax
 
 	; koniec obsługi procedury
 	jmp	irq64.end

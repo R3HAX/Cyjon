@@ -89,6 +89,8 @@ start:
 
 	; utwórz plik readme.txt w głównym systemie plików /
 	call	create_readme
+	; utwórz plik hostname
+	;call	create_hostname
 
 	; załaduj do wirtualnego systemu plików, dołączone oprogramowanie
 	call	move_included_files_to_virtual_filesystem
@@ -158,9 +160,13 @@ file_load_init_pointer	db	"init"
 ; dołączone oprogramowanie wyrównaj do pełnego adresu strony, będzie można zwolnić na końcu inicjalizacji dodatkową przestrzeń dla 
 align	0x1000
 
+; poniższe strony pamięci zostaną zwolnione po przetworzeniu
 release_memory:
 
 %include	"software/internal.asm"
+
+; wskaźnik końca kodu jądra wyrównaj do pełnego adresu strony
+align	0x1000
 
 ; koniec kodu jądra systemu + oprogramowania
 end:

@@ -45,9 +45,6 @@ start:
 	cmp	ax,	VARIABLE_ASCII_CODE_BACKSPACE
 	je	key_backspace
 
-;	cmp	ax,	VARIABLE_ASCII_CODE_DELETE
-;	je	key_delete
-
 	cmp	ax,	0x8002
 	je	key_arrow_left
 

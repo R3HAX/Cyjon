@@ -14,9 +14,6 @@
 ; 64 Bitowy kod programu
 [BITS 64]
 
-file_readme		dq	10
-file_readme_pointer	db	"readme.txt"
-
 ;===============================================================================
 ;===============================================================================
 
@@ -281,9 +278,66 @@ create_readme:
 
 	ret
 
+create_hostname:
+	xchg	bx,	bx
+
+	; poszukaj katalogu systemowego na partycji
+	mov	rax,	0	; w katalogu /
+	mov	rcx,	qword [file_system_dir]	; ilość znaków w nazwie pliku
+	mov	rsi,	file_system_dir_pointer
+
+	call	cyjon_filesystem_kfs_find_file
+	jc	.system_dir
+
+	; brak katalogu systemowego? WTF?
+	; brak jeszcze wsparcia
+	ret
+
+.system_dir:
+	mov	rbx,	0x8000	; plik
+	mov	rcx,	qword [file_hostname]	; ilość znaków w nazwie pliku
+	mov	rsi,	file_hostname_pointer
+	call	cyjon_filesystem_kfs_file_create
+
+	; załaduj do pliku dane
+	; rax - numer supła
+	; rbx - rozmiar danych w blokach
+	; rdx - rozmiar pliku w Bajtach
+	; rsi - gdzie są dane
+	; r8 - specyfikacja systemu plików
+	push	rax
+	mov	rax,	text_hostname_end - text_hostname
+	mov	rcx,	qword [r8 + KFS.block_size]
+	div	rcx
+	cmp	rdx,	VARIABLE_EMPTY
+	je	.file_size_ok
+
+	add	eax,	VARIABLE_INCREMENT
+
+.file_size_ok:
+	mov	eax,	eax
+	mov	rbx,	rax
+	pop	rax
+	mov	rdx,	text_hostname_end - text_hostname
+	mov	rsi,	text_hostname
+	call	cyjon_filesystem_kfs_file_update
+
+	ret
+
+file_system_dir		dq	7
+file_system_dir_pointer	db	".system"
+
+file_hostname		dq	8
+file_hostname_pointer	db	"hostname"
+
+text_hostname:
+	; jeśli pliku nie ma w katalogu systemowym, zostanie utworzony domyślny za poniższą zawartością
+	db	"localhost", VARIABLE_ASCII_CODE_TERMINATOR
+text_hostname_end:
+
+file_readme		dq	10
+file_readme_pointer	db	"readme.txt"
+
 text_readme:
 %include	"doc/readme.asm"
 text_readme_end:
-
-; etykiete końca kodu jądra wyrównaj do pełnego adresu strony
-align	0x1000
