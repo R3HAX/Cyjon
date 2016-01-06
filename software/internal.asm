@@ -179,6 +179,12 @@ files_table:
 	dq	file_colors_end
 	db	'colors'
 
+	dq	3
+	dq	file_msg_end - file_msg
+	dq	file_msg
+	dq	file_msg_end
+	db	'msg'
+
 	; koniec tablicy plików
 	dq	VARIABLE_EMPTY
 
@@ -226,6 +232,9 @@ file_ascii_end:
 
 file_colors:		incbin	'colors.bin'
 file_colors_end:
+
+file_msg:		incbin	'msg.bin'
+file_msg_end:
 
 text_virtial_file_system	db	" Virtual file system initialized.", VARIABLE_ASCII_CODE_ENTER, VARIABLE_ASCII_CODE_NEWLINE, VARIABLE_ASCII_CODE_TERMINATOR
 
