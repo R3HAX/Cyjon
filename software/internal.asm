@@ -185,8 +185,17 @@ files_table:
 	dq	file_msg_end
 	db	'msg'
 
+	dq	4
+	dq	file_test_end - file_test
+	dq	file_test
+	dq	file_test_end
+	db	'test'
+
 	; koniec tablicy plików
 	dq	VARIABLE_EMPTY
+
+file_test:		incbin	'test.bin'
+file_test_end:
 
 file_init:		incbin	'init.bin'
 file_init_end:

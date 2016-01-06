@@ -22,6 +22,7 @@ all:
 	$(ASM) $(SOFTWARE)/ascii.asm -o ascii.bin
 	$(ASM) $(SOFTWARE)/colors.asm -o colors.bin
 	$(ASM) $(SOFTWARE)/msg.asm -o msg.bin
+	$(ASM) $(SOFTWARE)/test.asm -o test.bin
 
 	$(ASM) kernel.asm -o kernel.bin
 
@@ -30,4 +31,4 @@ all:
 	$(ASM) $(BOOTLOADER)/stage1.asm -o $(BUILD)/disk.raw
 
 clean:
-	rm -f init.bin login.bin shell.bin help.bin uptime.bin moko.bin ps.bin date.bin ls.bin stage2.bin args.bin touch.bin free.bin conf.bin ascii.bin colors.bin msg.bin
+	rm -f init.bin login.bin shell.bin help.bin uptime.bin moko.bin ps.bin date.bin ls.bin stage2.bin args.bin touch.bin free.bin conf.bin ascii.bin colors.bin msg.bin test.bin
