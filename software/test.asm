@@ -24,13 +24,23 @@
 [ORG VARIABLE_MEMORY_HIGH_REAL_ADDRESS]	
 
 start:
+	mov	rdi,	variable_menu_specification
+
+	mov	rax,	0x0000000500000005
+	mov	qword [rdi + WINDOW_MENU.position],	rax
+	mov	qword [rdi + WINDOW_MENU.entrys],	1
+	mov	qword [rdi + WINDOW_MENU.data],	variable_menu
+	call	library_window_menu
+
 	; program kończy działanie
 	xor	ax,	ax
 	int	STATIC_KERNEL_SERVICE
 
-%include	"library/window_message_info.asm"
+%include	'library/window_menu.asm'
 
-variable_message_info_specification	times	WINDOW_MESSAGE_INFO.size / VARIABLE_QWORD_SIZE	dq	VARIABLE_EMPTY
+variable_menu_specification:	times	WINDOW_MENU.structure_size	db	VARIABLE_EMPTY
 
-variable_menu_specification:
-	dq	
+variable_menu:
+	dq	8
+	db	VARIABLE_EMPTY	; flagi
+	db	'hostname'

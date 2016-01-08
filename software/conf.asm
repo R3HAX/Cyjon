@@ -30,4 +30,4 @@ start:
 
 %include	"library/window_message_info.asm"
 
-variable_message_info_specification	times	WINDOW_MESSAGE_INFO.size / VARIABLE_QWORD_SIZE	dq	VARIABLE_EMPTY
+variable_message_info_specification	times	WINDOW_MESSAGE_INFO.structure_size	db	VARIABLE_EMPTY

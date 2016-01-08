@@ -78,7 +78,7 @@ start:
 
 %include	"library/window_message_info.asm"
 
-variable_table	times	WINDOW_MESSAGE_INFO.size / VARIABLE_QWORD_SIZE	dq	VARIABLE_EMPTY
+variable_table	times	WINDOW_MESSAGE_INFO.structure_size	db	VARIABLE_EMPTY
 
 text_window_message0_size	dq	31
 text_window_message0		db	"This is a simple message box.", VARIABLE_ASCII_CODE_TERMINATOR

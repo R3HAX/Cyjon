@@ -15,11 +15,11 @@
 [BITS 64]
 
 struc	WINDOW_MESSAGE_INFO
-	.position	resq	1
-	.width		resq	1
-	.text_width	resq	1
-	.text_pointer	resq	1
-	.size		resb	1	; ignorowany/znacznik rozmiaru tablicy
+	.position		resq	1
+	.width			resq	1
+	.text_width		resq	1
+	.text_pointer		resq	1
+	.structure_size		resb	1	; ignorowany/znacznik rozmiaru tablicy
 endstruc	
 
 VARIABLE_WINDOW_MESSAGE_INFO_TEXT_COLOR		equ	VARIABLE_COLOR_WHITE
