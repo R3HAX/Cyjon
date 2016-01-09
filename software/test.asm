@@ -26,10 +26,23 @@
 start:
 	mov	rdi,	variable_menu_specification
 
-	mov	rax,	0x0000000500000005
+	; --- wyświetl menu na środku ekranu --- ;
+
+	mov	ax,	VARIABLE_KERNEL_SERVICE_SCREEN_SIZE
+	int	STATIC_KERNEL_SERVICE
+
+	; ktoś zna lepszy sposob?
+	mov	qword [variable_screen_cursor],	rbx
+	shr	qword [variable_screen_cursor],	VARIABLE_DIVIDE_BY_2
+	shr	qword [variable_screen_cursor + VARIABLE_QWORD_HIGH],	VARIABLE_DIVIDE_BY_2
+	sub	qword [variable_screen_cursor], 4	; połowa szerokości menu (bez marginesów)
+	sub	qword [variable_screen_cursor + VARIABLE_QWORD_HIGH],	1	; połowa ilości rekordow (bez marginesów)
+	mov	rax,	qword [variable_screen_cursor]
+
 	mov	qword [rdi + WINDOW_MENU.position],	rax
 	mov	qword [rdi + WINDOW_MENU.entrys],	1
-	mov	qword [rdi + WINDOW_MENU.data],	variable_menu
+	mov	rax,	variable_menu
+	mov	qword [rdi + WINDOW_MENU.data],	rax
 	call	library_window_menu
 
 	; program kończy działanie
@@ -38,6 +51,7 @@ start:
 
 %include	'library/window_menu.asm'
 
+variable_screen_cursor		dq	VARIABLE_EMPTY
 variable_menu_specification:	times	WINDOW_MENU.structure_size	db	VARIABLE_EMPTY
 
 variable_menu:

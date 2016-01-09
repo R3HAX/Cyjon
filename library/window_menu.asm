@@ -21,8 +21,8 @@ struc	WINDOW_MENU
 	.structure_size	resb	1	; ignorowany/znacznik rozmiaru tablicy
 endstruc
 
-VARIABLE_WINDOW_MENU_COLOR		equ	VARIABLE_COLOR_WHITE
-VARIABLE_WINDOW_MENU_BACKGROUND		equ	VARIABLE_COLOR_BACKGROUND_LIGHT_RED
+VARIABLE_WINDOW_MENU_COLOR		equ	VARIABLE_COLOR_BLACK
+VARIABLE_WINDOW_MENU_BACKGROUND		equ	VARIABLE_COLOR_BACKGROUND_RED
 
 variable_window_menu_info_position	dq	VARIABLE_EMPTY
 
@@ -31,7 +31,26 @@ library_window_menu:
 	mov	ax,	VARIABLE_KERNEL_SERVICE_SCREEN_SHADOW
 	int	STATIC_KERNEL_SERVICE
 
-	; --- oblicz szerokość menu ---
+	xchg	bx,	bx
+
+	; --- oblicz szerokość menu --- ;
+	xor	rcx,	rcx
+	mov	rdx,	qword [rdi + WINDOW_MENU.entrys]
+	mov	rsi,	qword [rdi + WINDOW_MENU.data]
+
+.calculate:
+	cmp	rcx,	qword [rsi]
+	ja	.calculate_continue
+
+	; aktualizuj szerokość największego rekordu
+	mov	rcx,	qword [rsi]
+
+.calculate_continue:
+	add	rsi,	qword [rsi]
+	add	rsi,	VARIABLE_QWORD_SIZE + VARIABLE_BYTE_SIZE
+
+	dec	rdx
+	jnz	.calculate
 
 	call	library_window_menu_interface
 
@@ -64,12 +83,15 @@ library_window_menu_interface:
 	mov	r8,	VARIABLE_ASCII_CODE_DASH_HORIZONTAL_BOLD
 	call	library_window_menu_background
 
-.background:
+	mov	rax,	qword [rdi + WINDOW_MENU.entrys]
+
 	; tło okna komunikatu
 	xor	r8,	r8
+
+.background:
 	call	library_window_menu_background
 
-	dec	rbp
+	dec	rax
 	jnz	.background
 
 	; margines dolny
