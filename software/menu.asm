@@ -42,12 +42,10 @@ start:
 	mov	rax,	qword [variable_screen_cursor]
 
 	mov	qword [rdi + WINDOW_MENU.position],	rax
-	mov	qword [rdi + WINDOW_MENU.entrys],	2
+	mov	qword [rdi + WINDOW_MENU.entrys],	3
 	mov	rax,	variable_menu
 	mov	qword [rdi + WINDOW_MENU.data],	rax
 	call	library_window_menu
-
-	xchg	bx,	bx
 
 	; ustaw kursor na początku ostatniej linii
 	mov	ax,	VARIABLE_KERNEL_SERVICE_SCREEN_CURSOR_SET
@@ -66,9 +64,12 @@ variable_screen_cursor		dq	VARIABLE_EMPTY
 variable_menu_specification:	times	WINDOW_MENU.structure_size	db	VARIABLE_EMPTY
 
 variable_menu:
-	db	4
+	db	5
 	db	VARIABLE_EMPTY
-	db	'test'
-	db	8
+	db	'first'
+	db	6
 	db	VARIABLE_EMPTY	; flagi
-	db	'hostname'
+	db	'second'
+	db	5
+	db	VARIABLE_EMPTY
+	db	'third'

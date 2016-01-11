@@ -191,6 +191,12 @@ files_table:
 	dq	file_test_end
 	db	'test'
 
+	dq	4
+	dq	file_menu_end - file_menu
+	dq	file_menu
+	dq	file_menu_end
+	db	'menu'
+
 	; koniec tablicy plików
 	dq	VARIABLE_EMPTY
 
@@ -244,6 +250,9 @@ file_colors_end:
 
 file_msg:		incbin	'msg.bin'
 file_msg_end:
+
+file_menu:		incbin	'menu.bin'
+file_menu_end:
 
 text_virtial_file_system	db	" Virtual file system initialized.", VARIABLE_ASCII_CODE_ENTER, VARIABLE_ASCII_CODE_NEWLINE, VARIABLE_ASCII_CODE_TERMINATOR
 
