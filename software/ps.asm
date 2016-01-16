@@ -111,7 +111,7 @@ start:
 	cmp	qword [rdi + VARIABLE_TABLE_SERPENTINE_RECORD.FLAGS],	VARIABLE_EMPTY
 	jne	.loop
 
-	xor	ax,	ax
+	mov	ax,	VARIABLE_KERNEL_SERVICE_PROCESS_KILL
 	int	STATIC_KERNEL_SERVICE
 
 %include	"library/align_address_up_to_page.asm"

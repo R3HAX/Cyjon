@@ -73,7 +73,7 @@ start:
 	call	library_window_message_info
 
 	; program kończy działanie
-	xor	ax,	ax
+	mov	ax,	VARIABLE_KERNEL_SERVICE_PROCESS_KILL
 	int	STATIC_KERNEL_SERVICE
 
 %include	"library/window_message_info.asm"

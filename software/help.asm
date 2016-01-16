@@ -64,7 +64,7 @@ start:
 
 .end:
 	; wyjdź z programu
-	xor	ax,	ax
+	mov	ax,	VARIABLE_KERNEL_SERVICE_PROCESS_KILL
 	int	STATIC_KERNEL_SERVICE
 
 command_table:

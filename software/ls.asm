@@ -146,7 +146,7 @@ start:
 	int	STATIC_KERNEL_SERVICE	; wykonaj
 
 	; program kończy działanie
-	xor	ax,	ax
+	mov	ax,	VARIABLE_KERNEL_SERVICE_PROCESS_KILL
 	int	STATIC_KERNEL_SERVICE	; wykonaj
 
 %include	'library/find_first_word.asm'

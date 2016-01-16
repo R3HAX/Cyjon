@@ -174,7 +174,7 @@ start:
 	jnc	.noExit
 
 	; wyloguj z powłoki systemu
-	xor	rax,	rax
+	mov	ax,	VARIABLE_KERNEL_SERVICE_PROCESS_KILL
 	int	STATIC_KERNEL_SERVICE
 
 .noExit:

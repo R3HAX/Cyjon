@@ -175,7 +175,7 @@ start:
 	int	STATIC_KERNEL_SERVICE
 
 	; program kończy działanie
-	xor	ax,	ax
+	mov	ax,	VARIABLE_KERNEL_SERVICE_PROCESS_KILL
 	int	STATIC_KERNEL_SERVICE
 
 variable_semaphore	db	VARIABLE_EMPTY

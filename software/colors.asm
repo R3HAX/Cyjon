@@ -42,7 +42,7 @@ start:
 	pop	rbx
 
 	mov	ax,	VARIABLE_KERNEL_SERVICE_SCREEN_PRINT_NUMBER
-	mov	rcx,	0x0210	; system dziesiętny, uzupełnij do 2
+	mov	rcx,	0x0210	; system heksadecymalny, uzupełnij do 2
 	mov	r8,	rbx
 	add	r8,	rdx
 	int	STATIC_KERNEL_SERVICE
@@ -67,7 +67,7 @@ start:
 
 .end:
 	; program kończy działanie
-	xor	ax,	ax
+	mov	ax,	VARIABLE_KERNEL_SERVICE_PROCESS_KILL
 	int	STATIC_KERNEL_SERVICE
 
 text_new_line	db	VARIABLE_ASCII_CODE_ENTER, VARIABLE_ASCII_CODE_NEWLINE
