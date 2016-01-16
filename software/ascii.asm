@@ -126,7 +126,7 @@ start:
 
 .end:
 	; koniec procesu
-	xor	ax,	ax
+	mov	ax,	VARIABLE_KERNEL_SERVICE_PROCESS_KILL
 	int	STATIC_KERNEL_SERVICE
 
 .special:
