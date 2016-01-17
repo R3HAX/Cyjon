@@ -43,9 +43,6 @@ start:
 	;     |  |  |  |  |  |  |  |
 	; 0x 00 00 00 00 00 00 00 00
 
-	; wyczyść licznik
-	xor	rcx,	rcx
-
 	push	rbx
 
 	; pobierz dzień tygodnia ---------------------------------------
@@ -54,7 +51,7 @@ start:
 	; licz od zera
 	dec	r8
 
-	; oblicz numer rekordu w tablicy nazw tygodnia
+	; oblicz adres rekordu w tablicy nazw tygodnia
 	mov	eax,	6
 	mul	r8	; oblicz
 
@@ -65,7 +62,7 @@ start:
 	; wypisz tekst na ekranie
 	mov	ax,	VARIABLE_KERNEL_SERVICE_SCREEN_PRINT_STRING
 	mov	ebx,	VARIABLE_COLOR_DEFAULT
-	mov	ecx,	VARIABLE_FULL
+	mov	cl,	VARIABLE_FULL
 	mov	edx,	VARIABLE_COLOR_BACKGROUND_DEFAULT
 	int	STATIC_KERNEL_SERVICE
 
@@ -74,7 +71,7 @@ start:
 
 	; wyświetl liczbę
 	mov	ax,	VARIABLE_KERNEL_SERVICE_SCREEN_PRINT_NUMBER
-	mov	ecx,	10	; system dziesiętny
+	mov	cx,	10	; system dziesiętny
 	int	STATIC_KERNEL_SERVICE
 
 	; pobierz miesiąc ----------------------------------------------
@@ -83,7 +80,7 @@ start:
 	; licz od zera
 	dec	r8
 
-	; oblicz numer rekordu w tablicy miesięcy
+	; oblicz adres rekordu w tablicy miesięcy
 	mov	eax,	6
 	mul	r8	; oblicz
 
@@ -93,7 +90,6 @@ start:
 
 	; wypisz tekst na ekranie
 	mov	ax,	VARIABLE_KERNEL_SERVICE_SCREEN_PRINT_STRING
-	mov	ecx,	VARIABLE_FULL
 	mov	edx,	VARIABLE_COLOR_BACKGROUND_DEFAULT
 	int	STATIC_KERNEL_SERVICE
 
@@ -110,18 +106,6 @@ start:
 
 	; wyświetl separator -------------------------------------------
 
-	; wyświetl separator bez cyfry wiodącej
-	mov	ecx,	2
-
-	; sprawdź, czy wyświetlić cyfrę wiodącą?
-	cmp	byte [rsp + 0x03],	9
-	ja	.godzina	; godzina powyżej
-
-	; koryguj, wyświetl separator z cyfrą wiodącą
-	inc	rcx
-
-.godzina:
-	; wyświetl tekst
 	mov	ax,	VARIABLE_KERNEL_SERVICE_SCREEN_PRINT_STRING
 	mov	rsi,	tekst_separator
 	int	STATIC_KERNEL_SERVICE
@@ -131,23 +115,11 @@ start:
 
 	; wyświetl liczbę
 	mov	ax,	VARIABLE_KERNEL_SERVICE_SCREEN_PRINT_NUMBER
-	mov	rcx,	10	; system dziesiętny
+	mov	rcx,	0x020A	; system dziesiętny
 	int	STATIC_KERNEL_SERVICE
 
 	; wyświetl dwukropek -------------------------------------------
 
-	; wyświetl dwukropek bez cyfry wiodącej
-	mov	ecx,	1
-
-	; sprawdź, czy wyświetlić cyfrę wiodącą?
-	cmp	byte [rsp + 0x02],	9
-	ja	.minuta	; minuta powyżej
-
-	; koryguj, wyświetl dwukropek z cyfrą wiodącą
-	inc	rcx
-
-.minuta:
-	; wyświetl tekst
 	mov	ax,	VARIABLE_KERNEL_SERVICE_SCREEN_PRINT_STRING
 	mov	rsi,	tekst_dwukropek
 	int	STATIC_KERNEL_SERVICE
@@ -155,25 +127,11 @@ start:
 	; pobierz minute ----------------------------------------------
 	movzx	r8,	byte [rsp + 0x02]
 
-	; wyświetl liczbę
 	mov	ax,	VARIABLE_KERNEL_SERVICE_SCREEN_PRINT_NUMBER
-	mov	rcx,	10	; system dziesiętny
 	int	STATIC_KERNEL_SERVICE
 
 	; wyświetl dwukropek -------------------------------------------
 
-	; wyświetl dwukropek bez cyfry wiodącej
-	mov	ecx,	1
-
-	; sprawdź, czy wyświetlić cyfrę wiodącą?
-	cmp	byte [rsp + 0x01],	9
-	ja	.sekunda	; sekunda powyżej
-
-	; koryguj, wyświetl dwukropek z cyfrą wiodącą
-	inc	rcx
-
-.sekunda:
-	; wyświetl tekst
 	mov	ax,	VARIABLE_KERNEL_SERVICE_SCREEN_PRINT_STRING
 	mov	rsi,	tekst_dwukropek
 	int	STATIC_KERNEL_SERVICE
@@ -183,12 +141,10 @@ start:
 
 	; wyświetl liczbę
 	mov	ax,	VARIABLE_KERNEL_SERVICE_SCREEN_PRINT_NUMBER
-	mov	rcx,	10	; system dziesiętny
 	int	STATIC_KERNEL_SERVICE
 
 	; wyświetl informacje o strefie czasowej -----------------------
 	mov	ax,	VARIABLE_KERNEL_SERVICE_SCREEN_PRINT_STRING
-	mov	ecx,	VARIABLE_FULL
 	mov	rsi,	tekst_czas_miedzynarodowy
 	int	STATIC_KERNEL_SERVICE
 
@@ -196,8 +152,8 @@ start:
 	mov	ax,	VARIABLE_KERNEL_SERVICE_PROCESS_KILL
 	int	STATIC_KERNEL_SERVICE
 
-tekst_separator	db	', 0'
-tekst_dwukropek	db	':0'
+tekst_separator	db	', ', VARIABLE_ASCII_CODE_TERMINATOR
+tekst_dwukropek	db	':', VARIABLE_ASCII_CODE_TERMINATOR
 
 tablica_dzien_tygodnia	db	'Sun, ', VARIABLE_ASCII_CODE_TERMINATOR
 			db	'Mon, ', VARIABLE_ASCII_CODE_TERMINATOR

@@ -107,7 +107,7 @@ start:
 	mov	r8,	rax
 	mov	ax,	VARIABLE_KERNEL_SERVICE_SCREEN_PRINT_NUMBER
 	mov	rdx,	VARIABLE_COLOR_BACKGROUND_DEFAULT
-	mov	rcx,	10	; system dziesiętny
+	mov	rcx,	0x020A	; system dziesiętny
 	int	STATIC_KERNEL_SERVICE
 
 	; wyświetlono godzinę
@@ -127,17 +127,6 @@ start:
 
 	; wyświetl dwukropek -------------------------------------------
 
-	; wyświetl dwukropek bez cyfry wiodącej
-	mov	rcx,	1
-
-	; sprawdź, czy wyświetlić cyfrę wiodącą?
-	cmp	al,	9
-	ja	.caution	; minuta powyżej
-
-	; koryguj, wyświetl dwukropek z cyfrą wiodącą
-	inc	rcx
-
-.caution:
 	cmp	byte [variable_semaphore],	VARIABLE_EMPTY
 	je	.no_hour
 
@@ -151,9 +140,16 @@ start:
 	; ustaw licznik
 	pop	r8
 
+	mov	rcx,	10
+
+	cmp	byte [variable_semaphore],	VARIABLE_EMPTY
+	je	.no_hours
+
+	mov	rcx,	0x020A	; system dziesiętny
+
+.no_hours:
 	; wyświetl liczbę
 	mov	ax,	VARIABLE_KERNEL_SERVICE_SCREEN_PRINT_NUMBER
-	mov	rcx,	10	; system dziesiętny
 	mov	rdx,	VARIABLE_COLOR_BACKGROUND_DEFAULT
 	int	STATIC_KERNEL_SERVICE
 
@@ -182,7 +178,7 @@ variable_semaphore	db	VARIABLE_EMPTY
 
 text_up			db	'up ', VARIABLE_ASCII_CODE_TERMINATOR
 
-text_caution		db	':0' ;)
+text_caution		db	':', VARIABLE_ASCII_CODE_TERMINATOR
 text_day		db	' day, ', VARIABLE_ASCII_CODE_TERMINATOR
 text_days		db	' days, ', VARIABLE_ASCII_CODE_TERMINATOR
 text_min		db	' min', VARIABLE_ASCII_CODE_TERMINATOR
