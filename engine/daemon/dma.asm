@@ -11,71 +11,18 @@
 ; Use:
 ; nasm - http://www.nasm.us/
 
-text_daemon_garbage_collector_name	db	"garbage_collector"
-text_daemon_garbage_collector_name_end:
+text_daemon_dma_name	db	"dma_controller"
+text_daemon_dma_name_end:
 
 ; 64 Bitowy kod programu
 [BITS 64]
 
-daemon_garbage_collector:
-	; szukaj procesu gotowego do zamknięcia
-	mov	bx,	STATIC_SERPENTINE_RECORD_FLAG_USED + STATIC_SERPENTINE_RECORD_FLAG_CLOSED
-
-	call	cyjon_multitasking_serpentine_find_record
-
-	; pobierz adres tablicy PML4 procesu do zamknięcia
-	mov	rbx,	qword [rdi + VARIABLE_TABLE_SERPENTINE_RECORD.CR3]
-
-	; zapamiętaj adres tablicy PML4 procesu
-	push	rbx
-
-	; zmniejsz ilość procesów przechowywanych w tablicy
-	dec	qword [variable_multitasking_serpentine_record_counter]
-
-	cmp	qword [rdi + VARIABLE_TABLE_SERPENTINE_RECORD.ARGS],	VARIABLE_EMPTY
-	je	.no_args
-
-	; zwolnij przestrzeń pod argumenty
-	push	rdi
-
-	mov	rdi,	qword [rdi + VARIABLE_TABLE_SERPENTINE_RECORD.ARGS]
-	call	cyjon_page_release
-
-	pop	rdi
-
-.no_args:
-	; wyczyść rekord w tablicy
-	mov	qword [rdi + VARIABLE_TABLE_SERPENTINE_RECORD.FLAGS],	VARIABLE_EMPTY
-
-	; wyczyść nazwę pliku z rekordu
-	xor	al,	al
-	mov	rcx,	VARIABLE_TABLE_SERPENTINE_RECORD.ARGS - VARIABLE_TABLE_SERPENTINE_RECORD.NAME
-	add	rdi,	VARIABLE_TABLE_SERPENTINE_RECORD.NAME
-
-.loop:
-	mov	byte [rdi],	al
-	add	rdi,	VARIABLE_INCREMENT
-	sub	rcx,	VARIABLE_DECREMENT
-	jnz	.loop
-
-	; zwolnij pamięć zajętą przez proces
-	mov	rdi,	rbx	; załaduj adres tablicy PML4 procesu
-	add	rdi,	255 * 0x08	; rozpocznij zwalnianie przestrzeni od rekordu stosu kontekstu procesu
-	mov	rbx,	4	; ustaw poziom tablicy przetwarzanej
-	mov	rcx,	257	; ile pozostało rekordów w tablicy PML4 do zwolnienia
-	call	cyjon_page_release_area.loop
-
-	; przywróć adres tablicy PML4 procesu
-	pop	rdi
-
-	; zwolnij przestrzeń spod tablicy PML4 procesu
-	call	cyjon_page_release
-
+daemon_dma:
 	hlt
 
-	jmp	daemon_garbage_collector
+	jmp	daemon_dma
 
-daemon_init_garbage_collector:
+daemon_init_dma:
 	; przygotuj miejsce dla tablicy PML4 demona
 	call	cyjon_page_allocate
 
@@ -112,7 +59,7 @@ daemon_init_garbage_collector:
 	; odstaw na stos kontekstu demona spreparowane dane powrotu z przerwania IRQ0
 
 	; RIP
-	mov	rax,	daemon_garbage_collector
+	mov	rax,	daemon_dma
 	stosq	; zapisz
 
 	; CS
@@ -222,10 +169,10 @@ daemon_init_garbage_collector:
 	stosq
 
 	; ustaw wskaźnik do nazwy pliku
-	mov	rsi,	text_daemon_garbage_collector_name
+	mov	rsi,	text_daemon_dma_name
 
 	; rozmiar nazwy pliku
-	mov	rcx,	text_daemon_garbage_collector_name_end - text_daemon_garbage_collector_name
+	mov	rcx,	text_daemon_dma_name_end - text_daemon_dma_name
 
 	; załaduj nazwe procesu do rekordu
 	rep	movsb

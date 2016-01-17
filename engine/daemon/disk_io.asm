@@ -41,7 +41,7 @@ text_daemon_disk_io_name_end:
 ; 64 Bitowy kod programu
 [BITS 64]
 
-disk_io:
+daemon_disk_io:
 	; demon wymaga własnego stosu, pobierz adres ustalony przy inicjalizacji
 	mov	rsp,	qword [variable_disk_io_stack]
 
@@ -66,7 +66,7 @@ disk_io:
 	sub	rcx,	VARIABLE_DECREMENT
 	jnz	.loop
 
-	jmp	disk_io
+	jmp	daemon_disk_io
 
 .ready:
 	mov	rax,	cr3
@@ -222,7 +222,7 @@ daemon_init_disk_io:
 	; odstaw na stos kontekstu demona spreparowane dane powrotu z przerwania IRQ0
 
 	; RIP
-	mov	rax,	disk_io
+	mov	rax,	daemon_disk_io
 	stosq	; zapisz
 
 	; CS

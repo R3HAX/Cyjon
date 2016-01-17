@@ -80,6 +80,7 @@ start:
 	; uruchom niezbędne demony
 	call	daemon_init_disk_io
 	call	daemon_init_garbage_collector
+	call	daemon_init_dma
 
 	; inizjalizuj system plików
 	mov	rax,	2048
@@ -142,6 +143,7 @@ start:
 
 %include	"engine/daemon/garbage_collector.asm"
 %include	"engine/daemon/disk_io.asm"
+%include	"engine/daemon/dma.asm"
 
 %include	"engine/drivers/pci.asm"
 %include	"engine/drivers/ide.asm"
