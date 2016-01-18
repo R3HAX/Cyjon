@@ -14,7 +14,7 @@
 ; 64 Bitowy kod programu
 [BITS 64]
 
-variable_page_semaphore_allocate	db	VARIABLE_EMPTY
+variable_page_allocate_semaphore	db	VARIABLE_EMPTY
 
 cyjon_page_release_specified_area:
 	; zachowaj oryginalne rejestry
@@ -117,7 +117,7 @@ cyjon_page_release_specified_area:
 	jmp	.pml3_continue
 
 ;=======================================================================
-; pobiera adres fizyczny wolnej strony do wykorzystania
+; pobiera adres fizyczny/logiczny wolnej strony do wykorzystania
 ; IN:
 ;	brak
 ; OUT:
@@ -133,20 +133,20 @@ cyjon_page_allocate:
 	; wyczyść adres strony zwracanej
 	xor	rdi,	rdi
 
+.wait:
+	; sprawdź czy binarna mapa pamięci jest dostępna do modyfikacji
+	cmp	byte [variable_page_allocate_semaphore],	VARIABLE_TRUE
+	je	.wait	; nie, czekaj na zwolnienie
+
+	; zarezerwuj binarną mapę pamięci dla siebie
+	mov	byte [variable_page_allocate_semaphore],	VARIABLE_TRUE
+
 	; sprawdź czy istnieją dostępne strony
 	cmp	qword [variable_binary_memory_map_free_pages],	VARIABLE_EMPTY
 	je	.end	; brak, zakończ procedurę
 
 	; istnieją dostępne strony, zmniejsz ich ilość o jedną
 	dec	qword [variable_binary_memory_map_free_pages]
-
-.wait:
-	; sprawdź czy binarna mapa pamięci jest dostępna do modyfikacji
-	cmp	byte [variable_page_semaphore_allocate],	0x01
-	je	.wait	; nie, czekaj na zwolnienie
-
-	; zarezerwuj binarną mapę pamięci dla siebie
-	mov	byte [variable_page_semaphore_allocate],	0x01
 
 	; załaduj do wskaźnika źródłowego adres logiczny początku binarnej mapy pamięci
 	mov	rsi,	qword [variable_binary_memory_map_address_start]
@@ -160,15 +160,15 @@ cyjon_page_allocate:
 	mov	rdi,	rax
 
 	; zamień całkowity numer bitu na względny adres strony
-	shl	rdi,	12	; * 4096
+	shl	rdi,	VARIABLE_MULTIPLE_BY_4096
 
 	; w binarnej mapie pamięci opisaliśmy przestrzeń zaczynającą się od adresu fizycznego 0x0000000000100000
 	; zamień adres fizyczny względny na bezwzględny
-	add	rdi,	0x0000000000100000
+	add	rdi,	VARIABLE_KERNEL_PHYSICAL_ADDRESS
 
 .end:
 	; zwolnij dostęp do binarnej mapy pamięci
-	mov	byte [variable_page_semaphore_allocate],	VARIABLE_EMPTY
+	mov	byte [variable_page_allocate_semaphore],	VARIABLE_EMPTY
 
 	; przywróć oryginalne rejestry
 	pop	rsi
@@ -747,11 +747,11 @@ cyjon_page_release:
 
 .wait:
 	; czekaj na zwolnienie binarnej mapy pamięci
-	cmp	byte [variable_page_semaphore_allocate],	VARIABLE_EMPTY
+	cmp	byte [variable_page_allocate_semaphore],	VARIABLE_EMPTY
 	jne	.wait
 
 	; zarezerwuj binarną mapę pamięci
-	mov	byte [variable_page_semaphore_allocate],	0x01
+	mov	byte [variable_page_allocate_semaphore],	VARIABLE_TRUE
 
 	; pobierz zestaw 64 bitów z binarnej mapy pamięci
 	mov	rax,	qword [rdi]
@@ -765,7 +765,7 @@ cyjon_page_release:
 	inc	qword [variable_binary_memory_map_free_pages]
 
 	; zwolnij binarną mapę pamięci
-	mov	byte [variable_page_semaphore_allocate],	VARIABLE_EMPTY
+	mov	byte [variable_page_allocate_semaphore],	VARIABLE_EMPTY
 
 	; przywróć oryginalne rejestry
 	pop	rdi

@@ -49,7 +49,7 @@ start:
 
 	; ustaw kursor na początku ostatniej linii
 	mov	ax,	VARIABLE_KERNEL_SERVICE_SCREEN_CURSOR_SET
-	dec	dword [rsp]
+	mov	dword [rsp],	VARIABLE_EMPTY
 	dec	dword [rsp + VARIABLE_QWORD_HIGH]
 	pop	rbx
 	int	STATIC_KERNEL_SERVICE
