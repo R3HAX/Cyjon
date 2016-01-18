@@ -36,7 +36,7 @@ start:
 	; specyfikacja komunikatu
 	mov	rdi,	variable_table
 
-	mov	rax,	0x0000001500000020
+	mov	rax,	0x0000001300000020
 	mov	qword [rdi + WINDOW_MESSAGE_INFO.position],	rax
 	mov	qword [rdi + WINDOW_MESSAGE_INFO.width],	18
 	mov	rax,	qword [text_window_message0_size]
@@ -63,7 +63,7 @@ start:
 	mov	qword [rdi + WINDOW_MESSAGE_INFO.text_pointer],	rax
 	call	library_window_message_info
 
-	mov	rax,	0x0000001E00000010
+	mov	rax,	0x0000000100000010
 	mov	qword [rdi + WINDOW_MESSAGE_INFO.position],	rax
 	mov	qword [rdi + WINDOW_MESSAGE_INFO.width],	50
 	mov	rax,	qword [text_window_message3_size]

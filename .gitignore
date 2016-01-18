@@ -20,3 +20,5 @@ nasm.exe
 *.php
 tea.asm
 build/disk.vhd
+*.VFT
+DOS/CRISPY.ASM

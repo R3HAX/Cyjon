@@ -35,13 +35,13 @@ start:
 	out	0xA1,	al
 	out	0x21,	al
 
-	; załaduj standardową macierz czcionki 8x8 > tryb tekstowy 80x50
-	mov	ax,	0x1112
+	; załaduj standardową macierz czcionki 8x8 > tryb tekstowy 80x25
+	mov	ax,	0x0003	; 80x50 > 0x1112
 	int	0x10
 
 	; załaduj własną czcionkę do przestrzeni BIOSu
 	mov	ax,	0x1110
-	mov	bx,	0x0800	; bh, wysokość znaku (8 pikseli)
+	mov	bx,	0x1000	; bh, wysokość znaku (16 pikseli)
 	mov	cx,	256	; ilość znaków do załadowania
 	xor	dx,	dx	; rozpocząć od pierwszego
 	mov	bp,	font
@@ -914,7 +914,7 @@ supervga_info	times	256	db	0x00
 ; tablica informacyjna o wybranym trybie graficznym
 supervga_mode	times	256	db	0x00
 
-%include	'font/sinclair.asm'
+%include	'font/crispy.asm'
 
 ; wyrównaj pozycje kodu jądra systemu do pełnego sektora
 align	0x0200
