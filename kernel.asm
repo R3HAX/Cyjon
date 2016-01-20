@@ -70,6 +70,9 @@ start:
 	; resetuj karte dźwiękową SB16
 	call	sound
 
+	; szukaj karty sieciowej
+	call	cyjon_network_i8254x_find_card
+
 	; zainicjalizuj dostęp do nośnika IDE0 Master
 	call	ide_initialize
 
@@ -148,11 +151,14 @@ start:
 %include	"engine/drivers/pci.asm"
 %include	"engine/drivers/ide.asm"
 
+%include	"engine/drivers/network/i8254x.asm"
+
 %include	"engine/drivers/filesystem/kfs.asm"
 
 %include	"library/align_address_up_to_page.asm"
 %include	"library/find_free_bit.asm"
 %include	"library/compare_string.asm"
+%include	"library/find_first_word.asm"
 
 %include	VARIABLE_FONT_MATRIX_DEFAULT
 

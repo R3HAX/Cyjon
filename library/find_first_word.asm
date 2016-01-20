@@ -30,11 +30,11 @@ library_find_first_word:
 
 .find:
 	; pomiń spacje przed słowem
-	cmp	byte [rdi],	0x20
+	cmp	byte [rdi],	VARIABLE_ASCII_CODE_SPACE
 	je	.leave
 
 	; pomiń znak tabulacji
-	cmp	byte [rdi],	0x09
+	cmp	byte [rdi],	VARIABLE_ASCII_CODE_TAB
 	je	.leave
 
 	; znaleziono piwerszy znak należący do słowa
@@ -61,12 +61,16 @@ library_find_first_word:
 	xor	rax,	rax
 
 .count:
-	; sprawdź czy koniec słowa (space)
-	cmp	byte [rdi],	0x20
+	; sprawdź czy koniec słowa
+	cmp	byte [rdi],	VARIABLE_ASCII_CODE_SPACE
 	je	.ready
 
-	; sprawdź czy koniec słowa (tab)
-	cmp	byte [rdi],	0x09
+	; sprawdź czy koniec słowa
+	cmp	byte [rdi],	VARIABLE_ASCII_CODE_TAB
+	je	.ready
+
+	; nieoczekiwany koniec ciągu?
+	cmp	byte [rdi],	VARIABLE_ASCII_CODE_TERMINATOR
 	je	.ready
 
 	; przesuń wskaźnik na następny znak w buforze polecenia

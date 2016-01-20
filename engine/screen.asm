@@ -1667,6 +1667,9 @@ cyjon_screen_print_number:
 	; zresetuj licznik cyfr
 	xor	r10,	r10
 
+	; usuń zbędne wartości
+	and	rcx,	0x00000000000000FF
+
 .loop:
 	; oblicz resztę z dzielenia
 	div	rcx

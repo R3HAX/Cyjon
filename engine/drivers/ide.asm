@@ -46,9 +46,8 @@ VARIABLE_IDE_IDENTIFY_SIZE		equ	100
 
 variable_ide_buffor	times	2048	db	VARIABLE_EMPTY
 
-text_ide_disk_found			db	" Disk ATA found ", VARIABLE_ASCII_CODE_TERMINATOR
-text_ide_disk_size			db	VARIABLE_ASCII_CODE_ENTER, VARIABLE_ASCII_CODE_NEWLINE, "    Size: ", VARIABLE_ASCII_CODE_TERMINATOR
-text_ide_disk_serial			db	", serial: ", VARIABLE_ASCII_CODE_TERMINATOR
+text_ide_disk_found			db	" Disk ATA, model: ", VARIABLE_ASCII_CODE_TERMINATOR
+text_ide_disk_size			db	", size: ", VARIABLE_ASCII_CODE_TERMINATOR
 
 variable_disk_name	times	41	db	0x00
 variable_disk_size_in_sectors		dq	VARIABLE_EMPTY
@@ -106,8 +105,10 @@ ide_initialize:
 	call	cyjon_screen_print_string
 
 	mov	rcx,	40
-	mov	rsi,	variable_ide_buffor
-	add	rsi,	VARIABLE_IDE_IDENTIFY_MODEL
+	mov	rdi,	variable_ide_buffor + VARIABLE_IDE_IDENTIFY_MODEL
+	call	library_find_first_word
+	push	rcx
+	mov	rsi,	rdi
 	mov	rdi,	variable_disk_name
 
 .rename:
@@ -119,7 +120,7 @@ ide_initialize:
 	jnz	.rename
 
 	mov	rbx,	VARIABLE_COLOR_WHITE
-	mov	rcx,	40
+	pop	rcx
 	mov	rsi,	variable_disk_name
 	call	cyjon_screen_print_string
 

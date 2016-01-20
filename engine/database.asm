@@ -12,6 +12,8 @@
 ; nasm - http://www.nasm.us/
 
 text_caution			db	"::", VARIABLE_ASCII_CODE_TERMINATOR
+text_colon			db	":", VARIABLE_ASCII_CODE_TERMINATOR
+
 text_paragraph			db	VARIABLE_ASCII_CODE_ENTER, VARIABLE_ASCII_CODE_NEWLINE, VARIABLE_ASCII_CODE_TERMINATOR
 
 text_kib			db	" KiB",	VARIABLE_ASCII_CODE_TERMINATOR
