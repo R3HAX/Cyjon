@@ -82,15 +82,19 @@ start:
 	;-----------------------------------------------------------------------
 
 	; załaduj do rejestru segmentowego ekstra adres położenia kodu jądra systemu
-	push	0x1000
-	pop	es
+	push	ds
+
+	mov	ax,	0x1000
+	mov	ds,	ax
 
 	; właczyć tryb graficzny?
-	cmp	byte [es:0x0001],	0x00
+	cmp	byte [ds:0x0001],	0x00
 	je	.missing
 
-	push	0x0000
-	pop	es
+	pop	ds
+
+	mov	si,	text_debug
+	call	print_16bit
 
 	; ustaw tryb graficzny 800x600@32bpp
 	mov	ax,	0x4F00
@@ -131,7 +135,13 @@ start:
 	mov	ebx,	0x4100	; wyłącz banki pamięci, linear frame buffer
 	int	0x10	; wykonaj
 
+	jmp	.omit_DS
+
 .missing:
+	; przywróć DS
+	pop	ds
+
+.omit_DS:
 	; wyczyść zbędne rejestry
 	xor	ebx,	ebx
 
@@ -143,9 +153,16 @@ start:
 	mov	ebx,	supervga_mode
 
 .text_mode:
+	push	ds
+
+	mov	ax,	0x1000
+	mov	ds,	ax
+
 	; sprawdź, czy kod jądra systemu jest 16 Bitowy
-	cmp	byte [es:0x0000],	0x10	; 16
+	cmp	byte [ds:0x0000],	0x10	; 16
 	ja	.no	; kod jądra systemu nie jest 16 Bitowy, przejdź do trybu chronionego (32 Bitowego)
+
+	pop	ds
 
 	; wyczyść zbędne rejestry
 	xor	ecx,	ecx
@@ -174,6 +191,8 @@ start:
 	iretw	; skocz do kodu jądra systemu
 	
 .no:
+	pop	ds
+
 	; wyłącz obsługę wyjątków i przerwań
 	cli
 
@@ -906,6 +925,7 @@ text_no_memory		db	'An error occurred while performing memory map!', 0x0D, 0x0A,
 text_kernel		db	'Kernel system loaded.', 0x0D, 0x0A, 0x00
 text_kernel_oversized	db	'Kenrel file oversized!', 0x0D, 0x0A, 0x00
 text_read_fail		db	'Read error, code 0x',	0x00
+text_debug		db	'[/]', 0x00
 
 align	0x08
 

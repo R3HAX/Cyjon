@@ -1,3 +1,3 @@
-nasm -f bin kfs.asm -o kfs.raw
+..\nasm.exe -f bin kfs.asm -o kfs.raw
 
 pause

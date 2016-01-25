@@ -42,7 +42,7 @@ interrupt_descriptor_table:
 	mov	qword [variable_interrupt_descriptor_table_address],	rdi
 
 	; utworzymy obsługę 32 wyjątków (zombi, w przyszłości utworzy się odpowiednie procedury obsługi) procesora
-	mov	rax,	itd_cpu_exception
+	mov	rax,	idt_cpu_exception
 	mov	bx,	0x8E00	; typ - wyjątek procesora
 	mov	rcx,	32	; wszystkie wyjątki procesora
 	call	recreate_record	; utwórz
@@ -50,14 +50,14 @@ interrupt_descriptor_table:
 	; utworzymy obsługę 16 przerwań (zombi) sprzętowych
 	; gdyby jakimś cudem wystąpiły
 	; co niektóre dostaną prawidłową procedurę obsługi
-	mov	rax,	itd_hardware_interrupt
+	mov	rax,	idt_hardware_interrupt
 	mov	bx,	0x8F00	; typ - przerwanie sprzętowe
 	mov	rcx,	16	; wszystkie przerwania sprzętowe
 	call	recreate_record	; utwórz
 
 	; utworzymy obsługę pozostałych 208 przerwań (zombi) programowych
 	; tylko jedno z nich (przerwanie 64, 0x40) dostanie prawidłową procedurę obsługi
-	mov	rax,	itd_software_interrupt
+	mov	rax,	idt_software_interrupt
 	mov	bx,	0xEF00	; typ - przerwanie programowe
 	mov	rcx,	208	; pozostałe rekordy w tablicy
 	call	recreate_record	; utwórz
@@ -122,7 +122,7 @@ interrupt_descriptor_table:
 ;	brak
 ;
 ; wszystkie rejestry zachowane
-itd_cpu_exception:
+idt_cpu_exception:
 	push	r15
 	push	r11
 	push	r14
@@ -153,7 +153,7 @@ itd_cpu_exception:
 	call	cyjon_screen_print_string
 
 	pop	rax
-	mov	rcx,	0x0810	; uzupełnienie do 8, podstawa 16
+	mov	rcx,	0x1010	; uzupełnienie do 16, podstawa 16
 	call	cyjon_screen_print_number
 
 	mov	dword [variable_screen_cursor_xy],	23
@@ -443,7 +443,7 @@ itd_cpu_exception:
 	xchg	rcx,	r8
 
 .noCF:
-	mov	rcx,	0x0810	; uzupełnienie do 8, podstawa 16
+	mov	rcx,	0x1010	; uzupełnienie do 16, podstawa 16
 	mov	rsi,	text_cpu_exception_r8
 	call	cyjon_screen_print_string
 
@@ -570,7 +570,7 @@ text_cpu_exception_rip		db	VARIABLE_ASCII_CODE_ENTER, VARIABLE_ASCII_CODE_NEWLIN
 ;	brak
 ;
 ; wszystkie rejestry zachowane
-itd_hardware_interrupt:
+idt_hardware_interrupt:
 	; wyświetl informację
 	mov	rbx,	VARIABLE_COLOR_RED
 	mov	rcx,	-1	; wyświetl całą informację
@@ -594,7 +594,7 @@ text_hardware_interrupt	db	"Unhandled hardware interrupt!", VARIABLE_ASCII_CODE_
 ;	brak
 ;
 ; wszystkie rejestry zachowane
-itd_software_interrupt:
+idt_software_interrupt:
 	; standardowo zastosuję zabicie procesu, który zrobił coś czego być był nie powinien
 
 	; wyświetl informację

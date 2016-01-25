@@ -73,9 +73,19 @@ start:
 	; szukaj karty sieciowej
 	call	cyjon_network_i8254x_find_card
 
+	; szukaj dysków sata
+	call	cyjon_ahci_initialize
+
+	; Qemu wykrzacza się na sterowniku IDE/ATA PIO, nie mam debugera - nie sprawdzę dlaczego
+	; zatem wirtualny dysk będę podłączał pod AHCI/SATA, Bochs będzie obdługiwał IDE/ATA PIO
+	; sprawdź czy znaleziono dysk pod kontrolerem AHCI/SATA
+	cmp	byte [variable_ahci_semaphore],	VARIABLE_EMPTY
+	ja	.ahci_found
+
 	; zainicjalizuj dostęp do nośnika IDE0 Master
 	call	ide_initialize
 
+.ahci_found:
 	; przygotuj wirtualne systemy plików (płaski system plików)
 	; wirtualny system plików zostanie przygotowany na nowo (wzorem z ext2), aby mieć obsługe katalogów
 	call	virtual_file_systems
@@ -150,6 +160,7 @@ start:
 
 %include	"engine/drivers/pci.asm"
 %include	"engine/drivers/ide.asm"
+%include	"engine/drivers/ahci.asm"
 
 %include	"engine/drivers/network/i8254x.asm"
 
