@@ -49,6 +49,7 @@ variable_ahci_semaphore		db	VARIABLE_EMPTY
 variable_ahci_base_address	dq	VARIABLE_EMPTY
 variable_ahci_port		dq	VARIABLE_EMPTY
 variable_ahci_cmd_list		dq	VARIABLE_EMPTY
+variable_ahci_cmd_table		dq	VARIABLE_EMPTY
 variable_ahci_fis		dq	VARIABLE_EMPTY
 
 text_ahci_found			db	" Serial ATA drive found.", VARIABLE_ASCII_CODE_ENTER, VARIABLE_ASCII_CODE_NEWLINE, VARIABLE_ASCII_CODE_TERMINATOR
@@ -62,6 +63,9 @@ cyjon_ahci_initialize:
 	push	rbx
 	push	rcx
 	push	rdx
+	push	rsi
+	push	rdi
+	push	r11
 
 	xor	rbx,	rbx
 	xor	rcx,	rcx
@@ -89,6 +93,9 @@ cyjon_ahci_initialize:
 	; nie znaleziono kontrolera sieci
 
 	; przywróć oryginalne rejestry
+	pop	r11
+	pop	rdi
+	pop	rsi
 	pop	rdx
 	pop	rcx
 	pop	rbx
@@ -121,30 +128,32 @@ cyjon_ahci_initialize:
 
 	; sprawdź port zero
 	bt	eax,	0
-	jnc	.no_drive
+	jnc	.end
 
 	; pobierz status urządzenia
 	add	rsi,	VARIABLE_AHCI_PORT_REGISTER_BASE_ADDRESS
 	mov	eax,	dword [rsi + VARIABLE_AHCI_PORT_REGISTER_SSTS]
 	cmp	eax,	VARIABLE_EMPTY
-	je	.no_drive
+	je	.end
 
 	; przygouj miejsce dla przestrzeni poleceń
 	call	cyjon_page_allocate
 	call	cyjon_page_clear
 	mov	qword [variable_ahci_cmd_list],	rdi
 
+	; poinformuj urządzenie/dysk o adresie przestrzeni poleceń
+	mov	rax,	rdi
+	mov	rdi,	rsi
+	add	rdi,	VARIABLE_AHCI_PORT_REGISTER_CLBA
+	stosq
+
 	; przygouj miejsce dla przestrzeni Frame Information Structure
 	call	cyjon_page_allocate
 	call	cyjon_page_clear
 	mov	qword [variable_ahci_fis],	rdi
 
-	; poinformuj urządzenie/dysk o adresie przestrzeni poleceń
-	mov	rdi,	rsi
-	add	rdi,	VARIABLE_AHCI_PORT_REGISTER_CLBA
-	stosq
-
 	; poinformuj urządzenie/dysk o adresie przestrzeni Frame Information Structure
+	mov	rax,	rdi
 	mov	rdi,	rsi
 	add	rdi,	VARIABLE_AHCI_PORT_REGISTER_FB
 	stosq
@@ -154,7 +163,10 @@ cyjon_ahci_initialize:
 	stosq	; Port x Interrupt Status
 	stosq	; Port x Interrupt Enable
 
-	mov	byte [variable_ahci_semaphore],	VARIABLE_TRUE
+	; przygouj miejsce dla przestrzeni tablicy poleceń
+	mov	rcx,	14	; 54 KiB
+	call	cyjon_page_find_free_memory
+	mov	qword [variable_ahci_cmd_table],	rdi
 
 	; wyświetl informacje podłączonym nośniku
 	mov	rbx,	VARIABLE_COLOR_GREEN
@@ -167,7 +179,135 @@ cyjon_ahci_initialize:
 	mov	rsi,	text_ahci_found
 	call	cyjon_screen_print_string
 
-.no_drive:
+	; ustaw interfejs dysku na AHCI
+	mov	rax,	ahci_read_sectors
+	mov	qword [variable_disk_interface_read],	rax
+	mov	rax,	ahci_write_sectors
+	mov	qword [variable_disk_interface_write],	rax
+
+	mov	byte [variable_ahci_semaphore],	VARIABLE_TRUE
+
+	xor	rax,	rax
+	mov	rcx,	1
+	call	cyjon_page_allocate
+	push	rdi
+
+	call	ahci_read_sectors
+
+	mov	ebx,	VARIABLE_COLOR_DEFAULT
+	mov	rcx,	0x0410
+	mov	edx,	VARIABLE_COLOR_BACKGROUND_DEFAULT
+	movzx	rax,	word [rdi + 0x01FE]
+	call	cyjon_screen_print_number
+
 	jmp	$
 
 	jmp	.end
+
+; rax - numer bezwzględny (LBA) sektora
+; rcx - ilość sektorów do odczytu
+; rdi - gdzie załadować
+ahci_read_sectors:
+	push	rax
+	push	rbx
+	push	rcx
+	push	rdx
+	push	rsi
+	push	rdi
+
+	push	rcx
+	push	rdi
+	push	rax
+	push	rax
+
+	; cały poniższy kod do naprawy
+
+	mov	rsi,	qword [variable_ahci_base_address]
+	add	rsi,	VARIABLE_AHCI_PORT_REGISTER_BASE_ADDRESS
+
+	; ???
+	mov	eax,	0x00010005
+	mov	rdi,	qword [variable_ahci_cmd_list]
+	stosd
+	xor	eax,	eax
+	stosd
+	mov	rax,	qword [variable_ahci_cmd_table]
+	stosq
+	xor	eax,	eax
+	stosd
+	stosd
+	stosd
+	stosd
+
+	; Command FIS setup
+	mov rdi, qword [variable_ahci_cmd_table]	; Build a command table for Port 0
+	mov eax, 0x00258027		; 25 READ DMA EXT, bit 15 set, fis 27 H2D
+	stosd				; feature 7:0, command, c, fis
+	pop rax				; Restore the start sector number
+	shl rax, 36
+	shr rax, 36			; Upper 36 bits cleared
+	bts rax, 30			; bit 30 set for LBA
+	stosd				; device, lba 23:16, lba 15:8, lba 7:0
+	pop rax				; Restore the start sector number
+	shr rax, 24
+	stosd				; feature 15:8, lba 47:40, lba 39:32, lba 31:24
+	mov rax, rcx			; Read the number of sectors given in rcx
+	stosd				; control, ICC, count 15:8, count 7:0
+	mov rax, 0x00000000
+	stosd				; reserved
+
+	; PRDT setup
+	mov rdi, qword [variable_ahci_cmd_table]
+	add	rdi,	0x80
+	pop rax				; Restore the destination memory address
+	stosd				; Data Base Address
+	shr rax, 32
+	stosd				; Data Base Address Upper
+	stosd				; Reserved
+	pop rax				; Restore the sector count
+	shl rax, 9			; multiply by 512 for bytes
+	sub rax, 1			; subtract 1 (4.2.3.3, DBC is number of bytes - 1)
+	stosd				; Description Information
+
+	add rsi, rdx
+
+	mov rdi, rsi
+	add rdi, 0x10			; Port x Interrupt Status
+	xor eax, eax
+	stosd
+
+	mov rdi, rsi
+	add rdi, 0x18			; Offset to port 0
+	mov eax, [rdi]
+	bts eax, 4			; FRE
+	bts eax, 0			; ST
+	stosd
+
+	mov rdi, rsi
+	add rdi, 0x38			; Command Issue
+	mov eax, 0x00000001		; Execute Command Slot 0
+	stosd
+
+.pool:
+	mov eax, [rsi+0x38]
+	cmp eax, 0
+	jne .pool
+
+	mov rdi, rsi
+	add rdi, 0x18			; Offset to port 0
+	mov eax, [rdi]
+	btc eax, 4			; FRE
+	btc eax, 0			; ST
+	stosd
+
+	pop	rdi
+	pop	rsi
+	pop	rdx
+	pop	rcx
+	pop	rbx
+	pop	rax
+
+	ret
+
+ahci_write_sectors:
+	ret

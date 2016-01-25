@@ -21,3 +21,6 @@ text_mib			db	" MiB", VARIABLE_ASCII_CODE_TERMINATOR
 
 variable_system_microtime	dq	VARIABLE_EMPTY
 variable_system_uptime		dq	VARIABLE_EMPTY
+
+variable_disk_interface_read	dq	VARIABLE_EMPTY
+variable_disk_interface_write	dq	VARIABLE_EMPTY

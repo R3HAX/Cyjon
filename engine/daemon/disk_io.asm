@@ -85,7 +85,7 @@ daemon_disk_io:
 	mov	rdi,	qword [rdi + STATIC_DISK_IO_RECORD.address]
 
 .reader:
-	call	ide_read_sectors
+	call	qword [variable_disk_interface_read]
 
 	add	rax,	VARIABLE_INCREMENT
 	add	rdi,	VARIABLE_DISK_SECTOR_SIZE_IN_BYTES
@@ -110,7 +110,7 @@ daemon_disk_io:
 	mov	rsi,	qword [rdi + STATIC_DISK_IO_RECORD.address]
 
 .writer:
-	call	ide_write_sectors
+	call	qword [variable_disk_interface_write]
 
 	add	rax,	VARIABLE_INCREMENT
 	add	rsi,	VARIABLE_DISK_SECTOR_SIZE_IN_BYTES

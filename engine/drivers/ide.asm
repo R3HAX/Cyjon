@@ -147,6 +147,12 @@ ide_initialize:
 	mov	rsi,	text_paragraph
 	call	cyjon_screen_print_string
 
+	; ustaw interfejs na dysk ATA PIO
+	mov	rax,	ide_read_sectors
+	mov	qword [variable_disk_interface_read],	rax
+	mov	rax,	ide_write_sectors
+	mov	qword [variable_disk_interface_write],	rax
+
 	; powrót z procedury
 	ret
 
