@@ -788,6 +788,7 @@ cyjon_page_find_free_memory:
 	; zachowaj oryginalne rejestry
 	push	rax
 	push	rbx
+	push	rcx
 	push	r8
 	push	r9
 	push	r10
@@ -894,6 +895,19 @@ cyjon_page_find_free_memory:
 	; opisz znalezioną przestrzeń
 	call	cyjon_page_map_logical_area
 
+	; wyczyść przydzieloną pamięć
+	mov	rdi,	qword [rsp]
+	shl	rcx,	12	; *4096
+	shr	rcx,	3
+
+	xor	rax,	rax
+
+.clear:
+	mov	qword [rdi],	rax
+	add	rdi,	8
+	dec	rcx
+	jnz	.clear
+
 	; załaduj adres znalezionej i zarejestrowanej przestrzeni
 	pop	rdi
 
@@ -914,6 +928,7 @@ cyjon_page_find_free_memory:
 	pop	r10
 	pop	r9
 	pop	r8
+	pop	rcx
 	pop	rbx
 	pop	rax
 

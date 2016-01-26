@@ -45,6 +45,21 @@ VARIABLE_AHCI_PORT_REGISTER_FBS				equ	0x0040	; FIS-based Switching Control
 VARIABLE_AHCI_PORT_REGISTER_DEVSLP			equ	0x0044	; Device Sleep
 VARIABLE_AHCI_PORT_REGISTER_VS				equ	0x0070	; Vendor Specific
 
+VARIABLE_AHCI_COMMAND_HEADER_CFL			equ	0x00000005	; Command FIS Length 4 DW (default)
+VARIABLE_AHCI_COMMAND_HEADER_A				equ	0x00000020	; ATAPI
+VARIABLE_AHCI_COMMAND_HEADER_W				equ	0x00000040	; Write
+VARIABLE_AHCI_COMMAND_HEADER_P				equ	0x00000080	; Prefetchable
+VARIABLE_AHCI_COMMAND_HEADER_R				equ	0x00000100	; Reset
+VARIABLE_AHCI_COMMAND_HEADER_B				equ	0x00000200	; BIST
+VARIABLE_AHCI_COMMAND_HEADER_C				equ	0x00000400	; Clear Busy upon R_OK
+VARIABLE_AHCI_COMMAND_HEADER_PRDTL			equ	0x00010000	; Physical Region Descriptor Table Length (default)
+
+VARIABLE_AHCI_COMMAND_TABLE_CIFS			equ	0x00	; Command FIS (up to 64 bytes)
+VARIABLE_AHCI_COMMAND_TABLE_ACMD			equ	0x40	; ATAPI Command (12 or 16 bytes)
+VARIABLE_AHCI_COMMAND_TABLE_PRDT			equ	0x80	; Physical Region Descriptor Table
+VARIABLE_AHCI_COMMAND_TABLE_PRDT_DBA			equ	0x80	; Data Base Address
+VARIABLE_AHCI_COMMAND_TABLE_PRDT_DBC			equ	0x8C	; Data Byte Count
+
 variable_ahci_semaphore		db	VARIABLE_EMPTY
 variable_ahci_base_address	dq	VARIABLE_EMPTY
 variable_ahci_port		dq	VARIABLE_EMPTY
@@ -187,7 +202,7 @@ cyjon_ahci_initialize:
 
 	mov	byte [variable_ahci_semaphore],	VARIABLE_TRUE
 
-	xor	rax,	rax
+	mov	rax,	1
 	mov	rcx,	1
 	call	cyjon_page_allocate
 	push	rdi
@@ -197,7 +212,8 @@ cyjon_ahci_initialize:
 	mov	ebx,	VARIABLE_COLOR_DEFAULT
 	mov	rcx,	0x0410
 	mov	edx,	VARIABLE_COLOR_BACKGROUND_DEFAULT
-	movzx	rax,	word [rdi + 0x01FE]
+	pop	rdi
+	movzx	rax,	word [rdi]
 	call	cyjon_screen_print_number
 
 	jmp	$
@@ -223,24 +239,32 @@ ahci_read_sectors:
 	; cały poniższy kod do naprawy
 
 	mov	rsi,	qword [variable_ahci_base_address]
-	add	rsi,	VARIABLE_AHCI_PORT_REGISTER_BASE_ADDRESS
-
-	; ???
-	mov	eax,	0x00010005
 	mov	rdi,	qword [variable_ahci_cmd_list]
+
+	; DW 0
+	mov	eax,	VARIABLE_AHCI_COMMAND_HEADER_PRDTL | VARIABLE_AHCI_COMMAND_HEADER_CFL
 	stosd
+
+	; DW 1
 	xor	eax,	eax
 	stosd
+
+	; DW 2
 	mov	rax,	qword [variable_ahci_cmd_table]
-	stosq
-	xor	eax,	eax
+	stosd
+
+	; DW 3
+	shr	rax,	32
+	stosd
+
+	; DW 4, 5, 6, 7
 	stosd
 	stosd
 	stosd
 	stosd
 
-	; Command FIS setup
-	mov rdi, qword [variable_ahci_cmd_table]	; Build a command table for Port 0
+	mov	rdi,	qword [variable_ahci_cmd_table]
+
 	mov eax, 0x00258027		; 25 READ DMA EXT, bit 15 set, fis 27 H2D
 	stosd				; feature 7:0, command, c, fis
 	pop rax				; Restore the start sector number
@@ -256,20 +280,41 @@ ahci_read_sectors:
 	mov rax, 0x00000000
 	stosd				; reserved
 
-	; PRDT setup
-	mov rdi, qword [variable_ahci_cmd_table]
-	add	rdi,	0x80
-	pop rax				; Restore the destination memory address
-	stosd				; Data Base Address
-	shr rax, 32
-	stosd				; Data Base Address Upper
-	stosd				; Reserved
-	pop rax				; Restore the sector count
-	shl rax, 9			; multiply by 512 for bytes
-	sub rax, 1			; subtract 1 (4.2.3.3, DBC is number of bytes - 1)
-	stosd				; Description Information
 
-	add rsi, rdx
+
+
+
+
+
+
+
+
+
+	mov	rdi,	qword [variable_ahci_cmd_table]
+
+	; pobierz adres docelowy
+	pop	rax
+	mov	dword [rdi + VARIABLE_AHCI_COMMAND_TABLE_PRDT_DBA],	eax
+	shr	rax,	32
+	mov	dword [rdi + VARIABLE_AHCI_COMMAND_TABLE_PRDT_DBA + VARIABLE_DWORD_SIZE],	eax
+
+	; pobierz ilość sektorów do odczytania
+	pop	rax
+	; zamień na Bajty
+	shl	rax,	9
+	; licz od zera
+	dec	rax
+	mov	dword [rdi + VARIABLE_AHCI_COMMAND_TABLE_PRDT_DBC],	eax
+
+
+
+
+
+
+
+
+
+
 
 	mov rdi, rsi
 	add rdi, 0x10			; Port x Interrupt Status
