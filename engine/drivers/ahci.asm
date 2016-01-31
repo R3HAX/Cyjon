@@ -202,7 +202,7 @@ cyjon_ahci_initialize:
 
 	mov	byte [variable_ahci_semaphore],	VARIABLE_TRUE
 
-	mov	rax,	1
+	mov	rax,	0
 	mov	rcx,	1
 	call	cyjon_page_allocate
 	push	rdi
@@ -213,7 +213,7 @@ cyjon_ahci_initialize:
 	mov	rcx,	0x0410
 	mov	edx,	VARIABLE_COLOR_BACKGROUND_DEFAULT
 	pop	rdi
-	movzx	rax,	word [rdi]
+	movzx	rax,	word [rdi + 0x1FE]
 	call	cyjon_screen_print_number
 
 	jmp	$
@@ -239,6 +239,8 @@ ahci_read_sectors:
 	; cały poniższy kod do naprawy
 
 	mov	rsi,	qword [variable_ahci_base_address]
+	add	rsi,	VARIABLE_AHCI_PORT_REGISTER_BASE_ADDRESS
+
 	mov	rdi,	qword [variable_ahci_cmd_list]
 
 	; DW 0
