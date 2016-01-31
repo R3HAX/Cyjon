@@ -54,7 +54,7 @@ VARIABLE_AHCI_COMMAND_HEADER_B				equ	0x00000200	; BIST
 VARIABLE_AHCI_COMMAND_HEADER_C				equ	0x00000400	; Clear Busy upon R_OK
 VARIABLE_AHCI_COMMAND_HEADER_PRDTL			equ	0x00010000	; Physical Region Descriptor Table Length (default)
 
-VARIABLE_AHCI_COMMAND_TABLE_CIFS			equ	0x00	; Command FIS (up to 64 bytes)
+VARIABLE_AHCI_COMMAND_TABLE_CFIS			equ	0x00	; Command FIS (up to 64 bytes)
 VARIABLE_AHCI_COMMAND_TABLE_ACMD			equ	0x40	; ATAPI Command (12 or 16 bytes)
 VARIABLE_AHCI_COMMAND_TABLE_PRDT			equ	0x80	; Physical Region Descriptor Table
 VARIABLE_AHCI_COMMAND_TABLE_PRDT_DBA			equ	0x80	; Data Base Address
@@ -267,6 +267,7 @@ ahci_read_sectors:
 
 	mov	rdi,	qword [variable_ahci_cmd_table]
 
+	; VARIABLE_AHCI_COMMAND_TABLE_CFIS
 	mov eax, 0x00258027		; 25 READ DMA EXT, bit 15 set, fis 27 H2D
 	stosd				; feature 7:0, command, c, fis
 	pop rax				; Restore the start sector number
