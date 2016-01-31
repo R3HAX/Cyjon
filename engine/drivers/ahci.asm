@@ -164,8 +164,8 @@ cyjon_ahci_initialize:
 	stosq	; Port x Interrupt Enable
 
 	; przygouj miejsce dla przestrzeni tablicy poleceń
-	mov	rcx,	14	; 54 KiB
-	call	cyjon_page_find_free_memory
+	call	cyjon_page_allocate
+	call	cyjon_page_clear
 	mov	qword [variable_ahci_cmd_table],	rdi
 
 	; wyświetl informacje podłączonym nośniku
