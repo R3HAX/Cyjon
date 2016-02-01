@@ -267,8 +267,6 @@ irq33:
 	xor	rax,	rax	; wyczyść cały akumulator
 	in	al,	0x60
 
-	xchg	bx,	bx
-
 	; sprawdź czy zmienić typ macierzy
 	call	keyboard_key_shift_or_capslock
 

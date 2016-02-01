@@ -55,19 +55,8 @@ library_find_free_bit:
 	sub	rsi,	0x08
 
 	; przeszukaj 64 bity w pakiecie/"rejestrze RAX"
-	mov	rcx,	63	; numerowane są od zera
+	bsr	rcx,	rax
 
-.bit:
-	; sprawdź bit o numerze w rejestrze RCX dla rejestru RAX
-	bt	rax,	rcx
-
-	; jeśli znaleziono, przejdź dalej
-	jc	.found
-
-	; sprawdź kolejne bity w rejestrze RAX
-	loop	.bit
-
-.found:
 	; wyłączamy (ustawiamy na zero) znaleziony bit w pakiecie/"rejestrze RAX"
 	btr	rax,	rcx
 

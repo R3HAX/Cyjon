@@ -4,8 +4,6 @@
 ; LICENSE Creative Commons BY-NC-ND 4.0
 ; See LICENSE.TXT
 ;
-; Driver based on BareMetal OS https://github.com/ReturnInfinity/BareMetal-OS
-;
 ; Main developer:
 ;	Andrzej (akasei) Adamczyk [e-mail: akasei from wataha.net]
 ;-------------------------------------------------------------------------------
@@ -216,6 +214,20 @@ cyjon_ahci_initialize:
 	movzx	rax,	word [rdi + 0x1FE]
 	call	cyjon_screen_print_number
 
+	mov	rax,	1
+	mov	rcx,	1
+	call	cyjon_page_allocate
+	push	rdi
+
+	call	ahci_read_sectors
+
+	mov	ebx,	VARIABLE_COLOR_DEFAULT
+	mov	rcx,	0x0410
+	mov	edx,	VARIABLE_COLOR_BACKGROUND_DEFAULT
+	pop	rdi
+	movzx	rax,	word [rdi + 0x1FE]
+	call	cyjon_screen_print_number
+
 	jmp	$
 
 	jmp	.end
@@ -224,6 +236,7 @@ cyjon_ahci_initialize:
 ; rcx - ilość sektorów do odczytu
 ; rdi - gdzie załadować
 ahci_read_sectors:
+	; zachowaj oryginalne rejestry
 	push	rax
 	push	rbx
 	push	rcx
@@ -231,15 +244,11 @@ ahci_read_sectors:
 	push	rsi
 	push	rdi
 
+	; zmienne lokalne
 	push	rcx
 	push	rdi
 	push	rax
 	push	rax
-
-	; cały poniższy kod do naprawy
-
-	mov	rsi,	qword [variable_ahci_base_address]
-	add	rsi,	VARIABLE_AHCI_PORT_REGISTER_BASE_ADDRESS
 
 	mov	rdi,	qword [variable_ahci_cmd_list]
 
@@ -265,39 +274,46 @@ ahci_read_sectors:
 	stosd
 	stosd
 
+	; VARIABLE_AHCI_COMMAND_TABLE_CFIS
 	mov	rdi,	qword [variable_ahci_cmd_table]
 
-	; VARIABLE_AHCI_COMMAND_TABLE_CFIS
-	mov eax, 0x00258027		; 25 READ DMA EXT, bit 15 set, fis 27 H2D
-	stosd				; feature 7:0, command, c, fis
-	pop rax				; Restore the start sector number
-	shl rax, 36
-	shr rax, 36			; Upper 36 bits cleared
-	bts rax, 30			; bit 30 set for LBA
-	stosd				; device, lba 23:16, lba 15:8, lba 7:0
-	pop rax				; Restore the start sector number
-	shr rax, 24
-	stosd				; feature 15:8, lba 47:40, lba 39:32, lba 31:24
-	mov rax, rcx			; Read the number of sectors given in rcx
-	stosd				; control, ICC, count 15:8, count 7:0
-	mov rax, 0x00000000
-	stosd				; reserved
+	; 0x00 Features, 0x25 READ DMA EXT, 0x80 C bit set, 0x27 H2D
+	mov	eax,	0x00258027
+	stosd
 
+	; przywróć numer bezwzględny pierwszego sektora do odczytania
+	pop	rax
 
+	; port 0
+	and	eax,	0x00FFFFFF
 
+	; włącz tryb LBA
+	bts	rax,	30
+	stosd	; LBA 23..0
 
+	; przywróć numer bezwzględny pierwszego sektora do odczytania
+	pop	rax
 
+	; przesuń bity 31..24 na początek rejestru
+	shr	rax,	24
+	stosd	; Feature 15..8, LBA 31..24
 
+	; załaduj ilość sektorów do odczytania
+	mov	rax,	rcx
+	stosd	; Control 31..24, ICC 23..16, Count 15..0
 
-
-
-
+	; 32 bity zastrzeżone
+	xor	eax,	eax
+	stosd
 
 	mov	rdi,	qword [variable_ahci_cmd_table]
 
 	; pobierz adres docelowy
 	pop	rax
+
+	; bity 31..0
 	mov	dword [rdi + VARIABLE_AHCI_COMMAND_TABLE_PRDT_DBA],	eax
+	; bity 63..32
 	shr	rax,	32
 	mov	dword [rdi + VARIABLE_AHCI_COMMAND_TABLE_PRDT_DBA + VARIABLE_DWORD_SIZE],	eax
 
@@ -309,45 +325,35 @@ ahci_read_sectors:
 	dec	rax
 	mov	dword [rdi + VARIABLE_AHCI_COMMAND_TABLE_PRDT_DBC],	eax
 
+	mov	rsi,	qword [variable_ahci_base_address]
+	add	rsi,	VARIABLE_AHCI_PORT_REGISTER_BASE_ADDRESS
 
+	; zresetuj status przerwania
+	mov	dword [rsi + VARIABLE_AHCI_PORT_REGISTER_IS],	VARIABLE_EMPTY
 
+	; pobierz informacje o poleceniu i statusie
+	mov	eax,	dword [rsi + VARIABLE_AHCI_PORT_REGISTER_CMD]
+	bts	eax,	4	; FRE - włącz przesyłanie z dysku do pamięci
+	bts	eax,	0	; ST - rozpocznij
+	; aktualizuj
+	mov	dword [rsi + VARIABLE_AHCI_PORT_REGISTER_CMD],	eax
 
-
-
-
-
-
-
-
-	mov rdi, rsi
-	add rdi, 0x10			; Port x Interrupt Status
-	xor eax, eax
-	stosd
-
-	mov rdi, rsi
-	add rdi, 0x18			; Offset to port 0
-	mov eax, [rdi]
-	bts eax, 4			; FRE
-	bts eax, 0			; ST
-	stosd
-
-	mov rdi, rsi
-	add rdi, 0x38			; Command Issue
-	mov eax, 0x00000001		; Execute Command Slot 0
-	stosd
+	; Wykonaj działania na porcie 0
+	mov	dword [rsi + VARIABLE_AHCI_PORT_REGISTER_CI],	VARIABLE_TRUE
 
 .pool:
-	mov eax, [rsi+0x38]
-	cmp eax, 0
-	jne .pool
+	; czekaj na zakończenie operacji przesyłu danych
+	cmp	dword [rsi + VARIABLE_AHCI_PORT_REGISTER_CI], VARIABLE_EMPTY
+	jne	.pool
 
-	mov rdi, rsi
-	add rdi, 0x18			; Offset to port 0
-	mov eax, [rdi]
-	btc eax, 4			; FRE
-	btc eax, 0			; ST
-	stosd
+	; pobierz informacje o poleceniu i statusie
+	mov	eax,	dword [rsi + VARIABLE_AHCI_PORT_REGISTER_CMD]
+	btr	eax,	4	; FRE - wyłącz przesyłanie z dysku do pamięci
+	btr	eax,	0	; ST - zatrzymaj
+	; aktualizuj
+	mov	dword [rsi + VARIABLE_AHCI_PORT_REGISTER_CMD],	eax
 
+	; przywróć oryginalne rejestry
 	pop	rdi
 	pop	rsi
 	pop	rdx
@@ -355,6 +361,7 @@ ahci_read_sectors:
 	pop	rbx
 	pop	rax
 
+	; powrót z procedury
 	ret
 
 ahci_write_sectors:
