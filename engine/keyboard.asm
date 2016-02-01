@@ -14,7 +14,9 @@
 ; 64 bitowy kod programu
 [BITS 64]
 
-variable_keyboard_semaphore					db	VARIABLE_EMPTY
+variable_keyboard_semaphore					db	VARIABLE_FALSE
+variable_keyboard_capslock_semaphore				db	VARIABLE_FALSE
+variable_keyboard_shift_semaphore				db	VARIABLE_FALSE
 
 variable_keyboard_key_special					db	VARIABLE_EMPTY
 variable_keyboard_matrix_active					dq	VARIABLE_EMPTY
@@ -95,7 +97,7 @@ keyboard_key_save:
 ;	brak
 ;
 ; wszystkie rejestry zachowane
-keyboard_key_shift:
+keyboard_key_shift_or_capslock:
 	; lewy naciśnięty
 	cmp	al,	0x2A
 	je	.press
@@ -112,14 +114,60 @@ keyboard_key_shift:
 	cmp	al,	0x36 + 0x80
 	je	.release
 
+	; capslock naciśnięty
+	cmp	al,	0x3A
+	je	.press_capslock
+
 	; powrót z procedury
 	ret
 
+.press_capslock:
+	cmp	byte [variable_keyboard_capslock_semaphore],	VARIABLE_TRUE
+	jne	.press_capslock_continue
+
+	; naciśnięto znak ":"
+	ret
+
+.press_capslock_continue:
+	cmp	qword [variable_keyboard_matrix_active],	variable_keyboard_matrix_low
+	jne	.press_capslock_another
+
+	mov	rax,	variable_keyboard_matrix_high
+	mov	qword [variable_keyboard_matrix_active],	rax
+
+	add	rsp,	VARIABLE_QWORD_SIZE
+	jmp	irq33.end
+
+.press_capslock_another:
+	mov	rax,	variable_keyboard_matrix_low
+	mov	qword [variable_keyboard_matrix_active],	rax
+
+	add	rsp,	VARIABLE_QWORD_SIZE
+	jmp	irq33.end
+
 .press:
+	; wyłącz klawisz CAPSLOCK, gdy naciśnięty jest SHIFT
+	mov	byte [variable_keyboard_capslock_semaphore],	VARIABLE_TRUE
+
+	; przytrzymanie klawisza?
+	cmp	byte [variable_keyboard_shift_semaphore],	VARIABLE_TRUE
+	je	.press_end
+
+	cmp	qword [variable_keyboard_matrix_active],	variable_keyboard_matrix_low
+	jne	.press_another
+
 	; ustaw macierz drugą jako domyślną
 	mov	rax,	variable_keyboard_matrix_high
 	mov	qword [variable_keyboard_matrix_active],	rax
 
+	jmp	.press_continue
+
+.press_another:
+	; ustaw macierz drugą jako domyślną
+	mov	rax,	variable_keyboard_matrix_low
+	mov	qword [variable_keyboard_matrix_active],	rax
+
+.press_continue:
 	; zapisz do bufora informacje o naciśnięciu klawisza SHIFT
 	mov	ax,	0x8000	; lewy lub prawy (0x8001 prawy)
 	call	keyboard_key_save
@@ -127,14 +175,31 @@ keyboard_key_shift:
 	; zakończ obsługę przerwania sprzetowego klawiatury
 	add	rsp,	0x08	; usuń adres powrotu z procedury
 
+.press_end:
 	; kontynuuj
 	jmp	irq33.end
 
 .release:
-	; ustaw macież pierwszą jako domyślną
+	; włącz obsługę klawisza CAPSLOCK
+	mov	byte [variable_keyboard_capslock_semaphore],	VARIABLE_FALSE
+	; włącz klawisz SHIFT
+	mov	byte [variable_keyboard_shift_semaphore],	VARIABLE_FALSE
+
+	cmp	qword [variable_keyboard_matrix_active],	variable_keyboard_matrix_low
+	jne	.release_another
+
+	; ustaw macierz drugą jako domyślną
+	mov	rax,	variable_keyboard_matrix_high
+	mov	qword [variable_keyboard_matrix_active],	rax
+
+	jmp	.release_continue
+
+.release_another:
+	; ustaw macierz drugą jako domyślną
 	mov	rax,	variable_keyboard_matrix_low
 	mov	qword [variable_keyboard_matrix_active],	rax
 
+.release_continue:
 	; zapisz do bufora informacje o naciśniętym klawiszu SHIFT
 	mov	ax,	0xB000	; lewy lub prawy (0xB001 prawy)
 	call	keyboard_key_save
@@ -202,8 +267,10 @@ irq33:
 	xor	rax,	rax	; wyczyść cały akumulator
 	in	al,	0x60
 
+	xchg	bx,	bx
+
 	; sprawdź czy zmienić typ macierzy
-	call	keyboard_key_shift
+	call	keyboard_key_shift_or_capslock
 
 	; sprawdź czy naciśnięto klawisz specjalny
 	cmp	al,	0xE0

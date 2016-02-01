@@ -102,7 +102,7 @@ start:
 	call	cyjon_filesystem_kfs_initialization
 
 	; utwórz plik readme.txt w głównym systemie plików /
-	call	create_readme
+	;call	create_readme
 	; utwórz plik hostname
 	;call	create_hostname
 
