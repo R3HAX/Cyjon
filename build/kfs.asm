@@ -18,6 +18,7 @@ dq	0x0000000000001000	; rozmiar bloku w Bajtach
 dq	0x0000000000000080	; rozmiar supła
 dq	0x0000000000000001	; rozmiar binarnej mapy bloków
 dq	0x0000000000000008	; rozmiar tablicy supłów
+dq	' Wataha '			; sygnatura systemu plików KFS
 
 times 0x1000 - ( $ - $$ )	db	0x00
 
