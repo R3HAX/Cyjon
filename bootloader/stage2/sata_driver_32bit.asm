@@ -58,7 +58,6 @@ VARIABLE_AHCI_COMMAND_TABLE_PRDT			equ	0x80	; Physical Region Descriptor Table
 VARIABLE_AHCI_COMMAND_TABLE_PRDT_DBA			equ	0x80	; Data Base Address
 VARIABLE_AHCI_COMMAND_TABLE_PRDT_DBC			equ	0x8C	; Data Byte Count
 
-variable_ahci_semaphore		db	VARIABLE_EMPTY
 variable_ahci_base_address	dd	VARIABLE_EMPTY
 variable_ahci_port		dd	VARIABLE_EMPTY
 variable_ahci_cmd_list		dd	0x00020000
@@ -210,7 +209,7 @@ ahci_drive_read_sectors:
 	stosd
 
 	; DW 3
-	shr	eax,	32
+	xor	eax,	eax
 	stosd
 
 	; DW 4, 5, 6, 7
@@ -259,7 +258,7 @@ ahci_drive_read_sectors:
 	; bity 31..0
 	mov	dword [edi + VARIABLE_AHCI_COMMAND_TABLE_PRDT_DBA],	eax
 	; bity 63..32
-	shr	eax,	32
+	xor	eax,	eax
 	mov	dword [edi + VARIABLE_AHCI_COMMAND_TABLE_PRDT_DBA + VARIABLE_DWORD_SIZE],	eax
 
 	; pobierz ilość sektorów do odczytania
