@@ -36,9 +36,9 @@ stage2_check_cpu:
 .error:
 	; brak procesora 64 Bitowego
 	mov	si,	text_error_no_cpu
-	call	print_16bit
+	call	stage2_print_16bit
 
 	; zatrzymaj dalsze wykonywanie kodu
 	jmp	$
 
-text_error_no_cpu		db	'No 64 Bit instructions available on this CPU!', 0x0D, 0x0A, 0x00
+text_error_no_cpu	db	"No 64 Bit instructions available on this CPU!", VARIABLE_ASCII_CODE_TERMINATOR

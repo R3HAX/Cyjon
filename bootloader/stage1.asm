@@ -13,18 +13,6 @@
 
 %include	"config.asm"
 
-; BIOS Function: INT 0x13, AH 0x42
-struc	DISK_ADDRESS_PACKET
-	.structure_size		resb	1
-	.reserved		resb	1
-	.sectors_read_count	resw	1
-	; załaduj sektory pod adres
-	.offset			resw	1
-	.segment		resw	1
-	; pierwszy sektor do załadowania 
-	.start_sector_lba	resq	1
-endstruc
-
 ; 16 bitowy kod programu
 [BITS 16]
 
@@ -72,17 +60,6 @@ start:
 	bt	cx,	0	; skopiuj bit 0 do flagi CF
 	jnc	.bios_not_supported	; jeśli flaga nie jest ustawiona, brak procedury
 
-	; obliczamy rozmiar programu rozruchowego do załadowania
-	mov	eax,	end	; od adresu końca programu rozruchowego
-	sub	eax,	stage2	; odejmij rozmiar MBR
-	shr	eax,	9	; eax / 512 - zamień na ilość sektorów
-
-	; zwiększ rozmiar programu rozruchowego o jeden sektor
-	inc	eax	; gdyby z dzielenia pozostała reszta
-
-	; zaaktualizuj pakiet danych o rozmiar programu rozruchowego w sektorach
-	mov	word [variable_table_disk_address_packet + DISK_ADDRESS_PACKET.sectors_read_count],	ax
-
 	; rozpoczynamy wczytanie programu rozruchowego do pamięci
 	mov	ah,	0x42	; procedura - rozszerzony odczyt danych
 	mov	si,	variable_table_disk_address_packet	; o rozmiarze i miejscu docelowym opisanym za pomocą pakietu danych
@@ -129,7 +106,7 @@ start:
 variable_table_disk_address_packet:
 	db	0x10	; rozmiar struktury
 	db	0x00	; zarezerwowane
-	dw	0x0000	; ilość sektorów do odczytania (27 KiB)
+	dw	0x0030	; ilość sektorów do odczytania (24 KiB)
 	; gdzie zapisać odczytane dane
 	dw	0x1000	; przesunięcie
 	dw	0x0000	; segment
@@ -150,16 +127,11 @@ times	510 - ( $ - $$ )	db	VARIABLE_EMPTY
 ; znacznik sektora rozruchowego	
 dw	0xAA55	; czysta magija
 
-; początek programu rozruchowego stage2
-stage2:
-
+; dołącz program rozruchowy
 incbin	"stage2.bin"
-
-; koniec programu rozruchowego stage2
-end:
 
 ; na systemach z rodziny MS/Windows, oprogramowanie Bochs wymaga obrazu dysku o rozmiarze > 1MiB i wyrównanego do pełnego sektora (512 Bajtów)
 times	512 * 2048 - ( $ - $$ )	db	0x00
 
-; dołącz całą partycję wraz z zawartością
+; dołącz partycję wraz z zawartością
 incbin	"build/kfs.raw"
