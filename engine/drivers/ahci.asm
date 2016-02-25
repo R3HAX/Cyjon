@@ -122,6 +122,7 @@ cyjon_ahci_initialize:
 	mov	dl,	9
 	call	cyjon_pci_read
 
+	; zapamiętaj
 	mov	dword [variable_ahci_base_address],	eax
 
 	; udostępnij przestrzeń pamięci
