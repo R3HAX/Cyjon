@@ -11,11 +11,10 @@
 ; Use:
 ; nasm - http://www.nasm.us/
 
+text_virtial_file_system	db	" Virtual file system initialized.", VARIABLE_ASCII_CODE_ENTER, VARIABLE_ASCII_CODE_NEWLINE, VARIABLE_ASCII_CODE_TERMINATOR
+
 ; 64 Bitowy kod programu
 [BITS 64]
-
-;===============================================================================
-;===============================================================================
 
 ; procedura zostanie usunięta z pamięci po wykonaniu
 move_included_files_to_virtual_filesystem:
@@ -253,118 +252,3 @@ file_msg_end:
 
 file_menu:		incbin	'menu.bin'
 file_menu_end:
-
-text_virtial_file_system	db	" Virtual file system initialized.", VARIABLE_ASCII_CODE_ENTER, VARIABLE_ASCII_CODE_NEWLINE, VARIABLE_ASCII_CODE_TERMINATOR
-
-;===============================================================================
-;===============================================================================
-
-create_readme:
-	; utwórz pusty plik
-	mov	rax,	0	; w katalogu o Suple nr.0
-	mov	rbx,	0x8000	; plik
-	mov	rcx,	qword [file_readme]	; ilość znaków w nazwie pliku
-	mov	rsi,	file_readme_pointer
-
-	push	rax
-
-	call	cyjon_filesystem_kfs_find_file
-	jc	.exists
-
-	pop	rax
-
-	call	cyjon_filesystem_kfs_file_create
-
-	; załaduj do pliku dane
-	; rax - numer supła
-	; rbx - rozmiar danych w blokach
-	; rdx - rozmiar pliku w Bajtach
-	; rsi - gdzie są dane
-	; r8 - specyfikacja systemu plików
-	push	rax
-	mov	rax,	text_readme_end - text_readme
-	mov	rcx,	qword [r8 + KFS.block_size]
-	div	rcx
-	cmp	rdx,	VARIABLE_EMPTY
-	je	.file_size_ok
-
-	add	eax,	VARIABLE_INCREMENT
-
-.file_size_ok:
-	mov	eax,	eax
-	mov	rbx,	rax
-	pop	rax
-	mov	rdx,	text_readme_end - text_readme
-	mov	rsi,	text_readme
-	call	cyjon_filesystem_kfs_file_update
-
-	ret
-
-.exists:
-	pop	rax
-
-	ret
-
-create_hostname:
-	xchg	bx,	bx
-
-	; poszukaj katalogu systemowego na partycji
-	mov	rax,	0	; w katalogu /
-	mov	rcx,	qword [file_system_dir]	; ilość znaków w nazwie pliku
-	mov	rsi,	file_system_dir_pointer
-
-	call	cyjon_filesystem_kfs_find_file
-	jc	.system_dir
-
-	; brak katalogu systemowego? WTF?
-	; brak jeszcze wsparcia
-	ret
-
-.system_dir:
-	mov	rbx,	0x8000	; plik
-	mov	rcx,	qword [file_hostname]	; ilość znaków w nazwie pliku
-	mov	rsi,	file_hostname_pointer
-	call	cyjon_filesystem_kfs_file_create
-
-	; załaduj do pliku dane
-	; rax - numer supła
-	; rbx - rozmiar danych w blokach
-	; rdx - rozmiar pliku w Bajtach
-	; rsi - gdzie są dane
-	; r8 - specyfikacja systemu plików
-	push	rax
-	mov	rax,	text_hostname_end - text_hostname
-	mov	rcx,	qword [r8 + KFS.block_size]
-	div	rcx
-	cmp	rdx,	VARIABLE_EMPTY
-	je	.file_size_ok
-
-	add	eax,	VARIABLE_INCREMENT
-
-.file_size_ok:
-	mov	eax,	eax
-	mov	rbx,	rax
-	pop	rax
-	mov	rdx,	text_hostname_end - text_hostname
-	mov	rsi,	text_hostname
-	call	cyjon_filesystem_kfs_file_update
-
-	ret
-
-file_system_dir		dq	7
-file_system_dir_pointer	db	".system"
-
-file_hostname		dq	8
-file_hostname_pointer	db	"hostname"
-
-text_hostname:
-	; jeśli pliku nie ma w katalogu systemowym, zostanie utworzony domyślny za poniższą zawartością
-	db	"localhost", VARIABLE_ASCII_CODE_TERMINATOR
-text_hostname_end:
-
-file_readme		dq	10
-file_readme_pointer	db	"readme.txt"
-
-text_readme:
-%include	"doc/readme.asm"
-text_readme_end:

@@ -139,6 +139,8 @@ cyjon_disk_io:
 	mov	rax,	qword [rsp]
 	mov	qword [rdi + STATIC_DISK_IO_RECORD.address],	rax
 	mov	byte [rdi + STATIC_DISK_IO_RECORD.type],	STATIC_DISK_IO_RECORD_TYPE_READY
+	mov	rax,	cr3
+	mov	qword [rdi + STATIC_DISK_IO_RECORD.cr3],	rax
 
 .wait:
 	cmp	byte [rdi + STATIC_DISK_IO_RECORD.type],	STATIC_DISK_IO_RECORD_TYPE_READY

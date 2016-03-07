@@ -225,5 +225,5 @@ variable_disk_interface_read	dd	VARIABLE_EMPTY
 ; wyrównaj położenie kodu jądra systemu do pełnego sektora
 align	0x200
 kernel:
-incbin	"kernel.bin"
+incbin	"build/kernel.bin"
 end_of_kernel:

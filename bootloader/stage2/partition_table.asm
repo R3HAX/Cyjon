@@ -18,12 +18,12 @@
 disk_identificator		db	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00	; 10 Bajtów, wartość niewymagana
 
 ; pp0 - partycja podstawowa nr ZERO
-pp0_boot			db	0x80	; partycja jest aktywna (znacznik przesiadującego tu systemu)
+pp0_boot			db	0x00	; partycja jest aktywna (znacznik przesiadującego tu systemu)
 pp0_chs_start			db	0x00, 0x00, 0x00	; zbędne
-pp0_type			db	0x3a	; typ partycji (numer niewykorzystany, zarezerwowałem :)
+pp0_type			db	0x83	; typ partycji (numer niewykorzystany, zarezerwowałem :)
 pp0_chs_end			db	0x00, 0x00, 0x00	; zbędne
 pp0_lba				dd	2048	; bezwzględny numer sektora poczatku partycji (partycja zaczyna się od drugiego MiB)
-pp0_size			dd	2048	; rozmiar partycji w sektorach (1 MiB)
+pp0_size			dd	2048 * 32	; rozmiar partycji w sektorach (32 MiB)
 
 ; brak informacji o pozostałych partycjach
 

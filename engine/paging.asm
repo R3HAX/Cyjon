@@ -125,10 +125,11 @@ cyjon_page_release_specified_area:
 ;
 ; pozostałe rejestry zachowane
 cyjon_page_allocate:
-	; zachowaj oryginalne rejestry
+	; zachowaj oryginalne rejestry i flagi
 	push	rax
 	push	rcx
 	push	rsi
+	pushf
 
 	; wyczyść adres strony zwracanej
 	xor	rdi,	rdi
@@ -170,7 +171,8 @@ cyjon_page_allocate:
 	; zwolnij dostęp do binarnej mapy pamięci
 	mov	byte [variable_page_allocate_semaphore],	VARIABLE_EMPTY
 
-	; przywróć oryginalne rejestry
+	; przywróć oryginalne rejestry i flagi
+	popf
 	pop	rsi
 	pop	rcx
 	pop	rax
@@ -715,11 +717,12 @@ cyjon_panic:
 ;
 ; wszystkie rejestry zachowane
 cyjon_page_release:
-	; zachowaj oryginalne rejestry
+	; zachowaj oryginalne rejestry i flagi
 	push	rax
 	push	rcx
 	push	rdx
 	push	rdi
+	pushf
 
 	; przelicz na adres względny
 	sub	rdi,	0x0000000000100000
@@ -767,7 +770,8 @@ cyjon_page_release:
 	; zwolnij binarną mapę pamięci
 	mov	byte [variable_page_allocate_semaphore],	VARIABLE_EMPTY
 
-	; przywróć oryginalne rejestry
+	; przywróć oryginalne rejestry i flagi
+	popf
 	pop	rdi
 	pop	rdx
 	pop	rcx

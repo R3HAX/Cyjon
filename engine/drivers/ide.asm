@@ -153,6 +153,9 @@ ide_initialize:
 	mov	rax,	ide_write_sectors
 	mov	qword [variable_disk_interface_write],	rax
 
+	; dysk gotowy do przetwarzania danych
+	mov	byte [variable_disk_io_ready],	VARIABLE_TRUE
+
 	; powrót z procedury
 	ret
 

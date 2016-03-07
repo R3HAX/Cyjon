@@ -133,5 +133,5 @@ incbin	"stage2.bin"
 ; na systemach z rodziny MS/Windows, oprogramowanie Bochs wymaga obrazu dysku o rozmiarze > 1MiB i wyrównanego do pełnego sektora (512 Bajtów)
 times	512 * 2048 - ( $ - $$ )	db	0x00
 
-; dołącz partycję wraz z zawartością
-incbin	"build/kfs.raw"
+; dołącz partycję
+incbin	"build/empty_ntfs.raw"

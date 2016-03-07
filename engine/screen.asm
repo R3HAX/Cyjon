@@ -104,8 +104,8 @@ screen_initialization:
 	push	rdi
 	push	rax
 
-	cmp	byte [header + HEADER.video],	VARIABLE_EMPTY
-	ja	.graphics_mode
+	;cmp	byte [header + HEADER.video],	VARIABLE_EMPTY
+	;ja	.graphics_mode
 
 	mov	byte [variable_semaphore_video_text_mode],	VARIABLE_TRUE
 	mov	qword [variable_video_mode_memory_address],	VARIABLE_SCREEN_TEXT_MODE_BASE_ADDRESS
